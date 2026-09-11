@@ -1783,7 +1783,7 @@
           </div>
           <div id="exploded-3d-canvas-container" class="w-full h-80 rounded-xl overflow-hidden border border-slate-800 relative"></div>
           <div class="flex flex-wrap items-center justify-between gap-4 mt-4 text-xs font-mono text-slate-400">
-            <span>DIN Rail 35mm • Touch-Safe Fuse Holders • 15A gPV Fuses • 1000V DC Switch</span>
+            <span id="exploded-component-labels" class="text-slate-300 font-semibold">DIN Rail 35mm • Touch-Safe Fuse Holders • 15A gPV Fuses • 1000V DC Switch</span>
             <span class="text-sky-400">Three.js WebGL Engine</span>
           </div>
         </div>
@@ -6524,6 +6524,8 @@
         this.controls.maxDistance = 4.0;
 
         this.env = new EnvironmentAndEquipment(this.scene);
+        this.moduleEquipmentGroup = new THREE.Group();
+        this.scene.add(this.moduleEquipmentGroup);
         this.ghostGuides = new HolographicGhostGuides(this.scene);
         this.diegeticHUD = new Diegetic3DHUD(this.scene);
 
@@ -7625,7 +7627,86 @@
         this.renderer.setSize(window.innerWidth, window.innerHeight);
       }
 
+      loadModuleSimulation(moduleConfigOrId) {
+        const simConfig = (moduleConfigOrId && typeof moduleConfigOrId === 'object' && moduleConfigOrId.simulationConfig)
+          ? moduleConfigOrId.simulationConfig
+          : (moduleConfigOrId && typeof moduleConfigOrId === 'object' ? moduleConfigOrId : null);
+
+        const modCode = simConfig?.code || (typeof moduleConfigOrId === 'string' ? moduleConfigOrId : 'SOLAR-BOX-01');
+        const codeUpper = String(modCode).toUpperCase();
+
+        console.log('[WebXRTrainingApp] Loading module 3D simulation model for:', codeUpper);
+
+        // Toggle visibility of default workshop equipment
+        const isBoxModule = codeUpper.includes('BOX') || codeUpper.includes('04');
+        if (this.env) {
+          if (this.env.gateGroup) this.env.gateGroup.visible = isBoxModule;
+          if (this.env.solarRoofGroup) this.env.solarRoofGroup.visible = isBoxModule;
+          if (this.env.workbenchGroup) this.env.workbenchGroup.visible = isBoxModule;
+          if (this.env.combinerBox) this.env.combinerBox.visible = isBoxModule;
+          if (this.env.batteryRack) this.env.batteryRack.visible = isBoxModule;
+          if (this.env.batteryPack) this.env.batteryPack.visible = isBoxModule;
+          if (this.env.pegboardGroup) this.env.pegboardGroup.visible = isBoxModule;
+          if (this.env.shelfGroup) this.env.shelfGroup.visible = isBoxModule;
+          if (this.env.toolboxGroup) this.env.toolboxGroup.visible = isBoxModule;
+          if (this.env.dmmGroup) this.env.dmmGroup.visible = isBoxModule;
+          if (this.env.dmmMesh) this.env.dmmMesh.visible = isBoxModule;
+          if (this.env.redProbe) this.env.redProbe.visible = isBoxModule;
+          if (this.env.blackProbe) this.env.blackProbe.visible = isBoxModule;
+          if (this.env.leadLineRed) this.env.leadLineRed.visible = isBoxModule;
+          if (this.env.leadLineBlack) this.env.leadLineBlack.visible = isBoxModule;
+        }
+
+        // Only display floating 3D diegetic HUD in WebXR immersive headset mode
+        if (this.diegeticHUD && this.diegeticHUD.mesh) {
+          this.diegeticHUD.mesh.visible = this.renderer.xr.isPresenting;
+        }
+
+        if (this.ghostGuides) {
+          // Ghost guides only configured for default combiner box
+          if (!isBoxModule) {
+            this.ghostGuides.setStep(0);
+          } else {
+            this.ghostGuides.setStep(1);
+          }
+        }
+
+        // Build module equipment using MAYAVUE_MODELS
+        if (window.MAYAVUE_MODELS && window.MAYAVUE_MODELS.ModuleEquipmentBuilder) {
+          const result = window.MAYAVUE_MODELS.ModuleEquipmentBuilder.build(
+            codeUpper,
+            this.moduleEquipmentGroup,
+            THREE,
+            this.sound
+          );
+
+          if (result) {
+            if (result.interactiveObjects && result.interactiveObjects.length > 0) {
+              this.interactiveObjects = result.interactiveObjects;
+            } else if (isBoxModule && this.env && this.env.interactiveObjects) {
+              this.interactiveObjects = this.env.interactiveObjects;
+            }
+
+            if (result.defaultCameraPos && !this.renderer.xr.isPresenting) {
+              this.camera.position.copy(result.defaultCameraPos);
+            }
+            if (result.defaultControlsTarget && this.controls) {
+              this.controls.target.copy(result.defaultControlsTarget);
+              this.controls.update();
+            }
+          }
+        }
+
+        // Audio cue
+        if (this.sound && typeof this.sound.playSuccess === 'function') {
+          try { this.sound.playSuccess(); } catch (e) {}
+        }
+      }
+
       render(timestamp, frame) {
+        const simView = document.getElementById('view-simulation');
+        if (simView && simView.classList.contains('hidden')) return;
+
         const delta = this.clock.getDelta();
         const time = this.clock.getElapsedTime();
 
@@ -7659,6 +7740,7 @@
       window.app = new WebXRTrainingApp();
     });
   </script>
+  <script src="/equipment_models.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

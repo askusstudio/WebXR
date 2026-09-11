@@ -128,48 +128,139 @@ function computeTamperHash(userId, moduleCode, troubleshootPct, safetyPct, toolU
 }
 
 // --- 4. Socratic AI Actionable Feedback Generator ---
-function generateSocraticAiFeedback({ moduleCode, troubleshootPct, safetyPct, toolUsePct, safetyAlerts, durationMinutes, telemetryLog = {} }) {
+function generateSocraticAiFeedback({ moduleCode = 'SOLAR-BOX-01', troubleshootPct, safetyPct, toolUsePct, safetyAlerts, durationMinutes, telemetryLog = {} }) {
   const strengths = [];
   const improvements = [];
   const recommendations = [];
 
-  // Evaluate Troubleshooting & Logic
-  if (troubleshootPct >= 95) {
-    strengths.push('Exceptional systematic diagnosis: accurately probed 480V DC Voc and identified open-circuit fuse within benchmark time.');
-  } else if (troubleshootPct >= 80) {
-    strengths.push('Competent electrical isolation workflow; successfully diagnosed fault condition with minor circuit tracing hesitation.');
-  } else {
-    improvements.push('Circuit diagnosis sequence showed multiple redundant probe measurements prior to identifying blown fuse.');
-  }
+  const code = String(moduleCode).toUpperCase();
 
-  // Evaluate Safety Compliance
-  if (safetyPct === 100 && (safetyAlerts === 0 || !safetyAlerts)) {
-    strengths.push('Flawless NFPA 70E Arc Flash compliance: 1000V insulating gloves and face shield donned prior to high-voltage enclosure penetration.');
-  } else {
-    improvements.push(`Logged ${safetyAlerts || 1} safety violation warning(s): ensure zero-voltage bus verification before touching fuse extraction bracket.`);
-    recommendations.push('Review Module 03: NFPA 70E Arc Flash Boundary and CAT IV Multimeter Probing Procedure.');
-  }
+  if (code.includes('ROOF') || code === 'SOLAR-ROOF-01') {
+    if (troubleshootPct >= 90) {
+      strengths.push('Optimal Solar Window Acquisition: Accurately aligned array to 180° True South within ±2° azimuth tolerance.');
+      strengths.push('Pyranometer Radiance Grounding: Confirmed solar irradiance of 880 W/m² with zero shading obstacle penalties.');
+    } else {
+      improvements.push('Azimuth orientation deviated from True South; recalibrate magnetic declination compensation.');
+    }
+    if (safetyPct === 100) {
+      strengths.push('OSHA 1926.502 Fall Protection: 100% harness tie-off compliance confirmed across all rooftop working zones.');
+    } else {
+      improvements.push('Fall protection anchor point inspection missed before stepping onto sloped roof truss.');
+    }
+    if (toolUsePct >= 90) {
+      strengths.push('Inclinometer Precision: Structural L-feet brackets torqued to exact 25.0° optimal latitude tilt angle.');
+    }
+    recommendations.push('Advance to Module 02: PV Panel Mounting & End/Mid-Clamp Mechanical Torquing.');
 
-  // Evaluate Tool Technique & Torquing
-  if (toolUsePct >= 90) {
-    strengths.push('Precision tool handling: Fluke 87V CAT IV probes placed on isolated terminals with exact 15 N*m calibrated torque confirmation on 48V battery bus.');
-  } else {
-    improvements.push('Torque wrench technique requires calibration: verify tactile click confirmation on M8 terminal hardware.');
-    recommendations.push('Practice calibrated torque tool calibration in 3D Animated Circuit media lab.');
-  }
+  } else if (code.includes('MOUNT') || code === 'SOLAR-MOUNT-02') {
+    if (troubleshootPct >= 90) {
+      strengths.push('Bifacial Module Precision Handling: 550W panels seated with uniform 20mm thermal expansion spacing.');
+      strengths.push('Grounding Bond Integrity: Serrated WEEB bonding clips positioned under each rail contact point.');
+    } else {
+      improvements.push('Thermal expansion spacing inconsistent between panel rows; maintain strict 20mm spacing.');
+    }
+    if (toolUsePct >= 90) {
+      strengths.push('Calibrated Torquing Technique: Verified 14.0 N*m on end-clamps and 15.5 N*m on mid-clamps with tactile click confirmation.');
+    } else {
+      improvements.push('Under-torqued mid-clamp detected: ensure full 15.5 N*m calibrated setting is reached.');
+    }
+    recommendations.push('Advance to Module 03: DC Cabling, MC4 Crimping & String Wiring.');
 
-  // Next Step Recommendation
-  if (troubleshootPct >= 90 && safetyPct >= 95) {
+  } else if (code.includes('DC') || code.includes('MC4') || code === 'SOLAR-DC-03') {
+    if (troubleshootPct >= 90) {
+      strengths.push('Flawless MC4 Pin Ratchet Crimp: Zero sheared copper strands on 6mm² PV1-F cable with 7.5mm exact strip depth.');
+      strengths.push('Pull Retention Resistance: Exceeded 310 N minimum pull-off force with 345 N sustained tensile retention.');
+    } else {
+      improvements.push('Crimp compression depth showed uneven contact crimp; verify full ratchet release cycle.');
+    }
+    if (safetyPct === 100) {
+      strengths.push('Polarity Isolation Protocol: 100% correct DC home-run polarity mapping confirmed prior to enclosure entry.');
+    }
+    recommendations.push('Advance to Module 04: Combiner Box, DC Isolator & Battery Troubleshooting.');
+
+  } else if (code.includes('GRID') || code.includes('INVERTER') || code === 'SOLAR-GRID-05') {
+    if (troubleshootPct >= 90) {
+      strengths.push('Phase Sequence Verification: Confirmed clockwise 3-phase rotation (L1-L2-L3) across 480V utility interconnection.');
+      strengths.push('Anti-Islanding Trip Speed: Utility loss simulation triggered inverter rapid shutdown in 1.42s (< 2.0s limit).');
+    } else {
+      improvements.push('Phase rotation meter check showed momentary hesitation on L2/L3 sequence identification.');
+    }
+    if (safetyPct === 100) {
+      strengths.push('IEEE 1547 Grid Standard Compliance: Verified zero backfeed to de-energized utility grid during shutdown.');
+    }
+    recommendations.push('Complete Certificate Track: Solar PV Installation & Commissioning Master Accreditation.');
+
+  } else if (code.includes('SUB-LOTO') || code === 'SUB-LOTO-01') {
+    if (troubleshootPct >= 90) {
+      strengths.push('High-Voltage Arc Flash Perimeter Mastery: Successfully demarcated 4.2-meter Category 4 boundary line.');
+      strengths.push('Non-Contact Wand Probing: Extended 8ft fiberglass hot stick to verify absence of voltage on 13.8kV busbars.');
+    } else {
+      improvements.push('Approached within 4.2m boundary prior to completing full absence-of-voltage test on busbar.');
+    }
+    if (safetyPct === 100) {
+      strengths.push('OSHA 1910.269 Compliance: Donned complete 40 cal/cm² suit, hood with air supply, and Class 4 rubber gloves.');
+    }
+    recommendations.push('Advance to Module 02: SF6 Circuit Breaker De-energization & Visible Air-Gap Isolation.');
+
+  } else if (code.includes('SUB-SW') || code === 'SUB-SW-02') {
+    if (troubleshootPct >= 90) {
+      strengths.push('SF6 Density Verification: Confirmed SF6 gas pressure in safe green zone (0.62 MPa) before operating trip coil.');
+      strengths.push('Visible Air-Gap Isolation: Cranked 3-phase gang disconnect open with verified 450mm knife-blade clearance.');
+    } else {
+      improvements.push('Operating handle cranking speed was irregular; maintain steady mechanical leverage on gang switch.');
+    }
+    if (safetyPct === 100) {
+      strengths.push('NFPA 70E Article 120 LOTO Padlocking: Multi-padlock hasp and red danger tag attached directly to operating lever.');
+    }
+    recommendations.push('Complete Certificate Track: Electrical Sub-Station & 3-Phase Grid Safe Isolation.');
+
+  } else if (code.includes('BESS') || code === 'BESS-CELL-01') {
+    if (troubleshootPct >= 90) {
+      strengths.push('Cell Voltage Symmetry: Diagnosed 16 individual LiFePO4 cells with exceptional 12 mV maximum delta-V.');
+      strengths.push('BMS Telemetry Balancing: Multi-pin sensor harness connected and validated over CAN/RS485 communication.');
+    } else {
+      improvements.push('Cell delta-V measurement order was erratic; adhere to systematic positive-to-negative sequence.');
+    }
+    if (toolUsePct >= 90) {
+      strengths.push('Flexible Busbar Calibration: Torqued all 16 cell interconnects to 12.0 N*m with insulated torque wrench.');
+    }
+    if (safetyPct === 100) {
+      strengths.push('NFPA 855 Thermal Safety: Deflagration vent rupture disk and aerosol suppression heads inspected zero defect.');
+    }
+    recommendations.push('Complete Certificate Track: Commercial LiFePO4 Battery Energy Storage Systems (BESS).');
+
+  } else {
+    // Default Module 04: Combiner Box & Battery Troubleshooting
+    if (troubleshootPct >= 95) {
+      strengths.push('Exceptional systematic diagnosis: accurately probed 480V DC Voc and identified open-circuit fuse within benchmark time.');
+    } else if (troubleshootPct >= 80) {
+      strengths.push('Competent electrical isolation workflow; successfully diagnosed fault condition with minor circuit tracing hesitation.');
+    } else {
+      improvements.push('Circuit diagnosis sequence showed multiple redundant probe measurements prior to identifying blown fuse.');
+    }
+
+    if (safetyPct === 100 && (safetyAlerts === 0 || !safetyAlerts)) {
+      strengths.push('Flawless NFPA 70E Arc Flash compliance: 1000V insulating gloves and face shield donned prior to high-voltage enclosure penetration.');
+    } else {
+      improvements.push(`Logged ${safetyAlerts || 1} safety violation warning(s): ensure zero-voltage bus verification before touching fuse extraction bracket.`);
+      recommendations.push('Review Module 03: NFPA 70E Arc Flash Boundary and CAT IV Multimeter Probing Procedure.');
+    }
+
+    if (toolUsePct >= 90) {
+      strengths.push('Precision tool handling: Fluke 87V CAT IV probes placed on isolated terminals with exact 15 N*m calibrated torque confirmation on 48V battery bus.');
+    } else {
+      improvements.push('Torque wrench technique requires calibration: verify tactile click confirmation on M8 terminal hardware.');
+      recommendations.push('Practice calibrated torque tool calibration in 3D Animated Circuit media lab.');
+    }
+
     recommendations.push('Eligible for Advanced Track: 3PHASE-SUB-02 (High Voltage Substation & 3-Phase Grid Safe Isolation).');
-  } else {
-    recommendations.push('Repeat practice scenario focusing on tactile LOTO isolation sequence.');
   }
 
   return {
     evaluator: 'MAYAVUE Socratic AI Engine v2.4 (Grounded in NFPA 70E & OSHA 1910)',
     overallGrade: troubleshootPct >= 90 && safetyPct >= 90 ? 'DISTINCTION' : troubleshootPct >= 75 ? 'PASS' : 'RETAKE_RECOMMENDED',
     strengths,
-    improvements,
+    improvements: improvements.length > 0 ? improvements : ['Zero procedural infractions or safety violations logged.'],
     recommendations,
     generatedAt: new Date().toISOString()
   };

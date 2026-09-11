@@ -24,6 +24,34 @@ const COURSES = [
         status: 'completed',
         progress: 100,
         badge: 'CERTIFIED',
+        simulationConfig: {
+          simulationId: 'module_01',
+          code: 'SOLAR-ROOF-01',
+          title: 'Site Feasibility & Structural Racking Assembly',
+          envType: 'racking_lab',
+          name: 'Rooftop Structural Racking & Sun Angle Irradiance Lab',
+          standard: 'OSHA 1926.502 / NABCEP PV Associate',
+          telemetry: {
+            p1: { label: 'Tilt Angle', value: '25.0° OPTIMAL' },
+            p2: { label: 'Irradiance', value: '880 W/m²' },
+            p3: { label: 'Azimuth', value: '180° TRUE S' },
+            p4: { label: 'Roof Load', value: '18.5 kg/m² OK' }
+          },
+          steps: [
+            '1. ROOF INSPECT: Verify structural rafter integrity and load bearing capacity.',
+            '2. AZIMUTH ALIGN: Use magnetic compass to locate 180° True South solar window.',
+            '3. INCLINOMETER: Set racking L-feet to 25.0° optimal latitude tilt angle.',
+            '4. PYRANOMETER: Measure real-time rooftop solar irradiance (>800 W/m²).',
+            '5. UNISTRUT RAILS: Fasten aerospace aluminum rails with torque wrench to 14 N*m.',
+            '6. WATERPROOF SEAL: Inspect EPDM rubber flashing boots against rain penetration.'
+          ],
+          telemetryLog: {
+            azimuth_deg: 180,
+            tilt_angle: '25.0°',
+            irradiance: '880 W/m²',
+            structural_load_status: 'CONFIRMED PASS'
+          }
+        },
         topics: [
           {
             id: 'site_feasibility_01',
@@ -66,6 +94,34 @@ const COURSES = [
         status: 'completed',
         progress: 100,
         badge: 'CERTIFIED',
+        simulationConfig: {
+          simulationId: 'module_02',
+          code: 'SOLAR-MOUNT-02',
+          title: 'PV Panel Mounting & End/Mid-Clamp Mechanical Torquing',
+          envType: 'panel_mount',
+          name: 'Bifacial PV Panel Mounting & Calibrated Clamp Torquing Station',
+          standard: 'UL 2703 / NEC 690.43 Grounding Standard',
+          telemetry: {
+            p1: { label: 'Mid-Clamp Torque', value: '15.5 N*m' },
+            p2: { label: 'End-Clamp Torque', value: '14.0 N*m' },
+            p3: { label: 'Thermal Gap', value: '20 mm NOMINAL' },
+            p4: { label: 'Ground Bond', value: '0.04 Ω PASS' }
+          },
+          steps: [
+            '1. PANEL LIFT: Hoist 550W bifacial monocrystalline panel onto aluminum rails.',
+            '2. WEEB CLIPS: Seat serrated WEEB bonding washer between rail and module frame.',
+            '3. THERMAL GAP: Gauge 20mm uniform thermal expansion space between modules.',
+            '4. MID-CLAMPS: Position stainless steel mid-clamp channel and finger-tighten.',
+            '5. TORQUE WRENCH: Torque 6mm hex bolt with calibrated wrench until 15.5 N*m click.',
+            '6. BONDING TEST: Verify <0.1Ω continuity to ground rail with digital micro-ohmmeter.'
+          ],
+          telemetryLog: {
+            panel_type: '550W Bifacial PERC',
+            mid_clamp_torque: '15.5 N*m',
+            end_clamp_torque: '14.0 N*m',
+            ground_bond_resistance: '0.04 Ohm'
+          }
+        },
         topics: [
           {
             id: 'pv_panel_mounting_02',
@@ -108,6 +164,34 @@ const COURSES = [
         status: 'completed',
         progress: 100,
         badge: 'CERTIFIED',
+        simulationConfig: {
+          simulationId: 'module_03',
+          code: 'SOLAR-DC-03',
+          title: 'DC Cabling, MC4 Crimping & String Wiring',
+          envType: 'dc_cabling',
+          name: 'DC String Cabling, Wire Stripping & MC4 Connector Crimp Lab',
+          standard: 'IEC 62852 / NEC 690.31 Photovoltaic Wiring',
+          telemetry: {
+            p1: { label: 'Cable Sizing', value: '6mm² (10 AWG)' },
+            p2: { label: 'Strip Depth', value: '7.5 mm' },
+            p3: { label: 'Pull Retention', value: '345 N PASS' },
+            p4: { label: 'Contact Res.', value: '0.18 mΩ' }
+          },
+          steps: [
+            '1. STRIP CABLE: Strip 7.5mm of outer insulation from 6mm² PV1-F solar cable.',
+            '2. INSPECT STRANDS: Ensure zero sheared copper strands and uniform tinned conductor.',
+            '3. PIN INSERT: Slide silver-plated contact pin onto stripped copper core.',
+            '4. RATCHET CRIMP: Compress pin with Rennsteig crimper until full ratchet release.',
+            '5. HOUSING SNAP: Push crimped pin into IP68 MC4 body until audible lock click.',
+            '6. PULL-TEST RIG: Clamp connector and confirm retention exceeds 310 N threshold.'
+          ],
+          telemetryLog: {
+            cable_spec: '6mm2 PV1-F UV',
+            strip_depth_mm: 7.5,
+            pull_force_n: 345,
+            contact_mOhm: 0.18
+          }
+        },
         topics: [
           {
             id: 'dc_cabling_mc4_03',
@@ -150,6 +234,34 @@ const COURSES = [
         status: 'active',
         progress: 85,
         badge: 'IN PROGRESS',
+        simulationConfig: {
+          simulationId: 'solar_troubleshooting_04',
+          code: 'SOLAR-BOX-01',
+          title: 'Combiner Box, DC Isolator & Battery Troubleshooting',
+          envType: 'combiner_box',
+          name: 'Substation Combiner Box Safe Isolation & LiFePO4 Battery Lab',
+          standard: 'NFPA 70E / OSHA 1910.303 Safe Work Practices',
+          telemetry: {
+            p1: { label: 'Roof PV Voc', value: '480.0 V' },
+            p2: { label: 'Irradiance', value: '880 W/m²' },
+            p3: { label: 'Bus Voltage', value: '480.0 V' },
+            p4: { label: 'Battery Bay', value: '48V LiFePO4' }
+          },
+          steps: [
+            '1. MAIN GATE: Open security fence interlock gate to access enclosure.',
+            '2. SAFE ISOLATION: Rotate 1000V DC rotary disconnect switch to safe OFF position.',
+            '3. PROBE VOLTAGE: Probe high-voltage bus with Fluke 87V to confirm 0.0V de-energized.',
+            '4. FIX CIRCUIT: Extract blown 15A fuse with insulated puller and seat replacement.',
+            '5. TOOL BOX: Retrieve calibrated torque driver and confirm busbar fasteners.',
+            '6. NEW BATTERY: Torque 48V LiFePO4 battery terminal lugs to calibrated 15 N*m.'
+          ],
+          telemetryLog: {
+            voc_probed: '480.0V DC',
+            isolated_bus_voltage: '0.0V DC',
+            fuse_continuity: 'FUSE 3 REPLACED PASS',
+            battery_bus: '48V LiFePO4 BUS CONNECTED 15 N*m'
+          }
+        },
         topics: [
           {
             id: 'solar_troubleshooting_04',
@@ -195,6 +307,34 @@ const COURSES = [
         status: 'locked',
         progress: 0,
         badge: 'LOCKED',
+        simulationConfig: {
+          simulationId: 'module_05',
+          code: 'SOLAR-GRID-05',
+          title: '3-Phase Inverter Commissioning & Grid Interconnection',
+          envType: 'inverter_room',
+          name: 'Commercial 3-Phase Utility Inverter Commissioning Lab',
+          standard: 'IEEE 1547-2018 / UL 1741-SB Grid Interconnection',
+          telemetry: {
+            p1: { label: 'AC Grid Voltage', value: '480V 3-Phase Wye' },
+            p2: { label: 'Grid Frequency', value: '60.02 Hz' },
+            p3: { label: 'Phase Rotation', value: 'L1-L2-L3 CW PASS' },
+            p4: { label: 'Anti-Islanding', value: '1.4s (< 2.0s)' }
+          },
+          steps: [
+            '1. PHASE ROTATION: Connect rotation meter to L1/L2/L3 to verify clockwise rotation.',
+            '2. AC DISCONNECT: Measure 480V AC phase-to-phase and 277V phase-to-neutral.',
+            '3. DC MPPT INPUT: Check DC string polarity and open-circuit voltage before switch on.',
+            '4. INVERTER BOOT: Close main AC breaker and energize inverter digital LCD display.',
+            '5. GRID SYNC: Confirm frequency synchronization (59.3 - 60.5 Hz operating window).',
+            '6. ANTI-ISLANDING: Trigger simulated utility trip and verify shutdown under 2.0s.'
+          ],
+          telemetryLog: {
+            ac_voltage_ll: '480.2V AC',
+            grid_frequency: '60.02 Hz',
+            phase_sequence: 'CW L1-L2-L3 PASS',
+            anti_islanding_trip_time: '1.42 sec'
+          }
+        },
         topics: [
           {
             id: 'inverter_commissioning_05',
@@ -252,6 +392,34 @@ const COURSES = [
         status: 'completed',
         progress: 100,
         badge: 'CERTIFIED',
+        simulationConfig: {
+          simulationId: 'sub_mod_01',
+          code: 'SUB-LOTO-01',
+          title: 'OSHA 1910.269 Substation Entry & Arc Flash Hazard Analysis',
+          envType: 'substation_yard',
+          name: '13.8kV Utility Substation Yard & Arc Flash Perimeter Lab',
+          standard: 'OSHA 1910.269 / IEEE 1584 Arc Flash Standard',
+          telemetry: {
+            p1: { label: 'Nominal Bus', value: '13.8 kV AC' },
+            p2: { label: 'Available Fault', value: '25 kA RMS' },
+            p3: { label: 'Arc Boundary', value: '4.2 meters' },
+            p4: { label: 'PPE Level', value: 'Cat 4 (40 cal)' }
+          },
+          steps: [
+            '1. PERIMETER INSPECT: Walk substation fence line and verify earth ground bonding.',
+            '2. INTERLOCK KEY: Retrieve trapped-key interlock from master control station.',
+            '3. DON PPE: Suit up in 40 cal/cm² arc flash suit, hood with blower, and Class 4 gloves.',
+            '4. ARC BOUNDARY: Deploy 4.2-meter perimeter warning tape and flashing beacon.',
+            '5. HOT STICK PREP: Inspect 8ft fiberglass shotgun hot stick for cracks or flash tracking.',
+            '6. VOLTAGE DETECTOR: Probe 13.8kV busbar with non-contact wand; verify silence.'
+          ],
+          telemetryLog: {
+            substation_voltage: '13.8kV AC',
+            arc_energy_cal_cm2: 38.5,
+            boundary_clearance_m: 4.2,
+            zero_energy_verified: 'ABSENCE OF VOLTAGE CONFIRMED'
+          }
+        },
         topics: [
           {
             id: 'sub_entry_01',
@@ -293,6 +461,34 @@ const COURSES = [
         status: 'active',
         progress: 50,
         badge: 'IN PROGRESS',
+        simulationConfig: {
+          simulationId: 'sub_mod_02',
+          code: 'SUB-SW-02',
+          title: 'SF6 Circuit Breaker De-energization & Visible Air-Gap Isolation',
+          envType: 'sf6_switchgear',
+          name: 'SF6 Gas Circuit Breaker & 3-Phase Gang Air Disconnect Lab',
+          standard: 'IEEE C37.04 / NFPA 70E Article 120 LOTO',
+          telemetry: {
+            p1: { label: 'SF6 Gas Pressure', value: '0.62 MPa OK' },
+            p2: { label: 'Breaker Status', value: 'TRIPPED / OPEN' },
+            p3: { label: 'Air-Gap Blades', value: '450 mm OPEN' },
+            p4: { label: 'LOTO Lock', value: 'SECURED HASP' }
+          },
+          steps: [
+            '1. SF6 GAUGE: Inspect breaker gas density gauge to ensure needle is in green zone (>0.55 MPa).',
+            '2. TRIP BREAKER: Depress mechanical manual trip button; confirm semaphore shows OPEN.',
+            '3. CHARGE RELEASE: Release spring energy mechanism to prevent inadvertent reclosure.',
+            '4. CRANK GANG SWITCH: Insert operating handle and crank 3-phase air disconnect open.',
+            '5. VISUAL AIR-GAP: Visually inspect all 3 phases for 450mm visible air gap clearance.',
+            '6. LOTO PADLOCK: Apply red Master Lock hasp, padlock, and danger tag to handle.'
+          ],
+          telemetryLog: {
+            sf6_pressure_mpa: 0.62,
+            breaker_semaphore: 'GREEN OPEN',
+            air_gap_mm: 450,
+            loto_tag_id: 'LOTO-SUB-7702'
+          }
+        },
         topics: [
           {
             id: 'sub_breaker_isolation_02',
@@ -348,6 +544,34 @@ const COURSES = [
         status: 'active',
         progress: 60,
         badge: 'IN PROGRESS',
+        simulationConfig: {
+          simulationId: 'bess_mod_01',
+          code: 'BESS-CELL-01',
+          title: 'LiFePO4 Chemistry, Thermal Runaway & Deflagration Safety',
+          envType: 'bess_container',
+          name: 'Commercial 16S LiFePO4 BESS Rack Assembly & BMS Balancing Lab',
+          standard: 'NFPA 855 / UL 9540 Energy Storage Safety Standard',
+          telemetry: {
+            p1: { label: 'String Voltage', value: '51.2 V DC' },
+            p2: { label: 'Max Delta-V', value: '12 mV PASS' },
+            p3: { label: 'Rack Temp', value: '23.4 °C NOMINAL' },
+            p4: { label: 'Busbar Torque', value: '12.0 N*m' }
+          },
+          steps: [
+            '1. CELL HEALTH: Measure 16 individual LiFePO4 cells to verify delta-V < 25mV.',
+            '2. TRAY RACKING: Slide 16S tray into 19-inch steel cabinet and engage locking pins.',
+            '3. FLEX BUSBARS: Install nickel-plated copper flexible busbars across cell terminals.',
+            '4. TORQUE FASTENERS: Torque terminal bolts to calibrated 12.0 N*m with insulated wrench.',
+            '5. BMS HARNESS: Plug in multichannel voltage sensing harness and CAN communication.',
+            '6. EXHAUST VENT: Inspect deflagration burst disk and aerosol fire extinguisher head.'
+          ],
+          telemetryLog: {
+            battery_chemistry: '16S LiFePO4 (51.2V 100Ah)',
+            cell_delta_v_mv: 12,
+            busbar_torque_nm: 12.0,
+            thermal_status: '23.4C STABLE NO RUNAWAY'
+          }
+        },
         topics: [
           {
             id: 'bess_cells_01',
@@ -408,7 +632,44 @@ module.exports = {
             moduleId: mod.id,
             moduleCode: mod.code,
             moduleNumber: mod.moduleNumber,
-            moduleTitle: mod.title
+            moduleTitle: mod.title,
+            simulationConfig: mod.simulationConfig
+          };
+        }
+      }
+    }
+    return null;
+  },
+
+  getModuleOrTopic(identifier) {
+    if (!identifier) return null;
+    const clean = String(identifier).toLowerCase().replace(/[-_]/g, '');
+
+    for (const course of COURSES) {
+      for (const mod of course.modules) {
+        const modMatch = (
+          mod.id === identifier ||
+          mod.code === identifier ||
+          mod.id.replace(/[-_]/g, '').toLowerCase() === clean ||
+          mod.code.replace(/[-_]/g, '').toLowerCase() === clean
+        );
+        const topicMatch = mod.topics.find(t => (
+          t.id === identifier ||
+          t.id.replace(/[-_]/g, '').toLowerCase() === clean
+        ));
+
+        if (modMatch || topicMatch) {
+          const topic = topicMatch || mod.topics[0];
+          return {
+            ...topic,
+            courseId: course.id,
+            courseTitle: course.title,
+            courseCode: course.courseCode,
+            moduleId: mod.id,
+            moduleCode: mod.code,
+            moduleNumber: mod.moduleNumber,
+            moduleTitle: mod.title,
+            simulationConfig: mod.simulationConfig
           };
         }
       }

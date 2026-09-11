@@ -364,7 +364,7 @@ class MayaVuePlatform {
           </div>
           <h3 class="text-base font-bold text-white mb-2">${crs.title}</h3>
           <p class="text-xs text-slate-400 line-clamp-2 mb-4">${crs.description}</p>
-          <div class="space-y-1.5 mb-5">
+          <div class="space-y-1.5 mb-4">
             <div class="flex justify-between text-[11px] font-mono text-slate-300">
               <span>Curriculum Progress</span>
               <span class="text-emerald-400 font-bold">${crs.progressPct || 65}%</span>
@@ -373,11 +373,32 @@ class MayaVuePlatform {
               <div class="h-full bg-emerald-400 rounded-full" style="width: ${crs.progressPct || 65}%"></div>
             </div>
           </div>
+
+          <!-- Module List with Direct VR Simulation Launchers -->
+          <div class="space-y-2 pt-3 border-t border-slate-800/80 mb-4">
+            <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-semibold">Specialized Modules & VR Labs:</span>
+            ${(crs.modules || []).map(m => `
+              <div class="flex items-center justify-between p-2 rounded bg-slate-950/80 border border-slate-800/80 text-xs hover:border-slate-700 transition-colors">
+                <div class="flex items-center gap-2 overflow-hidden mr-2">
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-sky-950 text-sky-300 border border-sky-800/60 shrink-0">${m.code}</span>
+                  <span class="text-slate-200 text-[11px] font-medium truncate" title="${m.title}">${m.title}</span>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <a href="#/course/${crs.id}/theory/${m.topics[0]?.id || m.id}" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono text-decoration-none">
+                    📖 Theory
+                  </a>
+                  <a href="#/simulate/${m.id}" class="px-2 py-0.5 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-[10px] font-mono text-decoration-none flex items-center gap-0.5">
+                    ⚡ VR Sim
+                  </a>
+                </div>
+              </div>
+            `).join('')}
+          </div>
         </div>
-        <div class="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+        <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between">
           <span class="text-[11px] text-slate-400 font-mono">${crs.standard}</span>
           <a href="#/course/${crs.id}/theory/${crs.modules[0]?.topics[0]?.id || 'solar_troubleshooting_04'}" class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs transition-colors text-decoration-none inline-flex items-center gap-1.5">
-            Enter Course →
+            Full Course View →
           </a>
         </div>
       `;
@@ -490,7 +511,12 @@ class MayaVuePlatform {
   // Exploded 3D Component Assembly View
   initExploded3DView(viewType) {
     const container = document.getElementById('exploded-3d-canvas-container') || document.getElementById('exploded-canvas-container');
-    if (!container || container.hasChildNodes()) return;
+    if (!container) return;
+
+    // Clean up previous canvas if present
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
 
     const THREE = window.THREE;
     if (!THREE) {
@@ -512,7 +538,7 @@ class MayaVuePlatform {
     renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
 
-    // Controls
+    // OrbitControls
     const OrbitControlsCtor = window.OrbitControls || (window.THREE && window.THREE.OrbitControls);
     const controls = OrbitControlsCtor ? new OrbitControlsCtor(camera, renderer.domElement) : null;
     if (controls) {
@@ -521,54 +547,34 @@ class MayaVuePlatform {
     }
 
     // Lights
-    const amb = new THREE.AmbientLight(0xffffff, 0.9);
+    const amb = new THREE.AmbientLight(0xffffff, 0.95);
     scene.add(amb);
-    const dir = new THREE.DirectionalLight(0x38bdf8, 1.8);
+    const dir = new THREE.DirectionalLight(0x38bdf8, 2.0);
     dir.position.set(2, 3, 2);
     scene.add(dir);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    fillLight.position.set(-2, -1, -1);
+    scene.add(fillLight);
 
-    // Exploded Group
-    const explodeGroup = new THREE.Group();
-    scene.add(explodeGroup);
+    // Build exploded model using MAYAVUE_MODELS or fallback
+    let explodedResult = null;
+    if (window.MAYAVUE_MODELS && window.MAYAVUE_MODELS.ExplodedViewBuilder) {
+      explodedResult = window.MAYAVUE_MODELS.ExplodedViewBuilder.build(viewType, scene, THREE);
+    } else {
+      // Fallback simple DIN rail
+      const explodeGroup = new THREE.Group();
+      scene.add(explodeGroup);
+      const railMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 });
+      const dinRail = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.035, 0.015), railMat);
+      explodeGroup.add(dinRail);
+      explodedResult = { group: explodeGroup, parts: { explode: () => {} }, labelText: 'DIN Rail 35mm • Standard Mounting' };
+    }
 
-    // 1. DIN Rail
-    const railMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
-    const dinRail = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.035, 0.015), railMat);
-    explodeGroup.add(dinRail);
-
-    // 2. Touch-Safe Fuse Holders
-    const holderMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4 });
-    const holders = [];
-    [-0.15, -0.05, 0.05, 0.15].forEach(x => {
-      const h = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.09, 0.055), holderMat);
-      h.position.set(x, 0.03, 0.03);
-      explodeGroup.add(h);
-      holders.push(h);
-    });
-
-    // 3. 15A Cylindrical Fuses
-    const fuseMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.4, roughness: 0.2 });
-    const capMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95 });
-    const fuses = [];
-    [-0.15, -0.05, 0.05, 0.15].forEach(x => {
-      const fg = new THREE.Group();
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.038, 16), fuseMat);
-      const cap1 = new THREE.Mesh(new THREE.CylinderGeometry(0.0075, 0.0075, 0.008, 16), capMat);
-      cap1.position.y = 0.017;
-      const cap2 = new THREE.Mesh(new THREE.CylinderGeometry(0.0075, 0.0075, 0.008, 16), capMat);
-      cap2.position.y = -0.017;
-      fg.add(body, cap1, cap2);
-      fg.position.set(x, 0.03, 0.04);
-      explodeGroup.add(fg);
-      fuses.push(fg);
-    });
-
-    // 4. Rotary DC Isolator Switch
-    const switchMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 });
-    const switchKnob = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.03, 16), switchMat);
-    switchKnob.rotation.x = Math.PI / 2;
-    switchKnob.position.set(0, 0.03, 0.1);
-    explodeGroup.add(switchKnob);
+    // Update component labels text below canvas
+    const labelsEl = document.getElementById('exploded-component-labels');
+    if (labelsEl && explodedResult.labelText) {
+      labelsEl.textContent = explodedResult.labelText;
+    }
 
     const render = () => {
       renderer.render(scene, camera);
@@ -581,16 +587,12 @@ class MayaVuePlatform {
     // Slider listener
     const slider = document.getElementById('exploded-view-slider');
     if (slider) {
+      slider.value = 0;
       slider.oninput = (e) => {
         const val = parseFloat(e.target.value);
-        holders.forEach(h => {
-          h.position.z = 0.03 + val * 0.12;
-        });
-        fuses.forEach((f, i) => {
-          f.position.z = 0.04 + val * 0.25;
-          f.position.y = 0.03 + val * (0.05 + i * 0.02);
-        });
-        switchKnob.position.z = 0.1 + val * 0.35;
+        if (explodedResult && explodedResult.parts && typeof explodedResult.parts.explode === 'function') {
+          explodedResult.parts.explode(val);
+        }
         render();
       };
     }
@@ -602,7 +604,7 @@ class MayaVuePlatform {
   // STAGE 4: 3D/VR SIMULATION LAB & TELEMETRY
   // ==========================================
 
-  showSimulationScreen(moduleId) {
+  async showSimulationScreen(moduleId) {
     const screen = document.getElementById('view-simulation');
     if (!screen) return;
     screen.classList.remove('hidden');
@@ -610,6 +612,37 @@ class MayaVuePlatform {
     this.simTelemetry.startTime = new Date();
     this.simTelemetry.events = [];
     this.simTelemetry.safetyViolations = 0;
+
+    // Fetch rich module configuration
+    let modData = null;
+    try {
+      const res = await fetch(`/api/simulation/module/${moduleId || 'solar_troubleshooting_04'}`);
+      const data = await res.json();
+      if (data.success && data.module) {
+        modData = data.module;
+      }
+    } catch (err) {
+      console.warn('Could not fetch simulation config from API:', err);
+    }
+
+    // Update HUD and Task Guide with module-specific metadata
+    this.updateSimulationScreenHUD(modData, moduleId);
+
+    // Call 3D Engine to construct this module's dedicated equipment
+    if (window.app && typeof window.app.loadModuleSimulation === 'function') {
+      window.app.loadModuleSimulation(modData || moduleId);
+    } else {
+      let tries = 0;
+      const tId = setInterval(() => {
+        tries++;
+        if (window.app && typeof window.app.loadModuleSimulation === 'function') {
+          clearInterval(tId);
+          window.app.loadModuleSimulation(modData || moduleId);
+        } else if (tries > 30) {
+          clearInterval(tId);
+        }
+      }, 100);
+    }
 
     // Start 10 Hz Telemetry Stream Simulator
     if (this.simTelemetry.activeInterval) {
@@ -619,23 +652,99 @@ class MayaVuePlatform {
     this.simTelemetry.activeInterval = setInterval(() => {
       this.streamTelemetrySample();
     }, 100); // 10 Hz
+  }
 
-    // Hook manual complete button
+  updateSimulationScreenHUD(modData, moduleId) {
+    const simConfig = modData?.simulationConfig || {};
+    const modCode = modData?.moduleCode || modData?.code || simConfig.code || moduleId || 'SOLAR-BOX-01';
+    const modName = simConfig.name || modData?.title || 'Solar Facility Simulation';
+    const modStandard = simConfig.standard || 'NFPA 70E / OSHA Standard';
+
+    // Top Navigation Simulation Bar
+    const topBarTitle = document.querySelector('#view-simulation .fixed.top-14 span.text-slate-300');
+    if (topBarTitle) {
+      topBarTitle.textContent = `Module ${modData?.moduleNumber || ''}: ${modName}`;
+    }
+
+    // Top Header Card
+    const fullTitleEl = document.querySelector('.title-full');
+    const shortTitleEl = document.querySelector('.title-short');
+    const subTitleEl = document.querySelector('.sub');
+    if (fullTitleEl) fullTitleEl.textContent = `Mark VII // ${simConfig.name || modName}`;
+    if (shortTitleEl) shortTitleEl.textContent = modCode;
+    if (subTitleEl) subTitleEl.textContent = modStandard.toUpperCase();
+
+    // Telemetry items
+    const tel = simConfig.telemetry || {};
+    const p1 = tel.p1 || { label: 'Roof PV (Voc)', value: '480.0 V' };
+    const p2 = tel.p2 || { label: 'Irradiance', value: '880 W/m²' };
+    const p3 = tel.p3 || { label: 'Bus Voltage', value: '480.0 V' };
+    const p4 = tel.p4 || { label: 'Battery Bay', value: 'OFFLINE' };
+
+    const updateTelItem = (valId, item) => {
+      const el = document.getElementById(valId);
+      if (el) {
+        el.textContent = item.value;
+        const labelEl = el.previousElementSibling;
+        if (labelEl && labelEl.classList.contains('telemetry-label')) {
+          labelEl.textContent = item.label;
+        }
+      }
+    };
+
+    updateTelItem('hud-solar-voltage', p1);
+    updateTelItem('hud-irradiance', p2);
+    updateTelItem('hud-voltage', p3);
+    updateTelItem('hud-battery-status', p4);
+
+    // Movable Task Guidance HUD
+    const handleText = document.getElementById('guide-handle-text');
+    if (handleText) handleText.textContent = `TASK GUIDE // ${modCode}`;
+
+    const steps = simConfig.steps || [
+      '1. MAIN GATE: Scan biometric authorization card.',
+      '2. SAFE ISOLATION: Rotate DC isolator switch 90° to OFF.',
+      '3. PROBE VOLTAGE: Probe high-voltage terminals (<50V).',
+      '4. REPLACE FUSE: Extract blown fuse #3 & insert fresh 15A fuse.',
+      '5. TOOL BOX: Retrieve insulated torque driver from steel box.',
+      '6. CONNECT BATTERY: Slide 48V LiFePO4 battery pack into bay.'
+    ];
+
+    const taskStepTag = document.getElementById('task-step-tag');
+    const taskTitle = document.getElementById('task-title');
+    const taskInstruction = document.getElementById('task-instruction');
+
+    if (taskStepTag) taskStepTag.textContent = 'STEP 1 OF 6';
+    if (taskTitle) taskTitle.textContent = steps[0].split(':')[0].replace(/^[0-9]+\.\s*/, '');
+    if (taskInstruction) taskInstruction.textContent = steps[0].split(':')[1] || steps[0];
+
+    // Update step pills
+    for (let i = 1; i <= 6; i++) {
+      const pill = document.getElementById(`step-pill-${i}`);
+      if (pill) {
+        if (steps[i - 1]) {
+          const shortName = steps[i - 1].split(':')[0].replace(/^[0-9]+\.\s*/, '');
+          pill.textContent = `${i}. ${shortName}`;
+        }
+        if (i === 1) pill.className = 'step-pill active';
+        else pill.className = 'step-pill';
+      }
+    }
+
+    // Hook Finish Button
     const finishBtn = document.getElementById('sim-complete-trigger-btn');
     if (finishBtn) {
       finishBtn.onclick = () => {
         this.handleSimulationCompleted({
-          moduleCode: moduleId || 'SOLAR-BOX-01',
+          moduleCode: modCode,
           troubleshootPct: 98.8,
           safetyPct: 100.0,
-          toolUsePct: 97.0,
+          toolUsePct: 97.5,
           safetyAlerts: 0,
           activeDurationSeconds: 165,
-          telemetryLog: {
-            voc_probed: '480.0V DC',
-            isolated_bus_voltage: '0.0V DC',
-            fuse_continuity: 'FUSE 3 REPLACED PASS',
-            battery_bus: '48V LiFePO4 BUS CONNECTED 15 N*m'
+          telemetryLog: simConfig.telemetryLog || {
+            module: modCode,
+            status: 'COMPLETED_SUCCESS'
           }
         });
       };
@@ -682,7 +791,6 @@ class MayaVuePlatform {
     }
   }
 
-  // ==========================================
   // STAGE 5: DUAL-VIEW TELEMETRY & ADMIN FLEET
   // ==========================================
 

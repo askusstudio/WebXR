@@ -142,6 +142,17 @@ const server = http.createServer(async (req, res) => {
   // STAGE 4: SIMULATION & TELEMETRY APIS
   // ==========================================
 
+  // GET /api/simulation/module/:moduleId (Retrieve specific module VR simulation config)
+  const simModuleMatch = pathname.match(/^\/api\/simulation\/(?:module\/)?([a-zA-Z0-9_-]+)$/);
+  if (req.method === 'GET' && simModuleMatch) {
+    const modId = simModuleMatch[1];
+    const mod = courses.getModuleOrTopic(modId);
+    if (!mod) {
+      return sendJson(res, 404, { error: 'Simulation module not found' });
+    }
+    return sendJson(res, 200, { success: true, module: mod });
+  }
+
   // POST /api/simulation/session-commit (Commit simulation with Socratic AI & tamper-proof hash)
   if (req.method === 'POST' && (pathname === '/api/simulation/session-commit' || pathname === '/api/simulation/commit')) {
     try {
