@@ -1,0 +1,3539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>JARVIS // WebXR Solar Safe Isolation &amp; Battery Training</title>
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --panel-bg: rgba(10, 14, 22, 0.84);
+      --panel-border: rgba(0, 229, 255, 0.32);
+      --cyan-glow: #00e5ff;
+      --cyan-dim: rgba(0, 229, 255, 0.16);
+      --amber-warn: #ff9100;
+      --amber-dim: rgba(255, 145, 0, 0.2);
+      --red-alert: #ff2a44;
+      --green-safe: #00ff88;
+      --text-main: #e6f1f8;
+      --text-dim: #7d93a8;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: "SF Mono", "Fira Code", Consolas, "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+    }
+
+    #webgl-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Screen HUD Overlay */
+    #hud-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+      transition: background-color 0.35s ease;
+    }
+
+    #hud-overlay.flash-amber {
+      background-color: rgba(255, 145, 0, 0.26);
+    }
+
+    #hud-overlay.flash-green {
+      background-color: rgba(0, 255, 136, 0.18);
+    }
+
+    .interactive-ui {
+      pointer-events: auto;
+    }
+
+    /* Top Navigation / Telemetry Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .glass-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), inset 0 0 14px var(--cyan-dim);
+      padding: 12px 18px;
+      position: relative;
+    }
+
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      top: -1px;
+      left: 12px;
+      width: 24px;
+      height: 2px;
+      background: var(--cyan-glow);
+      box-shadow: 0 0 8px var(--cyan-glow);
+    }
+
+    .glass-card::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      right: 12px;
+      width: 24px;
+      height: 2px;
+      background: var(--cyan-glow);
+      box-shadow: 0 0 8px var(--cyan-glow);
+    }
+
+    .header-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-badge {
+      width: 40px;
+      height: 40px;
+      border: 1.5px solid var(--cyan-glow);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--cyan-glow);
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 1px;
+      box-shadow: 0 0 14px var(--cyan-dim), inset 0 0 10px var(--cyan-dim);
+      animation: pulse-ring 3s infinite ease-in-out;
+    }
+
+    @keyframes pulse-ring {
+      0%, 100% { box-shadow: 0 0 8px var(--cyan-dim), inset 0 0 6px var(--cyan-dim); }
+      50% { box-shadow: 0 0 18px var(--cyan-glow), inset 0 0 12px var(--cyan-glow); }
+    }
+
+    .title-group h1 {
+      font-size: 15px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .title-group .sub {
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    .center-jarvis-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-width: 340px;
+    }
+
+    .jarvis-status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      letter-spacing: 1.5px;
+      color: var(--cyan-glow);
+      text-transform: uppercase;
+    }
+
+    .jarvis-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan-glow);
+      box-shadow: 0 0 8px var(--cyan-glow);
+      animation: blink 1.5s infinite;
+    }
+
+    .jarvis-dot.listening {
+      background: var(--amber-warn);
+      box-shadow: 0 0 12px var(--amber-warn);
+      animation: blink 0.8s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    #speech-waveform-canvas {
+      width: 280px;
+      height: 32px;
+      display: block;
+    }
+
+    .live-speech-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      max-width: 320px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .live-speech-row .speech-prefix {
+      color: var(--cyan-glow);
+      font-weight: 700;
+    }
+
+    .live-speech-row .speech-text {
+      color: #fff;
+    }
+
+    .telemetry-card {
+      display: flex;
+      gap: 20px;
+      font-family: var(--font-mono);
+    }
+
+    .telemetry-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .telemetry-label {
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .telemetry-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .telemetry-value.score {
+      color: var(--green-safe);
+    }
+
+    .telemetry-value.voltage {
+      color: var(--red-alert);
+      transition: color 0.3s;
+    }
+
+    .telemetry-value.voltage.safe {
+      color: var(--green-safe);
+    }
+
+    /* Central Task Guidance Banner */
+    .task-banner-container {
+      align-self: center;
+      max-width: 680px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .task-banner {
+      padding: 14px 26px;
+      border-radius: 8px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.65);
+      transition: all 0.3s ease;
+    }
+
+    .task-step-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--cyan-glow);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .task-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .task-instruction {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+    /* Step Progression Badges (6 Steps) */
+    .steps-progress-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .step-pill {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.45);
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.3s ease;
+    }
+
+    .step-pill.active {
+      border-color: var(--cyan-glow);
+      color: #fff;
+      background: var(--cyan-dim);
+      box-shadow: 0 0 12px var(--cyan-dim);
+    }
+
+    .step-pill.completed {
+      border-color: var(--green-safe);
+      color: var(--green-safe);
+      background: rgba(0, 255, 136, 0.12);
+    }
+
+    /* Bottom Deck Controls */
+    .bottom-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+    }
+
+    .controls-help-card {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    .controls-help-card span {
+      color: var(--cyan-glow);
+      font-weight: 600;
+    }
+
+    .action-button-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-hud {
+      background: rgba(14, 20, 30, 0.88);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    }
+
+    .btn-hud:hover {
+      background: var(--cyan-dim);
+      border-color: var(--cyan-glow);
+      color: #fff;
+      box-shadow: 0 0 14px var(--cyan-dim);
+      transform: translateY(-1px);
+    }
+
+    .btn-hud:active {
+      transform: translateY(0);
+    }
+
+    .btn-hud.btn-primary {
+      background: rgba(0, 229, 255, 0.16);
+      border-color: var(--cyan-glow);
+      color: var(--cyan-glow);
+    }
+
+    .btn-hud.btn-primary:hover {
+      background: var(--cyan-glow);
+      color: #000;
+      box-shadow: 0 0 22px rgba(0, 229, 255, 0.55);
+    }
+
+    /* Microphone Button States */
+    .btn-hud.btn-mic {
+      border-color: rgba(0, 229, 255, 0.4);
+      color: var(--cyan-glow);
+    }
+
+    .btn-hud.btn-mic.listening {
+      border-color: var(--amber-warn);
+      color: var(--amber-warn);
+      background: rgba(255, 145, 0, 0.2);
+      box-shadow: 0 0 20px var(--amber-dim);
+      animation: mic-pulse 1.5s infinite alternate;
+    }
+
+    @keyframes mic-pulse {
+      0% { box-shadow: 0 0 10px var(--amber-dim); }
+      100% { box-shadow: 0 0 24px rgba(255, 145, 0, 0.6); }
+    }
+
+    #VRButton {
+      font-family: var(--font-mono) !important;
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      letter-spacing: 1.5px !important;
+      border-radius: 6px !important;
+      background: rgba(0, 229, 255, 0.22) !important;
+      border: 1px solid var(--cyan-glow) !important;
+      color: var(--cyan-glow) !important;
+      box-shadow: 0 0 16px var(--cyan-dim) !important;
+      padding: 10px 20px !important;
+      text-transform: uppercase !important;
+      transition: all 0.2s ease !important;
+    }
+
+    #VRButton:hover {
+      background: var(--cyan-glow) !important;
+      color: #000 !important;
+      box-shadow: 0 0 24px rgba(0, 229, 255, 0.75) !important;
+    }
+
+    .completion-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-align: center;
+      max-width: 540px;
+      width: 90%;
+      padding: 32px;
+      background: rgba(8, 12, 18, 0.95);
+      border: 1.5px solid var(--green-safe);
+      border-radius: 12px;
+      box-shadow: 0 0 44px rgba(0, 255, 136, 0.28), inset 0 0 20px rgba(0, 255, 136, 0.12);
+    }
+
+    .completion-modal.show {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .completion-badge {
+      font-size: 42px;
+      margin-bottom: 12px;
+      color: var(--green-safe);
+    }
+
+    .completion-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .completion-desc {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-bottom: 22px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 880px) {
+      .center-jarvis-card { display: none; }
+      .controls-help-card { display: none; }
+      .telemetry-card { gap: 10px; }
+      #hud-overlay { padding: 12px; }
+      .task-title { font-size: 15px; }
+    }
+  </style>
+
+  <!-- Import maps & Three.js r168 -->
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="webgl-container"></div>
+
+  <!-- Screen HUD Overlay -->
+  <div id="hud-overlay">
+    <!-- Top Telemetry Header -->
+    <div class="top-bar">
+      <div class="glass-card header-card interactive-ui">
+        <div class="logo-badge">JARV</div>
+        <div class="title-group">
+          <h1>Mark VII // Isolation &amp; Battery Lab</h1>
+          <div class="sub">NFPA 70E / OSHA SUBSTATION SIMULATOR</div>
+        </div>
+      </div>
+
+      <div class="glass-card center-jarvis-card">
+        <div class="jarvis-status-row">
+          <div class="jarvis-dot" id="jarvis-dot"></div>
+          <span id="jarvis-status-text">JARVIS ACTIVE // MONITORING</span>
+        </div>
+        <canvas id="speech-waveform-canvas" width="280" height="32"></canvas>
+        <div class="live-speech-row" id="live-speech-row">
+          <span class="speech-prefix">HEARING:</span>
+          <span class="speech-text" id="live-speech-text">Click "TALK TO JARVIS" or press 'M'</span>
+        </div>
+      </div>
+
+      <div class="glass-card telemetry-card interactive-ui">
+        <div class="telemetry-item">
+          <span class="telemetry-label">Elapsed</span>
+          <span class="telemetry-value" id="hud-timer">00:00</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Roof PV (Voc)</span>
+          <span class="telemetry-value" id="hud-solar-voltage" style="color:#00e5ff;">480.0 V</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Irradiance</span>
+          <span class="telemetry-value" id="hud-irradiance" style="color:#ffaa00;">880 W/m²</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Bus Voltage</span>
+          <span class="telemetry-value voltage" id="hud-voltage">480.0 V</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Battery Bay</span>
+          <span class="telemetry-value" id="hud-battery-status" style="color:#ff9100;">OFFLINE</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Safety Score</span>
+          <span class="telemetry-value score" id="hud-score">100%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Central Task Guidance Banner -->
+    <div class="task-banner-container">
+      <div class="task-banner">
+        <div class="task-step-tag" id="task-step-tag">STEP 1 OF 6</div>
+        <div class="task-title" id="task-title">Open Facility Security Gate</div>
+        <div class="task-instruction" id="task-instruction">
+          Click the access keypad or say: "Jarvis, open the gate" to unlock entrance.
+        </div>
+      </div>
+
+      <div class="steps-progress-row">
+        <div class="step-pill active" id="step-pill-1">1. MAIN GATE</div>
+        <div class="step-pill" id="step-pill-2">2. SAFE ISOLATION</div>
+        <div class="step-pill" id="step-pill-3">3. PROBE VOLTAGE</div>
+        <div class="step-pill" id="step-pill-4">4. FIX CIRCUIT</div>
+        <div class="step-pill" id="step-pill-5">5. TOOL BOX</div>
+        <div class="step-pill" id="step-pill-6">6. NEW BATTERY</div>
+      </div>
+    </div>
+
+    <!-- Bottom Deck Controls -->
+    <div class="bottom-bar">
+      <div class="glass-card controls-help-card interactive-ui">
+        <div><span>Voice:</span> Press <span>M</span> or click Mic | Speak: <em>"Jarvis, open gate"</em>, <em>"check solar panels"</em>, <em>"isolate switch"</em></div>
+        <div><span>Controls:</span> Left-Click 3D Items | Press <span>T</span> for Roof PV Array | WASD to Walk | VR Laser</div>
+      </div>
+
+      <div class="action-button-group interactive-ui">
+        <!-- Rooftop Solar Array View Toggle Button -->
+        <button class="btn-hud" id="btn-rooftop-view" title="Toggle Rooftop Solar PV Array View (Key: T)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <span id="rooftop-btn-label">ROOFTOP ARRAY</span>
+        </button>
+
+        <!-- Microphone Voice Command Button -->
+        <button class="btn-hud btn-mic" id="btn-mic-toggle" title="Click or Press 'M' to Talk with Jarvis">
+          <svg id="mic-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+          <span id="mic-btn-label">TALK TO JARVIS</span>
+        </button>
+
+        <button class="btn-hud" id="btn-replay-voice" title="Replay Jarvis Voice Instructions">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          JARVIS REPEAT
+        </button>
+
+        <button class="btn-hud btn-primary" id="btn-action-help" title="Perform active step directly">
+          INTERACT STEP
+        </button>
+
+        <button class="btn-hud" id="btn-reset-scene" title="Reset procedure">
+          RESET
+        </button>
+      </div>
+    </div>
+
+    <!-- Completion Modal -->
+    <div class="completion-modal interactive-ui" id="completion-modal">
+      <div class="completion-badge">&#10004;</div>
+      <div class="completion-title">TRAINING COMPLETE</div>
+      <div class="completion-desc">
+        Substation entrance traversed, combiner circuit safely isolated and corrected, tool box accessed, and 48V Lithium Battery Pack successfully mounted and balanced under full OSHA &amp; NFPA 70E compliance.
+      </div>
+      <div class="action-button-group" style="justify-content: center;">
+        <button class="btn-hud btn-primary" id="btn-modal-restart">PRACTICE AGAIN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { VRButton } from 'three/addons/webxr/VRButton.js';
+    import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+
+    /* ==========================================================================
+       1. SOUND & AUDIO SYNTHESIZER (WEB AUDIO API)
+       ========================================================================== */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.analyser = null;
+        this.dataArray = null;
+        this.micSource = null;
+      }
+
+      init() {
+        if (this.ctx) return;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContext();
+        this.analyser = this.ctx.createAnalyser();
+        this.analyser.fftSize = 64;
+        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+      }
+
+      ensureUnlocked() {
+        if (!this.ctx) this.init();
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Connect microphone stream into analyser for live holographic waveform animation
+      connectMicStream(stream) {
+        this.ensureUnlocked();
+        if (!this.ctx || this.micSource) return;
+        try {
+          this.micSource = this.ctx.createMediaStreamSource(stream);
+          // Connect to analyser only (DO NOT connect to destination to prevent feedback echo)
+          this.micSource.connect(this.analyser);
+        } catch (e) {
+          console.warn("Error connecting mic stream:", e);
+        }
+      }
+
+      playSuccessChime() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc1.type = 'sine';
+        osc2.type = 'triangle';
+        osc1.frequency.setValueAtTime(587.33, now); // D5
+        osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.18);
+
+        osc2.frequency.setValueAtTime(880.00, now);
+        osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.22);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.18, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.85);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.9);
+        osc2.stop(now + 0.9);
+      }
+
+      playHydraulicGateWhoosh() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const bufferSize = this.ctx.sampleRate * 0.4;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1200, now);
+        filter.frequency.exponentialRampToValueAtTime(400, now + 0.38);
+        filter.Q.value = 2;
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.3, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        noise.start(now);
+
+        const osc = this.ctx.createOscillator();
+        const oscGain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(70, now);
+        osc.frequency.linearRampToValueAtTime(95, now + 0.5);
+        oscGain.gain.setValueAtTime(0.25, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+        osc.connect(oscGain);
+        oscGain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.52);
+      }
+
+      playSwitchClick() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const oscGain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.08);
+
+        oscGain.gain.setValueAtTime(0.3, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        osc.connect(oscGain);
+        oscGain.connect(this.ctx.destination);
+
+        const bufferSize = this.ctx.sampleRate * 0.05;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 2400;
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.25, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+
+        osc.start(now);
+        noise.start(now);
+        osc.stop(now + 0.1);
+        noise.stop(now + 0.06);
+      }
+
+      playElectricArcBuzz() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.setValueAtTime(120 + Math.random() * 80, now + 0.05);
+        osc.frequency.setValueAtTime(90, now + 0.25);
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = 350;
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.36);
+      }
+
+      playProbeBeep() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(2400, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.12, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.16);
+      }
+
+      playFuseSnap() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(360, now);
+        osc.frequency.exponentialRampToValueAtTime(160, now + 0.1);
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.13);
+      }
+
+      playToolboxOpen() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.setValueAtTime(1200, now + 0.06);
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+
+      playBatteryDocking() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(35, now + 0.18);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      }
+
+      playCompletionFanfare() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          setTimeout(() => {
+            if (!this.ctx) return;
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now);
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.15, now + 0.04);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.85);
+          }, idx * 160);
+        });
+      }
+
+      playCameraSwoosh() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(740, now + 0.35);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.12, now + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+
+        osc.connect(gain);
+        gain.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      }
+
+      playSolarTelemetryChime() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc1.type = 'sine';
+        osc2.type = 'triangle';
+        osc1.frequency.setValueAtTime(880.0, now); // A5
+        osc2.frequency.setValueAtTime(1760.0, now); // A6 harmonic
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.14, now + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.75);
+        osc2.stop(now + 0.75);
+      }
+    }
+
+    /* ==========================================================================
+       2. JARVIS SOCRATIC VOICE ENGINE (SPEECH SYNTHESIS)
+       ========================================================================== */
+    class JarvisVoice {
+      constructor(soundEngine) {
+        this.soundEngine = soundEngine;
+        this.isSpeaking = false;
+        this.speechSynth = window.speechSynthesis;
+        this.selectedVoice = null;
+        this.lastSpokenText = '';
+        this.loadVoices();
+      }
+
+      loadVoices() {
+        if (!this.speechSynth) return;
+        const updateVoices = () => {
+          const voices = this.speechSynth.getVoices();
+          this.selectedVoice = voices.find(v => v.name.includes('UK English Male') || v.name.includes('Daniel') || v.name.includes('Google UK English Male'))
+            || voices.find(v => v.lang === 'en-GB')
+            || voices.find(v => v.lang.startsWith('en'))
+            || voices[0];
+        };
+        updateVoices();
+        if (this.speechSynth.onvoiceschanged !== undefined) {
+          this.speechSynth.onvoiceschanged = updateVoices;
+        }
+      }
+
+      speak(text, priority = false) {
+        if (!this.speechSynth) return;
+        if (this.speechSynth.speaking) {
+          if (priority) this.speechSynth.cancel();
+          else return;
+        }
+
+        this.lastSpokenText = text;
+        const utterance = new SpeechSynthesisUtterance(text);
+        if (this.selectedVoice) utterance.voice = this.selectedVoice;
+        utterance.rate = 1.05;
+        utterance.pitch = 0.95;
+
+        utterance.onstart = () => {
+          this.isSpeaking = true;
+          document.getElementById('jarvis-status-text').textContent = "JARVIS SPEAKING // DIRECTIVE";
+        };
+
+        utterance.onend = () => {
+          this.isSpeaking = false;
+          const micActive = window.app?.micListener?.isListening;
+          document.getElementById('jarvis-status-text').textContent = micActive ? "JARVIS LISTENING // VOICE ACTIVE" : "JARVIS ACTIVE // MONITORING";
+        };
+
+        utterance.onerror = () => {
+          this.isSpeaking = false;
+          document.getElementById('jarvis-status-text').textContent = "JARVIS READY";
+        };
+
+        this.speechSynth.speak(utterance);
+      }
+
+      repeat() {
+        if (this.lastSpokenText) this.speak(this.lastSpokenText, true);
+      }
+    }
+
+    /* ==========================================================================
+       3. JARVIS MICROPHONE & SPEECH RECOGNITION LISTENER (VOICE COMMANDS)
+       ========================================================================== */
+    class JarvisMicListener {
+      constructor(app) {
+        this.app = app;
+        this.isListening = false;
+        this.recognition = null;
+        this.hasMicPermission = false;
+        this.micStream = null;
+
+        this.setupRecognition();
+      }
+
+      setupRecognition() {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) {
+          console.warn("SpeechRecognition API not supported in this browser.");
+          return;
+        }
+
+        this.recognition = new SpeechRec();
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        this.recognition.lang = 'en-US';
+
+        this.recognition.onstart = () => {
+          this.isListening = true;
+          this.updateUI();
+        };
+
+        this.recognition.onresult = (event) => {
+          let interimTranscript = '';
+          let finalTranscript = '';
+
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript;
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+
+          const displayText = finalTranscript || interimTranscript;
+          if (displayText) {
+            this.setLiveTranscript(displayText);
+          }
+
+          if (finalTranscript) {
+            this.handleVoiceCommand(finalTranscript.trim().toLowerCase());
+          }
+        };
+
+        this.recognition.onerror = (event) => {
+          console.warn("SpeechRecognition error:", event.error);
+          if (event.error === 'not-allowed') {
+            this.setLiveTranscript("Microphone permission denied");
+            this.isListening = false;
+            this.updateUI();
+          }
+        };
+
+        this.recognition.onend = () => {
+          // Restart if still intended to be listening
+          if (this.isListening) {
+            try {
+              this.recognition.start();
+            } catch (e) {
+              this.isListening = false;
+              this.updateUI();
+            }
+          } else {
+            this.updateUI();
+          }
+        };
+      }
+
+      async toggleListening() {
+        this.app.sound.ensureUnlocked();
+
+        // Request real microphone audio stream for the visualizer if not already active
+        if (!this.micStream && navigator.mediaDevices?.getUserMedia) {
+          try {
+            this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.app.sound.connectMicStream(this.micStream);
+            this.hasMicPermission = true;
+          } catch (err) {
+            console.warn("Could not acquire microphone stream:", err);
+          }
+        }
+
+        if (!this.recognition) {
+          alert("Speech recognition is not supported in this browser. You can still use the interactive 3D controls or the 'INTERACT STEP' button.");
+          return;
+        }
+
+        if (this.isListening) {
+          this.isListening = false;
+          try {
+            this.recognition.stop();
+          } catch (e) {}
+          this.setLiveTranscript("Mic paused. Click to speak again.");
+        } else {
+          this.isListening = true;
+          try {
+            this.recognition.start();
+            this.setLiveTranscript("Listening... Say: 'Jarvis, open gate'");
+          } catch (e) {
+            console.warn("Recognition start error:", e);
+          }
+        }
+        this.updateUI();
+      }
+
+      setLiveTranscript(text) {
+        const elem = document.getElementById('live-speech-text');
+        if (elem) elem.textContent = text;
+        if (this.app.diegeticHUD) {
+          this.app.diegeticHUD.updateVoiceTranscript(text);
+        }
+      }
+
+      updateUI() {
+        const btn = document.getElementById('btn-mic-toggle');
+        const label = document.getElementById('mic-btn-label');
+        const dot = document.getElementById('jarvis-dot');
+        const statusText = document.getElementById('jarvis-status-text');
+
+        if (this.isListening) {
+          btn?.classList.add('listening');
+          if (label) label.textContent = "LISTENING (MIC ON)";
+          dot?.classList.add('listening');
+          if (statusText) statusText.textContent = "JARVIS LISTENING // VOICE COMMAND ACTIVE";
+        } else {
+          btn?.classList.remove('listening');
+          if (label) label.textContent = "TALK TO JARVIS";
+          dot?.classList.remove('listening');
+          if (statusText) statusText.textContent = "JARVIS ACTIVE // MONITORING";
+        }
+      }
+
+      handleVoiceCommand(text) {
+        console.log("Voice Command Recognized:", text);
+        this.setLiveTranscript(`"${text}"`);
+
+        // Check command intents:
+        // 1. Gate Entry
+        if (text.includes("gate") || text.includes("door") || text.includes("enter") || text.includes("unlock")) {
+          if (this.app.fsm.currentState === STATES.STEP1_GATE_ENTRY) {
+            this.app.jarvis.speak("Understood, sir. Initiating gate entry protocol.", true);
+            this.app.animateOpenGateAndEnter();
+          } else {
+            this.app.jarvis.speak("Facility gate is already open, sir.");
+          }
+          return;
+        }
+
+        // 2. Safe Isolation
+        if (text.includes("isolate") || text.includes("switch") || text.includes("turn off") ||
+            text.includes("safe isolation") || text.includes("open lid") || text.includes("de-energize")) {
+          if (this.app.fsm.currentState === STATES.STEP2_ISOLATOR_OFF) {
+            this.app.jarvis.speak("Disengaging 480-volt DC rotary isolator.", true);
+            this.app.animateOpenLid();
+          } else if (this.app.fsm.currentState < STATES.STEP2_ISOLATOR_OFF) {
+            this.app.jarvis.speak("Sir, please open the main gate first.");
+          } else {
+            this.app.jarvis.speak("Circuit is already safely de-energized.");
+          }
+          return;
+        }
+
+        // 3. Probing / Voltage Verification
+        if (text.includes("probe") || text.includes("voltage") || text.includes("multimeter") ||
+            text.includes("test") || text.includes("verify") || text.includes("measure")) {
+          if (this.app.fsm.circuitEnergized) {
+            this.app.handleProbingInteraction(); // triggers arc flash violation warning!
+          } else if (this.app.fsm.currentState === STATES.STEP3_VERIFY_VOLTAGE) {
+            this.app.jarvis.speak("Deploying multimeter probes to verify zero potential.", true);
+            this.app.handleProbingInteraction();
+          } else {
+            this.app.jarvis.speak("Voltage verification is already complete.");
+          }
+          return;
+        }
+
+        // 4. Correct Circuit / Fuse Replacement
+        if (text.includes("fuse") || text.includes("circuit") || text.includes("replace") ||
+            text.includes("fix circuit") || text.includes("new fuse") || text.includes("correct")) {
+          if (this.app.fsm.currentState === STATES.STEP4_CORRECT_CIRCUIT) {
+            this.app.jarvis.speak("Extracting blown fuse and seating fresh replacement cartridge.", true);
+            this.app.animateCorrectCircuit();
+          } else if (this.app.fsm.currentState < STATES.STEP4_CORRECT_CIRCUIT) {
+            this.app.jarvis.speak("Safety protocol requires verifying zero voltage before touching fuses.");
+          } else {
+            this.app.jarvis.speak("Circuit continuity has already been corrected.");
+          }
+          return;
+        }
+
+        // 5. Open Tool Box
+        if (text.includes("toolbox") || text.includes("tool box") || text.includes("tool chest") ||
+            text.includes("tools") || text.includes("open box")) {
+          if (this.app.fsm.currentState === STATES.STEP5_OPEN_TOOLBOX) {
+            this.app.jarvis.speak("Unlatching equipment tool chest.", true);
+            this.app.animateOpenToolbox();
+          } else if (this.app.fsm.currentState < STATES.STEP5_OPEN_TOOLBOX) {
+            this.app.jarvis.speak("Please complete the combiner circuit correction first.");
+          } else {
+            this.app.jarvis.speak("Tool box is already opened.");
+          }
+          return;
+        }
+
+        // 6. Install Battery
+        if (text.includes("battery") || text.includes("install") || text.includes("mount") ||
+            text.includes("dock") || text.includes("connect battery")) {
+          if (this.app.fsm.currentState === STATES.STEP6_INSTALL_BATTERY) {
+            this.app.jarvis.speak("Mounting 48-volt lithium battery pack into storage rack.", true);
+            this.app.animateInstallBattery();
+          } else if (this.app.fsm.currentState < STATES.STEP6_INSTALL_BATTERY) {
+            this.app.jarvis.speak("We must access the tool box before installing the battery.");
+          } else {
+            this.app.jarvis.speak("Battery module is fully docked and online.");
+          }
+          return;
+        }
+
+        // 7. Rooftop Solar PV Array & Voltage Check
+        if (text.includes("solar") || text.includes("roof") || text.includes("rooftop") ||
+            text.includes("panel") || text.includes("photovoltaic") || text.includes("irradiance") ||
+            text.includes("voc")) {
+          if (!this.app.isRooftopView) {
+            this.app.toggleRooftopView();
+          } else {
+            this.app.handleRooftopSolarInteraction();
+          }
+          return;
+        }
+
+        // 8. Return to Workbench View
+        if (text.includes("workbench") || text.includes("lab") || text.includes("go back") ||
+            text.includes("downstairs") || text.includes("table")) {
+          if (this.app.isRooftopView) {
+            this.app.toggleRooftopView();
+          } else {
+            this.app.jarvis.speak("Already stationed at the workbench, sir.");
+          }
+          return;
+        }
+
+        // Utility: Reset
+        if (text.includes("reset") || text.includes("restart") || text.includes("start over")) {
+          this.app.jarvis.speak("Resetting simulation.", true);
+          this.app.resetAll();
+          return;
+        }
+
+        // Utility: Repeat instructions
+        if (text.includes("repeat") || text.includes("what next") || text.includes("instructions")) {
+          this.app.jarvis.repeat();
+          return;
+        }
+
+        // Utility: Status Report
+        if (text.includes("status") || text.includes("report") || text.includes("telemetry")) {
+          const volt = this.app.fsm.circuitEnergized ? "480 volts energized" : "zero volts safe";
+          const score = this.app.fsm.safetyScore;
+          const step = this.app.fsm.currentState;
+          this.app.jarvis.speak(`Status report: We are at step ${step} of 6. Bus potential is ${volt}. Safety compliance is at ${score} percent.`);
+          return;
+        }
+
+        // Unrecognized phrase hint
+        this.app.jarvis.speak(`Command received: "${text}". You can say "open gate", "isolate switch", "verify voltage", "replace fuse", "open toolbox", or "install battery".`);
+      }
+    }
+
+    /* ==========================================================================
+       4. FINITE STATE MACHINE (6 STEPS DEFINITION)
+       ========================================================================== */
+    const STATES = {
+      STEP1_GATE_ENTRY: 1,
+      STEP2_ISOLATOR_OFF: 2,
+      STEP3_VERIFY_VOLTAGE: 3,
+      STEP4_CORRECT_CIRCUIT: 4,
+      STEP5_OPEN_TOOLBOX: 5,
+      STEP6_INSTALL_BATTERY: 6,
+      COMPLETED: 7
+    };
+
+    class TrainingFSM {
+      constructor(app) {
+        this.app = app;
+        this.currentState = STATES.STEP1_GATE_ENTRY;
+        this.circuitEnergized = true;
+        this.busVoltage = 480.0;
+        this.batteryOnline = false;
+        this.safetyScore = 100;
+        this.elapsedSeconds = 0;
+        this.timerInterval = null;
+      }
+
+      init() {
+        this.startTimer();
+        this.enterState(STATES.STEP1_GATE_ENTRY);
+      }
+
+      startTimer() {
+        this.timerInterval = setInterval(() => {
+          if (this.currentState === STATES.COMPLETED) return;
+          this.elapsedSeconds++;
+          const mins = String(Math.floor(this.elapsedSeconds / 60)).padStart(2, '0');
+          const secs = String(this.elapsedSeconds % 60).padStart(2, '0');
+          const timerStr = `${mins}:${secs}`;
+          document.getElementById('hud-timer').textContent = timerStr;
+          if (this.app.diegeticHUD) this.app.diegeticHUD.updateTimer(timerStr);
+        }, 1000);
+      }
+
+      enterState(newState) {
+        this.currentState = newState;
+        this.updateHUDForState();
+
+        switch (newState) {
+          case STATES.STEP1_GATE_ENTRY:
+            this.app.jarvis.speak(
+              "Jarvis online. Facility perimeter secured. Step one: Access the security keypad or say 'Jarvis, open the gate' to unlock entrance."
+            );
+            this.app.ghostGuides.setStep(1);
+            break;
+
+          case STATES.STEP2_ISOLATOR_OFF:
+            this.app.sound.playSuccessChime();
+            this.flashScreen('green');
+            this.app.jarvis.speak(
+              "Security blast gate open. Inside testing facility. Step two: Open the combiner box lid and rotate the DC isolator switch to zero volts."
+            );
+            this.app.ghostGuides.setStep(2);
+            break;
+
+          case STATES.STEP3_VERIFY_VOLTAGE:
+            this.app.sound.playSuccessChime();
+            this.flashScreen('green');
+            this.app.jarvis.speak(
+              "Array isolator turned off. Step three: Voltage verification. Touch multimeter probes to positive and negative terminals to confirm zero potential."
+            );
+            this.app.ghostGuides.setStep(3);
+            break;
+
+          case STATES.STEP4_CORRECT_CIRCUIT:
+            this.app.sound.playSuccessChime();
+            this.flashScreen('green');
+            this.app.jarvis.speak(
+              "Zero voltage verified. Step four: Correct the circuit. Extract the defective blown fuse and insert the replacement high-voltage cartridge into the DIN rail."
+            );
+            this.app.ghostGuides.setStep(4);
+            break;
+
+          case STATES.STEP5_OPEN_TOOLBOX:
+            this.app.sound.playSuccessChime();
+            this.flashScreen('green');
+            this.app.jarvis.speak(
+              "Circuit continuity corrected. Step five: Open the industrial tool box on the workbench to access the new lithium battery module and insulated torque tool."
+            );
+            this.app.ghostGuides.setStep(5);
+            break;
+
+          case STATES.STEP6_INSTALL_BATTERY:
+            this.app.sound.playSuccessChime();
+            this.flashScreen('green');
+            this.app.jarvis.speak(
+              "Tool box ready. Step six: Mount the new 48-volt battery pack into the Energy Storage Rack bay, locking terminals into place."
+            );
+            this.app.ghostGuides.setStep(6);
+            break;
+
+          case STATES.COMPLETED:
+            this.app.sound.playCompletionFanfare();
+            this.flashScreen('green');
+            this.batteryOnline = true;
+            document.getElementById('hud-battery-status').textContent = "ONLINE // 51.2V";
+            document.getElementById('hud-battery-status').style.color = "#00ff88";
+            this.app.jarvis.speak(
+              "Battery module successfully seated and torqued. Circuit restored and fully balanced. Module complete. Excellent work, sir."
+            );
+            this.app.ghostGuides.setStep(7);
+            document.getElementById('completion-modal').classList.add('show');
+            if (this.app.env.completionBadgeGroup) {
+              this.app.env.completionBadgeGroup.visible = true;
+            }
+            break;
+        }
+      }
+
+      triggerArcFlashViolation() {
+        this.safetyScore = Math.max(0, this.safetyScore - 25);
+        document.getElementById('hud-score').textContent = `${this.safetyScore}%`;
+        if (this.app.diegeticHUD) this.app.diegeticHUD.updateScore(this.safetyScore);
+
+        this.app.sound.playElectricArcBuzz();
+        this.flashScreen('amber');
+        this.app.jarvis.speak(
+          "Warning: Circuit is still energized at 480 volts! Turn the isolation switch first to prevent an arc flash.",
+          true
+        );
+      }
+
+      flashScreen(color) {
+        const overlay = document.getElementById('hud-overlay');
+        overlay.classList.remove('flash-amber', 'flash-green');
+        void overlay.offsetWidth;
+        overlay.classList.add(color === 'amber' ? 'flash-amber' : 'flash-green');
+        setTimeout(() => {
+          overlay.classList.remove('flash-amber', 'flash-green');
+        }, 600);
+      }
+
+      updateHUDForState() {
+        const stepPills = [1, 2, 3, 4, 5, 6].map(n => document.getElementById(`step-pill-${n}`));
+        stepPills.forEach((pill, idx) => {
+          const stepNum = idx + 1;
+          pill.classList.remove('active', 'completed');
+          if (stepNum < this.currentState) {
+            pill.classList.add('completed');
+          } else if (stepNum === this.currentState) {
+            pill.classList.add('active');
+          }
+        });
+
+        const titles = {
+          1: "Open Main Facility Gate",
+          2: "Lockout / Safe Isolation (LOTO)",
+          3: "Voltage Verification (Probing)",
+          4: "Correct Circuit (Fuse Replacement)",
+          5: "Access Industrial Tool Box",
+          6: "Install New Battery Module",
+          7: "All Training Modules Completed"
+        };
+
+        const instructions = {
+          1: "Click the keypad or say: 'Jarvis, open the gate' to enter the testing facility.",
+          2: "Open the combiner lid and rotate the DC switch to 0V (or say: 'Jarvis, isolate switch').",
+          3: "Pick up multimeter probes to touch terminals (or say: 'Jarvis, verify voltage').",
+          4: "Extract blown fuse and seat replacement cartridge (or say: 'Jarvis, replace fuse').",
+          5: "Unlatch and open the tool box on the workbench (or say: 'Jarvis, open toolbox').",
+          6: "Mount the new battery module into the rack bay (or say: 'Jarvis, install battery').",
+          7: "Substation entrance, circuit isolation, circuit correction, and battery rack installation successfully verified."
+        };
+
+        const stepText = this.currentState <= 6 ? `STEP ${this.currentState} OF 6` : "MODULE COMPLETE";
+        document.getElementById('task-step-tag').textContent = stepText;
+        document.getElementById('task-title').textContent = titles[this.currentState];
+        document.getElementById('task-instruction').textContent = instructions[this.currentState];
+
+        if (this.app.diegeticHUD) {
+          this.app.diegeticHUD.updateStep(
+            stepText,
+            titles[this.currentState],
+            instructions[this.currentState]
+          );
+        }
+      }
+
+      setCircuitDeenergized() {
+        this.circuitEnergized = false;
+        this.busVoltage = 0.0;
+        const vElem = document.getElementById('hud-voltage');
+        vElem.textContent = "0.00 V";
+        vElem.classList.add('safe');
+        if (this.app.diegeticHUD) {
+          this.app.diegeticHUD.updateVoltage("0.00 V - SAFE");
+        }
+      }
+
+      reset() {
+        this.circuitEnergized = true;
+        this.busVoltage = 480.0;
+        this.batteryOnline = false;
+        this.safetyScore = 100;
+        this.elapsedSeconds = 0;
+        document.getElementById('hud-score').textContent = "100%";
+        document.getElementById('hud-battery-status').textContent = "OFFLINE";
+        document.getElementById('hud-battery-status').style.color = "#ff9100";
+        const vElem = document.getElementById('hud-voltage');
+        vElem.textContent = "480.0 V";
+        vElem.classList.remove('safe');
+        document.getElementById('completion-modal').classList.remove('show');
+        if (this.app.env.completionBadgeGroup) {
+          this.app.env.completionBadgeGroup.visible = false;
+        }
+        this.enterState(STATES.STEP1_GATE_ENTRY);
+      }
+    }
+
+    /* ==========================================================================
+       5. DIEGETIC IN-WORLD 3D HUD (WEBXR COMPATIBLE CANVAS TEXTURE)
+       ========================================================================== */
+    class Diegetic3DHUD {
+      constructor(scene) {
+        this.scene = scene;
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = 1024;
+        this.canvas.height = 360;
+        this.ctx = this.canvas.getContext('2d');
+        this.texture = new THREE.CanvasTexture(this.canvas);
+        this.texture.minFilter = THREE.LinearFilter;
+
+        this.stepTag = "STEP 1 OF 6";
+        this.title = "Open Main Facility Gate";
+        this.instruction = "Click the access keypad or say 'Jarvis, open gate' to enter.";
+        this.timer = "00:00";
+        this.voltage = "480.0 V - ENERGIZED";
+        this.score = "100%";
+        this.voiceTranscript = "Voice ready: Press 'M' or click Mic";
+
+        const material = new THREE.MeshBasicMaterial({
+          map: this.texture,
+          transparent: true,
+          opacity: 0.96,
+          side: THREE.DoubleSide
+        });
+
+        const geometry = new THREE.PlaneGeometry(0.92, 0.32);
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.position.set(0, 1.25, -0.45);
+        this.mesh.rotation.x = -0.15;
+        this.scene.add(this.mesh);
+
+        this.renderCanvas(false, 0);
+      }
+
+      updateStep(stepTag, title, instruction) {
+        this.stepTag = stepTag;
+        this.title = title;
+        this.instruction = instruction;
+        this.renderCanvas(false, 0);
+      }
+
+      updateTimer(t) {
+        this.timer = t;
+        this.renderCanvas(false, 0);
+      }
+
+      updateVoltage(v) {
+        this.voltage = v;
+        this.renderCanvas(false, 0);
+      }
+
+      updateScore(s) {
+        this.score = `${s}%`;
+        this.renderCanvas(false, 0);
+      }
+
+      updateVoiceTranscript(text) {
+        this.voiceTranscript = text;
+        this.renderCanvas(false, 0);
+      }
+
+      renderCanvas(isSpeaking = false, time = 0) {
+        const c = this.ctx;
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        c.clearRect(0, 0, w, h);
+
+        c.fillStyle = "rgba(7, 11, 18, 0.90)";
+        c.strokeStyle = "rgba(0, 229, 255, 0.45)";
+        c.lineWidth = 4;
+        c.beginPath();
+        c.roundRect(10, 10, w - 20, h - 20, 20);
+        c.fill();
+        c.stroke();
+
+        c.fillStyle = "#00e5ff";
+        c.fillRect(10, 10, 32, 4);
+        c.fillRect(10, 10, 4, 32);
+        c.fillRect(w - 42, 10, 32, 4);
+        c.fillRect(w - 14, 10, 4, 32);
+        c.fillRect(10, h - 14, 32, 4);
+        c.fillRect(10, h - 42, 4, 32);
+        c.fillRect(w - 42, h - 14, 32, 4);
+        c.fillRect(w - 14, h - 42, 4, 32);
+
+        c.font = "bold 20px 'SF Mono', Consolas, monospace";
+        c.fillStyle = "#00e5ff";
+        c.fillText("JARVIS // SUBSTATION HUD", 40, 48);
+
+        c.font = "18px 'SF Mono', Consolas, monospace";
+        c.fillStyle = "#7d93a8";
+        c.fillText(`TIME: ${this.timer}  |  SAFETY: ${this.score}`, w - 380, 48);
+
+        // Waveform on HUD
+        c.beginPath();
+        c.strokeStyle = isSpeaking ? "#00e5ff" : "rgba(0, 229, 255, 0.35)";
+        c.lineWidth = 2;
+        const waveX = 380;
+        const waveW = 160;
+        const waveY = 44;
+        for (let i = 0; i <= 24; i++) {
+          const px = waveX + (i / 24) * waveW;
+          const amp = isSpeaking ? (4 + 6 * Math.sin(time * 16 + i * 0.9)) : 2;
+          const py = waveY + Math.sin(time * 4 + i * 0.5) * amp;
+          if (i === 0) c.moveTo(px, py);
+          else c.lineTo(px, py);
+        }
+        c.stroke();
+
+        c.strokeStyle = "rgba(0, 229, 255, 0.22)";
+        c.beginPath();
+        c.moveTo(40, 68);
+        c.lineTo(w - 40, 68);
+        c.stroke();
+
+        c.font = "bold 22px 'SF Mono', Consolas, monospace";
+        c.fillStyle = "#00e5ff";
+        c.fillText(this.stepTag, 40, 114);
+
+        c.font = "bold 34px -apple-system, sans-serif";
+        c.fillStyle = "#ffffff";
+        c.fillText(this.title, 40, 162);
+
+        c.font = "22px -apple-system, sans-serif";
+        c.fillStyle = "#a1b5cc";
+        c.fillText(this.instruction, 40, 206);
+
+        // Live voice recognition strip on HUD
+        c.font = "bold 16px 'SF Mono', Consolas, monospace";
+        c.fillStyle = "#00e5ff";
+        c.fillText(`VOICE: ${this.voiceTranscript.substring(0, 48)}`, 40, 238);
+
+        // Bottom digital twin readout bar
+        c.fillStyle = "rgba(0, 229, 255, 0.08)";
+        c.beginPath();
+        c.roundRect(40, 254, w - 80, 68, 10);
+        c.fill();
+        c.strokeStyle = "rgba(0, 229, 255, 0.25)";
+        c.stroke();
+
+        c.font = "bold 18px 'SF Mono', Consolas, monospace";
+        c.fillStyle = "#7d93a8";
+        c.fillText("BUS VOLTAGE:", 60, 296);
+
+        const isSafe = this.voltage.includes("SAFE");
+        c.fillStyle = isSafe ? "#00ff88" : "#ff2a44";
+        c.font = "bold 24px 'SF Mono', Consolas, monospace";
+        c.fillText(this.voltage, 210, 298);
+
+        c.fillStyle = "#00e5ff";
+        c.font = "bold 17px 'SF Mono', Consolas, monospace";
+        c.fillText("ROOF PV: 480V // 880W/m²", 485, 296);
+
+        c.fillStyle = "#7d93a8";
+        c.font = "18px 'SF Mono', Consolas, monospace";
+        c.fillText("ESS: 48V LiFePO4", w - 240, 296);
+
+        this.texture.needsUpdate = true;
+      }
+    }
+
+    /* ==========================================================================
+       6. HOLOGRAPHIC GHOST GUIDES (6 STEPS)
+       ========================================================================== */
+    class HolographicGhostGuides {
+      constructor(scene) {
+        this.scene = scene;
+        this.activeStep = 1;
+        this.time = 0;
+
+        this.holoMaterial = new THREE.MeshBasicMaterial({
+          color: 0x00e5ff,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.55,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+
+        // 1. Ghost Gate Access Keypad Guide
+        this.ghostGate = new THREE.Group();
+        const gateKeypadGeo = new THREE.BoxGeometry(0.16, 0.24, 0.05);
+        const ghostKeypad = new THREE.Mesh(gateKeypadGeo, this.holoMaterial);
+        const touchArrow = new THREE.ConeGeometry(0.03, 0.08, 16);
+        const touchArrowMesh = new THREE.Mesh(touchArrow, this.holoMaterial);
+        touchArrowMesh.position.set(0, 0, 0.12);
+        touchArrowMesh.rotation.x = Math.PI / 2;
+        this.ghostGate.add(ghostKeypad, touchArrowMesh);
+        this.ghostGate.position.set(0.65, 1.25, 1.75);
+        this.scene.add(this.ghostGate);
+
+        // 2. Ghost Lid & Switch Guide
+        this.ghostLidGroup = new THREE.Group();
+        const lidGeom = new THREE.BoxGeometry(0.38, 0.46, 0.02);
+        const ghostLid = new THREE.Mesh(lidGeom, this.holoMaterial);
+        ghostLid.position.set(0.19, 0, 0);
+        this.ghostLidGroup.add(ghostLid);
+        this.ghostLidGroup.position.set(-0.19, 0.95, -0.65);
+        this.ghostLidGroup.rotation.y = Math.PI * 0.55;
+
+        this.ghostSwitch = new THREE.Group();
+        const ringGeom = new THREE.RingGeometry(0.045, 0.055, 32);
+        const ringMesh = new THREE.Mesh(ringGeom, this.holoMaterial);
+        const arrowGeom = new THREE.ConeGeometry(0.015, 0.04, 16);
+        const arrowMesh = new THREE.Mesh(arrowGeom, this.holoMaterial);
+        arrowMesh.position.set(0.05, 0, 0);
+        arrowMesh.rotation.z = -Math.PI / 2;
+        this.ghostSwitch.add(ringMesh, arrowMesh);
+        this.ghostSwitch.position.set(-0.07, 1.00, -0.60);
+        this.scene.add(this.ghostLidGroup);
+        this.scene.add(this.ghostSwitch);
+
+        // 3. Ghost Probes Guide
+        this.ghostProbes = new THREE.Group();
+        const probeGeom = new THREE.CylinderGeometry(0.006, 0.006, 0.12, 16);
+        const ghostRedProbe = new THREE.Mesh(probeGeom, this.holoMaterial);
+        ghostRedProbe.position.set(0.045, 0.88, -0.61);
+        const ghostBlackProbe = new THREE.Mesh(probeGeom, this.holoMaterial);
+        ghostBlackProbe.position.set(0.095, 0.88, -0.61);
+        this.ghostProbes.add(ghostRedProbe, ghostBlackProbe);
+        this.scene.add(this.ghostProbes);
+
+        // 4. Ghost Fuse Guide
+        this.ghostFuse = new THREE.Group();
+        const fuseGeom = new THREE.CylinderGeometry(0.008, 0.008, 0.05, 16);
+        const fuseMesh = new THREE.Mesh(fuseGeom, this.holoMaterial);
+        this.ghostFuse.add(fuseMesh);
+        this.ghostFuse.position.set(-0.07, 0.89, -0.60);
+        this.scene.add(this.ghostFuse);
+
+        // 5. Ghost Tool Box Guide
+        this.ghostToolbox = new THREE.Group();
+        const tbLidGeo = new THREE.BoxGeometry(0.28, 0.06, 0.18);
+        const ghostTbLid = new THREE.Mesh(tbLidGeo, this.holoMaterial);
+        const tbUpArrow = new THREE.ConeGeometry(0.025, 0.06, 16);
+        const tbUpArrowMesh = new THREE.Mesh(tbUpArrow, this.holoMaterial);
+        tbUpArrowMesh.position.set(0, 0.1, 0);
+        this.ghostToolbox.add(ghostTbLid, tbUpArrowMesh);
+        this.ghostToolbox.position.set(0.48, 0.86, -0.55);
+        this.scene.add(this.ghostToolbox);
+
+        // 6. Ghost Battery Rack Guide
+        this.ghostBattery = new THREE.Group();
+        const batGeom = new THREE.BoxGeometry(0.32, 0.14, 0.26);
+        const ghostBat = new THREE.Mesh(batGeom, this.holoMaterial);
+        this.ghostBattery.add(ghostBat);
+        this.ghostBattery.position.set(-0.85, 0.76, -0.60);
+        this.scene.add(this.ghostBattery);
+
+        this.setStep(1);
+      }
+
+      setStep(step) {
+        this.activeStep = step;
+        this.ghostGate.visible = (step === 1);
+        this.ghostLidGroup.visible = (step === 2);
+        this.ghostSwitch.visible = (step === 2);
+        this.ghostProbes.visible = (step === 3);
+        this.ghostFuse.visible = (step === 4);
+        this.ghostToolbox.visible = (step === 5);
+        this.ghostBattery.visible = (step === 6);
+      }
+
+      update(delta) {
+        this.time += delta;
+        const pulse = 0.35 + 0.3 * Math.sin(this.time * 4);
+        this.holoMaterial.opacity = pulse;
+
+        if (this.ghostSwitch.visible) {
+          this.ghostSwitch.rotation.z = -(this.time * 2) % (Math.PI / 2);
+        }
+        if (this.ghostToolbox.visible) {
+          this.ghostToolbox.position.y = 0.86 + Math.sin(this.time * 3) * 0.02;
+        }
+        if (this.ghostBattery.visible) {
+          this.ghostBattery.position.y = 0.76 + Math.sin(this.time * 3) * 0.02;
+        }
+      }
+    }
+
+    /* ==========================================================================
+       7. 3D SCENE & EQUIPMENT MODELING
+       ========================================================================== */
+    class EnvironmentAndEquipment {
+      constructor(scene) {
+        this.scene = scene;
+        this.interactiveObjects = [];
+
+        this.createRoomAndFloor();
+        this.createRooftopSolarArray();
+        this.createMainSecurityGate();
+        this.createWorkbench();
+        this.createSolarCombinerBox();
+        this.createMultimeterAndProbes();
+        this.createIndustrialToolBox();
+        this.createBatteryRackAndBattery();
+        this.createCompletionHologram();
+      }
+
+      createRoomAndFloor() {
+        const floorGeo = new THREE.PlaneGeometry(16, 16);
+        const floorMat = new THREE.MeshStandardMaterial({
+          color: 0x080b12,
+          roughness: 0.4,
+          metalness: 0.8
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        this.scene.add(floor);
+
+        const grid = new THREE.GridHelper(16, 32, 0x00e5ff, 0x112233);
+        grid.position.y = 0.001;
+        this.scene.add(grid);
+
+        const wallGeo = new THREE.PlaneGeometry(16, 5);
+        const wallMat = new THREE.MeshStandardMaterial({
+          color: 0x0c111a,
+          roughness: 0.6,
+          metalness: 0.3
+        });
+        const backWall = new THREE.Mesh(wallGeo, wallMat);
+        backWall.position.set(0, 2.5, -3.5);
+        backWall.receiveShadow = true;
+        this.scene.add(backWall);
+      }
+
+      createRooftopSolarArray() {
+        this.solarRoofGroup = new THREE.Group();
+        this.solarRoofGroup.position.set(0, 0, 0);
+
+        // --- 1. Industrial Steel Ceiling Frame & Glass Skylight at Y = 3.6m ---
+        const beamMat = new THREE.MeshStandardMaterial({
+          color: 0x16202c,
+          roughness: 0.45,
+          metalness: 0.8
+        });
+
+        const roofSlabMat = new THREE.MeshStandardMaterial({
+          color: 0x0a0e16,
+          roughness: 0.7,
+          metalness: 0.3
+        });
+
+        // Surrounding roof slabs creating an opening for the glass skylight (X: -2.4 to 2.4, Z: -2.4 to 0.4)
+        const ceilingN = new THREE.Mesh(new THREE.BoxGeometry(16, 0.14, 5.5), roofSlabMat);
+        ceilingN.position.set(0, 3.6, -5.15);
+        const ceilingS = new THREE.Mesh(new THREE.BoxGeometry(16, 0.14, 7.5), roofSlabMat);
+        ceilingS.position.set(0, 3.6, 4.15);
+        const ceilingW = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.14, 2.8), roofSlabMat);
+        ceilingW.position.set(-5.2, 3.6, -1.0);
+        const ceilingE = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.14, 2.8), roofSlabMat);
+        ceilingE.position.set(5.2, 3.6, -1.0);
+
+        this.solarRoofGroup.add(ceilingN, ceilingS, ceilingW, ceilingE);
+
+        // Structural Steel Trusses / I-Beams framing the skylight opening
+        const trussMat = new THREE.MeshStandardMaterial({ color: 0x243042, metalness: 0.85, roughness: 0.3 });
+        const frameX_N = new THREE.Mesh(new THREE.BoxGeometry(4.9, 0.18, 0.14), trussMat);
+        frameX_N.position.set(0, 3.67, -2.4);
+        const frameX_S = new THREE.Mesh(new THREE.BoxGeometry(4.9, 0.18, 0.14), trussMat);
+        frameX_S.position.set(0, 3.67, 0.4);
+
+        const frameZ_W = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, 2.8), trussMat);
+        frameZ_W.position.set(-2.4, 3.67, -1.0);
+        const frameZ_E = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, 2.8), trussMat);
+        frameZ_E.position.set(2.4, 3.67, -1.0);
+
+        // Skylight Glazing Mullions
+        const mullionZ1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 2.8), trussMat);
+        mullionZ1.position.set(-0.8, 3.68, -1.0);
+        const mullionZ2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 2.8), trussMat);
+        mullionZ2.position.set(0.8, 3.68, -1.0);
+
+        this.solarRoofGroup.add(frameX_N, frameX_S, frameZ_W, frameZ_E, mullionZ1, mullionZ2);
+
+        // Architectural Glass Skylight Pane (allows looking up from workbench to the solar panels)
+        const skylightGlassMat = new THREE.MeshPhysicalMaterial({
+          color: 0x88c4e8,
+          transparent: true,
+          opacity: 0.35,
+          roughness: 0.08,
+          metalness: 0.1,
+          transmission: 0.85,
+          ior: 1.5,
+          depthWrite: false
+        });
+        const skylightPane = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 2.8), skylightGlassMat);
+        skylightPane.rotation.x = -Math.PI / 2;
+        skylightPane.position.set(0, 3.67, -1.0);
+        this.solarRoofGroup.add(skylightPane);
+
+        // --- 2. Rooftop Aluminum Unistrut Mounting Rack (Tilted at 25 degrees) ---
+        const aluRackMat = new THREE.MeshStandardMaterial({
+          color: 0x9eabb7,
+          metalness: 0.9,
+          roughness: 0.2
+        });
+
+        // Stanchion posts lifting the rack structure above the roof
+        const stanchionGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.45, 16);
+        const stanchionCoords = [
+          [-1.6, 3.85, -2.1], [0, 3.85, -2.1], [1.6, 3.85, -2.1],
+          [-1.6, 3.85, -0.9], [0, 3.85, -0.9], [1.6, 3.85, -0.9],
+          [-1.6, 3.85, 0.2],  [0, 3.85, 0.2],  [1.6, 3.85, 0.2]
+        ];
+        stanchionCoords.forEach(([x, y, z]) => {
+          const st = new THREE.Mesh(stanchionGeo, aluRackMat);
+          st.position.set(x, y, z);
+          this.solarRoofGroup.add(st);
+        });
+
+        // Longitudinal Rails
+        const longRailGeo = new THREE.BoxGeometry(4.2, 0.04, 0.04);
+        const r1 = new THREE.Mesh(longRailGeo, aluRackMat);
+        r1.position.set(0, 4.18, -1.8);
+        const r2 = new THREE.Mesh(longRailGeo, aluRackMat);
+        r2.position.set(0, 4.02, -0.9);
+        const r3 = new THREE.Mesh(longRailGeo, aluRackMat);
+        r3.position.set(0, 3.86, 0.0);
+        this.solarRoofGroup.add(r1, r2, r3);
+
+        // --- 3. Photovoltaic (PV) Solar Panel Modules (6 Modular PV Arrays) ---
+        // Tilt angle: 25 degrees (approx 0.436 radians)
+        const tilt = 0.436;
+        this.pvPanels = [];
+        this.solarPanelsGroup = new THREE.Group();
+        this.solarPanelsGroup.position.set(0, 4.08, -0.9);
+
+        const frameMat = new THREE.MeshStandardMaterial({
+          color: 0xc4cdd5,
+          metalness: 0.95,
+          roughness: 0.18
+        });
+
+        // Monocrystalline Silicon Solar Cell Material (High-efficiency dark blue/indigo-black)
+        const cellMat = new THREE.MeshStandardMaterial({
+          color: 0x071529,
+          metalness: 0.7,
+          roughness: 0.25,
+          emissive: 0x010815,
+          emissiveIntensity: 0.4
+        });
+
+        const busbarMat = new THREE.MeshBasicMaterial({
+          color: 0x38bdf8,
+          transparent: true,
+          opacity: 0.7
+        });
+
+        const panelW = 1.12;
+        const panelThick = 0.04;
+        const panelD = 0.96;
+
+        // 2 rows of 3 panels each
+        const panelLayout = [
+          { x: -1.22, y: 0.20, z: -0.55 },
+          { x: 0,     y: 0.20, z: -0.55 },
+          { x: 1.22,  y: 0.20, z: -0.55 },
+          { x: -1.22, y: -0.20, z: 0.45 },
+          { x: 0,     y: -0.20, z: 0.45 },
+          { x: 1.22,  y: -0.20, z: 0.45 }
+        ];
+
+        panelLayout.forEach((cfg, idx) => {
+          const modGroup = new THREE.Group();
+          modGroup.position.set(cfg.x, cfg.y, cfg.z);
+          modGroup.rotation.x = tilt;
+
+          // Outer Aluminum Frame
+          const pFrame = new THREE.Mesh(new THREE.BoxGeometry(panelW, panelThick, panelD), frameMat);
+          modGroup.add(pFrame);
+
+          // Silicon Wafer Layer
+          const wafer = new THREE.Mesh(new THREE.PlaneGeometry(panelW - 0.05, panelD - 0.05), cellMat);
+          wafer.rotation.x = -Math.PI / 2;
+          wafer.position.y = panelThick / 2 + 0.001;
+          modGroup.add(wafer);
+
+          // Photovoltaic Contact Busbars (Metallic silver conduct ribbons)
+          for (let b = -3; b <= 3; b++) {
+            const bb = new THREE.Mesh(new THREE.PlaneGeometry(0.006, panelD - 0.06), busbarMat);
+            bb.rotation.x = -Math.PI / 2;
+            bb.position.set(b * 0.15, panelThick / 2 + 0.002, 0);
+            modGroup.add(bb);
+          }
+
+          // Anti-Reflective ARC Tempered Glass Coating
+          const glassCover = new THREE.Mesh(
+            new THREE.PlaneGeometry(panelW - 0.04, panelD - 0.04),
+            new THREE.MeshPhysicalMaterial({
+              color: 0x93c5fd,
+              transparent: true,
+              opacity: 0.22,
+              roughness: 0.05,
+              metalness: 0.05,
+              transmission: 0.92,
+              ior: 1.5
+            })
+          );
+          glassCover.rotation.x = -Math.PI / 2;
+          glassCover.position.y = panelThick / 2 + 0.003;
+          modGroup.add(glassCover);
+
+          modGroup.name = `pv_panel_${idx + 1}`;
+          this.solarPanelsGroup.add(modGroup);
+          this.pvPanels.push(modGroup);
+          this.interactiveObjects.push(modGroup);
+        });
+
+        this.solarRoofGroup.add(this.solarPanelsGroup);
+
+        // --- 4. Rooftop Combiner / Junction Box with Active LCD Readout ---
+        this.createRooftopJunctionBox();
+
+        // --- 5. High-Voltage Conduit Piping to Laboratory Combiner Box ---
+        this.createSolarConduitPiping();
+
+        this.scene.add(this.solarRoofGroup);
+      }
+
+      createRooftopJunctionBox() {
+        this.roofJunctionGroup = new THREE.Group();
+        this.roofJunctionGroup.position.set(2.0, 4.05, -0.6);
+
+        // Weatherproof NEMA 4X Industrial Enclosure
+        const boxGeo = new THREE.BoxGeometry(0.36, 0.44, 0.16);
+        const boxMat = new THREE.MeshStandardMaterial({
+          color: 0x1a2332,
+          roughness: 0.45,
+          metalness: 0.4
+        });
+        const boxBody = new THREE.Mesh(boxGeo, boxMat);
+        boxBody.castShadow = true;
+        this.roofJunctionGroup.add(boxBody);
+
+        // Solar Array Warning Label Decal
+        const labelGeo = new THREE.PlaneGeometry(0.30, 0.06);
+        const labelMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+        const warningPlate = new THREE.Mesh(labelGeo, labelMat);
+        warningPlate.position.set(0, 0.16, 0.081);
+        this.roofJunctionGroup.add(warningPlate);
+
+        // Canvas LCD Telemetry Display Screen
+        this.roofLcdCanvas = document.createElement('canvas');
+        this.roofLcdCanvas.width = 256;
+        this.roofLcdCanvas.height = 144;
+        this.roofLcdCtx = this.roofLcdCanvas.getContext('2d');
+        this.roofLcdTexture = new THREE.CanvasTexture(this.roofLcdCanvas);
+        this.updateRoofTelemetryDisplay("480.0 V", "880 W/m²", "42.5°C", "VOC OPEN CKT");
+
+        const lcdGeo = new THREE.PlaneGeometry(0.28, 0.15);
+        const lcdMat = new THREE.MeshBasicMaterial({ map: this.roofLcdTexture });
+        this.roofLcdMesh = new THREE.Mesh(lcdGeo, lcdMat);
+        this.roofLcdMesh.position.set(0, 0.03, 0.082);
+        this.roofJunctionGroup.add(this.roofLcdMesh);
+
+        // Positive (+) High Voltage Test Terminal Lug
+        const termGeo = new THREE.BoxGeometry(0.04, 0.05, 0.04);
+        const redMat = new THREE.MeshStandardMaterial({ color: 0xdd1122, roughness: 0.3 });
+        this.roofPosTerminal = new THREE.Mesh(termGeo, redMat);
+        this.roofPosTerminal.position.set(-0.06, -0.12, 0.085);
+        this.roofPosTerminal.name = "roof_pos_terminal";
+
+        const brassLugGeo = new THREE.CylinderGeometry(0.009, 0.009, 0.015, 16);
+        const brassLugMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 });
+        const pLug = new THREE.Mesh(brassLugGeo, brassLugMat);
+        pLug.rotation.x = Math.PI / 2;
+        pLug.position.set(0, 0, 0.022);
+        this.roofPosTerminal.add(pLug);
+        this.roofJunctionGroup.add(this.roofPosTerminal);
+        this.interactiveObjects.push(this.roofPosTerminal);
+
+        // Negative (-) High Voltage Test Terminal Lug
+        const blackMat = new THREE.MeshStandardMaterial({ color: 0x111620, roughness: 0.4 });
+        this.roofNegTerminal = new THREE.Mesh(termGeo, blackMat);
+        this.roofNegTerminal.position.set(0.06, -0.12, 0.085);
+        this.roofNegTerminal.name = "roof_neg_terminal";
+
+        const nLug = new THREE.Mesh(brassLugGeo, brassLugMat);
+        nLug.rotation.x = Math.PI / 2;
+        nLug.position.set(0, 0, 0.022);
+        this.roofNegTerminal.add(nLug);
+        this.roofJunctionGroup.add(this.roofNegTerminal);
+        this.interactiveObjects.push(this.roofNegTerminal);
+
+        // Cable Glands on Bottom
+        const glandGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.04, 16);
+        const glandMat = new THREE.MeshStandardMaterial({ color: 0x2d3748, metalness: 0.8 });
+        const g1 = new THREE.Mesh(glandGeo, glandMat);
+        g1.position.set(-0.08, -0.23, 0);
+        const g2 = new THREE.Mesh(glandGeo, glandMat);
+        g2.position.set(0.08, -0.23, 0);
+        this.roofJunctionGroup.add(g1, g2);
+
+        this.roofJunctionGroup.name = "roof_junction_box";
+        this.solarRoofGroup.add(this.roofJunctionGroup);
+        this.interactiveObjects.push(this.roofJunctionGroup);
+      }
+
+      createSolarConduitPiping() {
+        this.conduitGroup = new THREE.Group();
+
+        const pipeMat = new THREE.MeshStandardMaterial({
+          color: 0xdd7700, // High-voltage DC orange conduit
+          metalness: 0.65,
+          roughness: 0.35
+        });
+
+        const jointMat = new THREE.MeshStandardMaterial({
+          color: 0x718096,
+          metalness: 0.9,
+          roughness: 0.2
+        });
+
+        // 1. Pipe coming out of rooftop junction box bottom
+        // From (2.0, 3.82, -0.6) down to roof level at (2.0, 3.65, -0.6)
+        const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 16), pipeMat);
+        p1.position.set(2.0, 3.75, -0.6);
+        this.conduitGroup.add(p1);
+
+        // 2. Horizontal run along ceiling frame from X: 2.0 to X: 0.0 at Y = 3.65, Z = -0.65
+        const p2 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.0, 16), pipeMat);
+        p2.rotation.z = Math.PI / 2;
+        p2.position.set(1.0, 3.65, -0.65);
+        this.conduitGroup.add(p2);
+
+        // Elbow joint at (2.0, 3.65, -0.65)
+        const elbow1 = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 16), jointMat);
+        elbow1.position.set(2.0, 3.65, -0.65);
+        this.conduitGroup.add(elbow1);
+
+        // Elbow joint at (0.0, 3.65, -0.65)
+        const elbow2 = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 16), jointMat);
+        elbow2.position.set(0.0, 3.65, -0.65);
+        this.conduitGroup.add(elbow2);
+
+        // 3. Vertical drop down the wall from Y = 3.65 to Y = 1.18 (entering the Combiner Box top)
+        const verticalLength = 3.65 - 1.18; // 2.47m
+        const p3 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, verticalLength, 16), pipeMat);
+        p3.position.set(0.0, 1.18 + verticalLength / 2, -0.65);
+        this.conduitGroup.add(p3);
+
+        // Conduit Wall Clamps
+        const clampGeo = new THREE.BoxGeometry(0.06, 0.03, 0.05);
+        [1.6, 2.3, 3.0].forEach(yPos => {
+          const clamp = new THREE.Mesh(clampGeo, jointMat);
+          clamp.position.set(0.0, yPos, -0.65);
+          this.conduitGroup.add(clamp);
+        });
+
+        this.solarRoofGroup.add(this.conduitGroup);
+      }
+
+      updateRoofTelemetryDisplay(voltsStr, irradStr, tempStr, statusStr = "VOC OPEN CKT") {
+        if (!this.roofLcdCtx) return;
+        const c = this.roofLcdCtx;
+        c.fillStyle = "#0a111a";
+        c.fillRect(0, 0, 256, 144);
+
+        // Outer border
+        c.strokeStyle = "#00e5ff";
+        c.lineWidth = 3;
+        c.strokeRect(3, 3, 250, 138);
+
+        c.fillStyle = "#00e5ff";
+        c.font = "bold 14px 'SF Mono', Consolas, monospace";
+        c.fillText("ROOF PV ARRAY // DC", 14, 24);
+
+        c.fillStyle = "#00ff88";
+        c.font = "bold 32px 'SF Mono', Consolas, monospace";
+        c.fillText(voltsStr, 14, 62);
+
+        c.fillStyle = "#ffffff";
+        c.font = "12px 'SF Mono', Consolas, monospace";
+        c.fillText(`IRRAD: ${irradStr} | CELL: ${tempStr}`, 14, 92);
+
+        c.fillStyle = "#ffaa00";
+        c.font = "bold 13px 'SF Mono', Consolas, monospace";
+        c.fillText(statusStr, 14, 122);
+
+        this.roofLcdTexture.needsUpdate = true;
+      }
+
+      flashRooftopTelemetry() {
+        this.updateRoofTelemetryDisplay("480.0 V", "880 W/m²", "42.5°C", "TEST PROBE ACTIVE");
+        setTimeout(() => {
+          this.updateRoofTelemetryDisplay("480.0 V", "880 W/m²", "42.5°C", "VOC OPEN CKT");
+        }, 1200);
+      }
+
+      createMainSecurityGate() {
+        this.gateGroup = new THREE.Group();
+        this.gateGroup.position.set(0, 0, 1.8);
+
+        const postGeo = new THREE.BoxGeometry(0.18, 2.8, 0.18);
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x1f2733, metalness: 0.8, roughness: 0.3 });
+        const leftPost = new THREE.Mesh(postGeo, frameMat);
+        leftPost.position.set(-1.1, 1.4, 0);
+        const rightPost = new THREE.Mesh(postGeo, frameMat);
+        rightPost.position.set(1.1, 1.4, 0);
+
+        const topBeamGeo = new THREE.BoxGeometry(2.38, 0.22, 0.22);
+        const topBeam = new THREE.Mesh(topBeamGeo, frameMat);
+        topBeam.position.set(0, 2.7, 0);
+        this.gateGroup.add(leftPost, rightPost, topBeam);
+
+        const keypadBodyGeo = new THREE.BoxGeometry(0.14, 0.22, 0.04);
+        const keypadMat = new THREE.MeshStandardMaterial({ color: 0x111620, roughness: 0.5 });
+        this.keypadMesh = new THREE.Mesh(keypadBodyGeo, keypadMat);
+        this.keypadMesh.position.set(0.65, 1.25, 0.06);
+        this.keypadMesh.name = "gate_keypad";
+
+        const lensGeo = new THREE.PlaneGeometry(0.09, 0.12);
+        this.keypadLensMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
+        const lens = new THREE.Mesh(lensGeo, this.keypadLensMat);
+        lens.position.set(0, 0, 0.021);
+        this.keypadMesh.add(lens);
+        this.gateGroup.add(this.keypadMesh);
+        this.interactiveObjects.push(this.keypadMesh);
+
+        const doorGeo = new THREE.BoxGeometry(1.0, 2.4, 0.06);
+        const doorMat = new THREE.MeshStandardMaterial({
+          color: 0x222c3a,
+          roughness: 0.35,
+          metalness: 0.75
+        });
+        this.doorLeft = new THREE.Mesh(doorGeo, doorMat);
+        this.doorLeft.position.set(-0.5, 1.2, 0);
+        this.doorLeft.name = "gate_door_left";
+
+        this.doorRight = new THREE.Mesh(doorGeo, doorMat);
+        this.doorRight.position.set(0.5, 1.2, 0);
+        this.doorRight.name = "gate_door_right";
+
+        const stripeGeo = new THREE.PlaneGeometry(0.15, 2.0);
+        const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffa000 });
+        const stripeL = new THREE.Mesh(stripeGeo, stripeMat);
+        stripeL.position.set(0.42, 0, 0.031);
+        this.doorLeft.add(stripeL);
+        const stripeR = new THREE.Mesh(stripeGeo, stripeMat);
+        stripeR.position.set(-0.42, 0, 0.031);
+        this.doorRight.add(stripeR);
+
+        this.gateGroup.add(this.doorLeft, this.doorRight);
+        this.interactiveObjects.push(this.doorLeft, this.doorRight);
+
+        this.scene.add(this.gateGroup);
+      }
+
+      createWorkbench() {
+        const tableGroup = new THREE.Group();
+        const topGeo = new THREE.BoxGeometry(1.7, 0.06, 0.95);
+        const topMat = new THREE.MeshStandardMaterial({
+          color: 0x1e2632,
+          roughness: 0.3,
+          metalness: 0.7
+        });
+        const tabletop = new THREE.Mesh(topGeo, topMat);
+        tabletop.position.set(0, 0.72, -0.6);
+        tabletop.castShadow = true;
+        tabletop.receiveShadow = true;
+        tableGroup.add(tabletop);
+
+        const matGeo = new THREE.BoxGeometry(1.5, 0.006, 0.8);
+        const matMat = new THREE.MeshStandardMaterial({
+          color: 0x14202e,
+          roughness: 0.7,
+          metalness: 0.1
+        });
+        const esdMat = new THREE.Mesh(matGeo, matMat);
+        esdMat.position.set(0, 0.753, -0.6);
+        esdMat.receiveShadow = true;
+        tableGroup.add(esdMat);
+
+        const legGeo = new THREE.BoxGeometry(0.06, 0.72, 0.06);
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x303b4b, roughness: 0.4, metalness: 0.8 });
+        const legPositions = [
+          [-0.75, 0.36, -0.22],
+          [0.75, 0.36, -0.22],
+          [-0.75, 0.36, -0.98],
+          [0.75, 0.36, -0.98]
+        ];
+        legPositions.forEach(pos => {
+          const leg = new THREE.Mesh(legGeo, legMat);
+          leg.position.set(...pos);
+          leg.castShadow = true;
+          tableGroup.add(leg);
+        });
+
+        const standGeo = new THREE.BoxGeometry(0.44, 0.6, 0.04);
+        const standMat = new THREE.MeshStandardMaterial({ color: 0x151c24, metalness: 0.8, roughness: 0.3 });
+        const stand = new THREE.Mesh(standGeo, standMat);
+        stand.position.set(0, 0.98, -0.74);
+        tableGroup.add(stand);
+
+        this.scene.add(tableGroup);
+      }
+
+      createSolarCombinerBox() {
+        this.combinerBox = new THREE.Group();
+        this.combinerBox.position.set(0, 0.95, -0.65);
+
+        const bodyGeo = new THREE.BoxGeometry(0.38, 0.46, 0.14);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x242d38, roughness: 0.5, metalness: 0.2 });
+        const boxBase = new THREE.Mesh(bodyGeo, bodyMat);
+        boxBase.castShadow = true;
+        this.combinerBox.add(boxBase);
+
+        const cavityGeo = new THREE.BoxGeometry(0.34, 0.42, 0.1);
+        const cavityMat = new THREE.MeshStandardMaterial({ color: 0x121820, roughness: 0.8 });
+        const cavity = new THREE.Mesh(cavityGeo, cavityMat);
+        cavity.position.set(0, 0, 0.025);
+        this.combinerBox.add(cavity);
+
+        const railGeo = new THREE.BoxGeometry(0.30, 0.035, 0.012);
+        const railMat = new THREE.MeshStandardMaterial({ color: 0xc0c8d0, roughness: 0.2, metalness: 0.9 });
+        const dinRail = new THREE.Mesh(railGeo, railMat);
+        dinRail.position.set(0, 0.02, 0.03);
+        this.combinerBox.add(dinRail);
+
+        // Hinged Transparent Polycarbonate Lid
+        this.lidPivot = new THREE.Group();
+        this.lidPivot.position.set(-0.19, 0, 0.07);
+
+        const lidGeo = new THREE.BoxGeometry(0.38, 0.46, 0.025);
+        const lidMat = new THREE.MeshPhysicalMaterial({
+          color: 0xaad8e6,
+          transparent: true,
+          opacity: 0.45,
+          roughness: 0.1,
+          metalness: 0.1,
+          transmission: 0.8,
+          ior: 1.5,
+          depthWrite: false
+        });
+        this.lidMesh = new THREE.Mesh(lidGeo, lidMat);
+        this.lidMesh.position.set(0.19, 0, 0);
+        this.lidMesh.name = "combiner_lid";
+
+        const latchGeo = new THREE.BoxGeometry(0.02, 0.06, 0.03);
+        const latchMat = new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.8 });
+        const latch = new THREE.Mesh(latchGeo, latchMat);
+        latch.position.set(0.38, 0, 0.015);
+        this.lidMesh.add(latch);
+
+        this.lidPivot.add(this.lidMesh);
+        this.combinerBox.add(this.lidPivot);
+        this.interactiveObjects.push(this.lidMesh);
+
+        // DC Isolator Rotary Switch
+        this.switchGroup = new THREE.Group();
+        this.switchGroup.position.set(-0.07, 0.05, 0.04);
+
+        const switchPlateGeo = new THREE.CylinderGeometry(0.042, 0.042, 0.015, 32);
+        const switchPlateMat = new THREE.MeshStandardMaterial({ color: 0xe6b800, roughness: 0.4 });
+        const switchPlate = new THREE.Mesh(switchPlateGeo, switchPlateMat);
+        switchPlate.rotation.x = Math.PI / 2;
+        this.switchGroup.add(switchPlate);
+
+        this.rotaryKnob = new THREE.Group();
+        const knobBaseGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.02, 32);
+        const knobHandleGeo = new THREE.BoxGeometry(0.018, 0.065, 0.03);
+        const knobMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: 0.3 });
+        const knobBase = new THREE.Mesh(knobBaseGeo, knobMat);
+        knobBase.rotation.x = Math.PI / 2;
+        const knobHandle = new THREE.Mesh(knobHandleGeo, knobMat);
+        knobHandle.position.set(0, 0, 0.015);
+        this.rotaryKnob.add(knobBase, knobHandle);
+        this.rotaryKnob.name = "rotary_isolator";
+        this.rotaryKnob.position.set(0, 0, 0.01);
+        this.switchGroup.add(this.rotaryKnob);
+        this.combinerBox.add(this.switchGroup);
+        this.interactiveObjects.push(this.rotaryKnob);
+
+        // Status LED Indicator
+        const ledGeo = new THREE.SphereGeometry(0.012, 16, 16);
+        this.ledMat = new THREE.MeshStandardMaterial({
+          color: 0xff0022,
+          emissive: 0xff0022,
+          emissiveIntensity: 2.2,
+          roughness: 0.2
+        });
+        this.statusLed = new THREE.Mesh(ledGeo, this.ledMat);
+        this.statusLed.position.set(-0.07, 0.13, 0.05);
+        this.combinerBox.add(this.statusLed);
+
+        this.ledLight = new THREE.PointLight(0xff0022, 0.4, 0.4);
+        this.ledLight.position.set(-0.07, 0.13, 0.07);
+        this.combinerBox.add(this.ledLight);
+
+        // Cartridge Fuse Holder
+        this.fuseHolder = new THREE.Group();
+        this.fuseHolder.position.set(-0.07, -0.06, 0.04);
+        const holderGeo = new THREE.BoxGeometry(0.035, 0.09, 0.04);
+        const holderMat = new THREE.MeshStandardMaterial({ color: 0x3a4454, roughness: 0.5 });
+        const holderMesh = new THREE.Mesh(holderGeo, holderMat);
+        this.fuseHolder.add(holderMesh);
+
+        // Blown Fuse Cartridge
+        this.fuseMesh = new THREE.Group();
+        const fuseBodyGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.045, 16);
+        const fuseBodyMat = new THREE.MeshStandardMaterial({ color: 0xdedede, roughness: 0.4 });
+        const fuseBody = new THREE.Mesh(fuseBodyGeo, fuseBodyMat);
+
+        const capGeo = new THREE.CylinderGeometry(0.0075, 0.0075, 0.01, 16);
+        const capMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.9, roughness: 0.2 });
+        const capTop = new THREE.Mesh(capGeo, capMat);
+        capTop.position.y = 0.018;
+        const capBottom = new THREE.Mesh(capGeo, capMat);
+        capBottom.position.y = -0.018;
+
+        const burnGeo = new THREE.CylinderGeometry(0.0072, 0.0072, 0.012, 16);
+        const burnMat = new THREE.MeshBasicMaterial({ color: 0x221a10 });
+        const burnMark = new THREE.Mesh(burnGeo, burnMat);
+
+        this.fuseMesh.add(fuseBody, capTop, capBottom, burnMark);
+        this.fuseMesh.position.set(0, 0, 0.015);
+        this.fuseMesh.name = "fuse_cartridge";
+        this.fuseHolder.add(this.fuseMesh);
+        this.combinerBox.add(this.fuseHolder);
+        this.interactiveObjects.push(this.fuseMesh);
+
+        // Terminals
+        this.terminalsGroup = new THREE.Group();
+        this.terminalsGroup.position.set(0.07, -0.08, 0.04);
+
+        const posGeo = new THREE.BoxGeometry(0.03, 0.05, 0.035);
+        const posMat = new THREE.MeshStandardMaterial({ color: 0xd92626 });
+        this.posTerminal = new THREE.Mesh(posGeo, posMat);
+        this.posTerminal.position.set(-0.025, 0, 0);
+        this.posTerminal.name = "pos_terminal";
+
+        const contactScrewGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.008, 16);
+        const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
+        const posScrew = new THREE.Mesh(contactScrewGeo, brassMat);
+        posScrew.position.set(0, 0.026, 0);
+        this.posTerminal.add(posScrew);
+
+        const negGeo = new THREE.BoxGeometry(0.03, 0.05, 0.035);
+        const negMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.6 });
+        this.negTerminal = new THREE.Mesh(negGeo, negMat);
+        this.negTerminal.position.set(0.025, 0, 0);
+        this.negTerminal.name = "neg_terminal";
+
+        const negScrew = new THREE.Mesh(contactScrewGeo, brassMat);
+        negScrew.position.set(0, 0.026, 0);
+        this.negTerminal.add(negScrew);
+
+        this.terminalsGroup.add(this.posTerminal, this.negTerminal);
+        this.combinerBox.add(this.terminalsGroup);
+        this.interactiveObjects.push(this.posTerminal, this.negTerminal);
+
+        this.scene.add(this.combinerBox);
+      }
+
+      createMultimeterAndProbes() {
+        this.dmmGroup = new THREE.Group();
+        this.dmmGroup.position.set(0.24, 0.78, -0.60);
+        this.dmmGroup.rotation.x = -0.15;
+
+        const dmmBodyGeo = new THREE.BoxGeometry(0.09, 0.16, 0.038);
+        const dmmBodyMat = new THREE.MeshStandardMaterial({ color: 0xf5a623, roughness: 0.4 });
+        const dmmBody = new THREE.Mesh(dmmBodyGeo, dmmBodyMat);
+        this.dmmGroup.add(dmmBody);
+
+        this.dmmCanvas = document.createElement('canvas');
+        this.dmmCanvas.width = 256;
+        this.dmmCanvas.height = 128;
+        this.dmmCtx = this.dmmCanvas.getContext('2d');
+        this.dmmTexture = new THREE.CanvasTexture(this.dmmCanvas);
+        this.updateDMMDisplay("--- V", "STANDBY");
+
+        const lcdGeo = new THREE.PlaneGeometry(0.065, 0.035);
+        const lcdMat = new THREE.MeshBasicMaterial({ map: this.dmmTexture });
+        const lcdMesh = new THREE.Mesh(lcdGeo, lcdMat);
+        lcdMesh.position.set(0, 0.045, 0.02);
+        this.dmmGroup.add(lcdMesh);
+
+        const dialGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.01, 32);
+        const dialMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 });
+        const dial = new THREE.Mesh(dialGeo, dialMat);
+        dial.rotation.x = Math.PI / 2;
+        dial.position.set(0, -0.015, 0.02);
+        this.dmmGroup.add(dial);
+        this.scene.add(this.dmmGroup);
+
+        this.probesGroup = new THREE.Group();
+
+        // Red Probe
+        this.redProbe = new THREE.Group();
+        const probeHandleGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.11, 16);
+        const redHandleMat = new THREE.MeshStandardMaterial({ color: 0xe02020 });
+        const redHandle = new THREE.Mesh(probeHandleGeo, redHandleMat);
+        const needleGeo = new THREE.CylinderGeometry(0.0015, 0.0015, 0.035, 16);
+        const needleMat = new THREE.MeshStandardMaterial({ color: 0xdde5ed, metalness: 0.95, roughness: 0.1 });
+        const redNeedle = new THREE.Mesh(needleGeo, needleMat);
+        redNeedle.position.set(0, 0.065, 0);
+        this.redProbe.add(redHandle, redNeedle);
+        this.redProbe.name = "probe_red";
+        this.redProbe.position.set(0.20, 0.78, -0.46);
+        this.redProbe.rotation.x = Math.PI / 2;
+        this.probesGroup.add(this.redProbe);
+        this.interactiveObjects.push(this.redProbe);
+
+        // Black Probe
+        this.blackProbe = new THREE.Group();
+        const blackHandleMat = new THREE.MeshStandardMaterial({ color: 0x1f242c });
+        const blackHandle = new THREE.Mesh(probeHandleGeo, blackHandleMat);
+        const blackNeedle = new THREE.Mesh(needleGeo, needleMat);
+        blackNeedle.position.set(0, 0.065, 0);
+        this.blackProbe.add(blackHandle, blackNeedle);
+        this.blackProbe.name = "probe_black";
+        this.blackProbe.position.set(0.28, 0.78, -0.46);
+        this.blackProbe.rotation.x = Math.PI / 2;
+        this.probesGroup.add(this.blackProbe);
+        this.interactiveObjects.push(this.blackProbe);
+
+        this.redLeadGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0.22, 0.76, -0.66),
+          this.redProbe.position
+        ]);
+        this.redLeadMat = new THREE.LineBasicMaterial({ color: 0xe02020, linewidth: 2 });
+        this.redLeadLine = new THREE.Line(this.redLeadGeo, this.redLeadMat);
+        this.probesGroup.add(this.redLeadLine);
+
+        this.blackLeadGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0.26, 0.76, -0.66),
+          this.blackProbe.position
+        ]);
+        this.blackLeadMat = new THREE.LineBasicMaterial({ color: 0x222222, linewidth: 2 });
+        this.blackLeadLine = new THREE.Line(this.blackLeadGeo, this.blackLeadMat);
+        this.probesGroup.add(this.blackLeadLine);
+
+        this.scene.add(this.probesGroup);
+      }
+
+      createIndustrialToolBox() {
+        this.toolboxGroup = new THREE.Group();
+        this.toolboxGroup.position.set(0.52, 0.76, -0.55);
+
+        const boxGeo = new THREE.BoxGeometry(0.30, 0.12, 0.20);
+        const boxMat = new THREE.MeshStandardMaterial({ color: 0xb52424, roughness: 0.4, metalness: 0.6 });
+        const tbBase = new THREE.Mesh(boxGeo, boxMat);
+        tbBase.position.y = 0.06;
+        tbBase.castShadow = true;
+        this.toolboxGroup.add(tbBase);
+
+        this.toolboxLidPivot = new THREE.Group();
+        this.toolboxLidPivot.position.set(0, 0.12, -0.10);
+
+        const lidGeo = new THREE.BoxGeometry(0.30, 0.03, 0.20);
+        this.toolboxLidMesh = new THREE.Mesh(lidGeo, boxMat);
+        this.toolboxLidMesh.position.set(0, 0.015, 0.10);
+        this.toolboxLidMesh.name = "toolbox_lid";
+
+        const handleGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.14, 16);
+        const chromeMat = new THREE.MeshStandardMaterial({ color: 0xdedede, metalness: 0.95, roughness: 0.15 });
+        const handle = new THREE.Mesh(handleGeo, chromeMat);
+        handle.rotation.z = Math.PI / 2;
+        handle.position.set(0, 0.035, 0.10);
+        this.toolboxLidMesh.add(handle);
+
+        this.toolboxLidPivot.add(this.toolboxLidMesh);
+        this.toolboxGroup.add(this.toolboxLidPivot);
+        this.interactiveObjects.push(this.toolboxLidMesh);
+
+        const foamGeo = new THREE.BoxGeometry(0.28, 0.02, 0.18);
+        const foamMat = new THREE.MeshStandardMaterial({ color: 0x181e26, roughness: 0.9 });
+        const foam = new THREE.Mesh(foamGeo, foamMat);
+        foam.position.set(0, 0.11, 0);
+        this.toolboxGroup.add(foam);
+
+        // Fresh Replacement Fuse
+        this.replacementFuse = new THREE.Group();
+        const repFuseGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.045, 16);
+        const repFuseMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+        const repFuseBody = new THREE.Mesh(repFuseGeo, repFuseMat);
+        const capGeo = new THREE.CylinderGeometry(0.0075, 0.0075, 0.01, 16);
+        const capMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.1 });
+        const c1 = new THREE.Mesh(capGeo, capMat);
+        c1.position.y = 0.018;
+        const c2 = new THREE.Mesh(capGeo, capMat);
+        c2.position.y = -0.018;
+        this.replacementFuse.add(repFuseBody, c1, c2);
+        this.replacementFuse.position.set(-0.08, 0.13, 0.02);
+        this.replacementFuse.rotation.z = Math.PI / 2;
+        this.replacementFuse.name = "replacement_fuse";
+        this.toolboxGroup.add(this.replacementFuse);
+        this.interactiveObjects.push(this.replacementFuse);
+
+        // Insulated Tool
+        const toolGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.14, 16);
+        const toolMat = new THREE.MeshStandardMaterial({ color: 0xf39c12, roughness: 0.3 });
+        const wrench = new THREE.Mesh(toolGeo, toolMat);
+        wrench.rotation.z = Math.PI / 2;
+        wrench.position.set(0.05, 0.13, 0.05);
+        this.toolboxGroup.add(wrench);
+
+        this.scene.add(this.toolboxGroup);
+      }
+
+      createBatteryRackAndBattery() {
+        this.batteryRack = new THREE.Group();
+        this.batteryRack.position.set(-0.85, 0, -0.60);
+
+        const rackCabinetGeo = new THREE.BoxGeometry(0.48, 1.4, 0.40);
+        const rackMat = new THREE.MeshStandardMaterial({ color: 0x18202b, metalness: 0.7, roughness: 0.4 });
+        const cabinet = new THREE.Mesh(rackCabinetGeo, rackMat);
+        cabinet.position.y = 0.7;
+        this.batteryRack.add(cabinet);
+
+        const bayGeo = new THREE.BoxGeometry(0.36, 0.18, 0.32);
+        const bayMat = new THREE.MeshStandardMaterial({ color: 0x0a0f16, roughness: 0.8 });
+        const bay = new THREE.Mesh(bayGeo, bayMat);
+        bay.position.set(0, 0.76, 0.04);
+        this.batteryRack.add(bay);
+
+        const bayLedGeo = new THREE.SphereGeometry(0.015, 16, 16);
+        this.bayLedMat = new THREE.MeshStandardMaterial({
+          color: 0xff8800,
+          emissive: 0xff8800,
+          emissiveIntensity: 1.5
+        });
+        this.bayLed = new THREE.Mesh(bayLedGeo, this.bayLedMat);
+        this.bayLed.position.set(0.18, 0.90, 0.21);
+        this.batteryRack.add(this.bayLed);
+
+        this.scene.add(this.batteryRack);
+
+        // New 48V Battery Module
+        this.batteryPack = new THREE.Group();
+        const batBodyGeo = new THREE.BoxGeometry(0.32, 0.14, 0.26);
+        const batBodyMat = new THREE.MeshStandardMaterial({
+          color: 0x283342,
+          roughness: 0.3,
+          metalness: 0.7
+        });
+        const batBody = new THREE.Mesh(batBodyGeo, batBodyMat);
+        this.batteryPack.add(batBody);
+
+        const faceGeo = new THREE.PlaneGeometry(0.30, 0.12);
+        const faceMat = new THREE.MeshStandardMaterial({ color: 0x111620, roughness: 0.6 });
+        const face = new THREE.Mesh(faceGeo, faceMat);
+        face.position.set(0, 0, 0.131);
+        this.batteryPack.add(face);
+
+        const termGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.02, 16);
+        const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95 });
+        const tPos = new THREE.Mesh(termGeo, goldMat);
+        tPos.position.set(-0.10, 0.03, 0.135);
+        tPos.rotation.x = Math.PI / 2;
+        const tNeg = new THREE.Mesh(termGeo, goldMat);
+        tNeg.position.set(0.10, 0.03, 0.135);
+        tNeg.rotation.x = Math.PI / 2;
+        this.batteryPack.add(tPos, tNeg);
+
+        const bHandleGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.08, 16);
+        const bHandleMat = new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.8 });
+        const bhL = new THREE.Mesh(bHandleGeo, bHandleMat);
+        bhL.position.set(-0.165, 0, 0);
+        bhL.rotation.x = Math.PI / 2;
+        const bhR = new THREE.Mesh(bHandleGeo, bHandleMat);
+        bhR.position.set(0.165, 0, 0);
+        bhR.rotation.x = Math.PI / 2;
+        this.batteryPack.add(bhL, bhR);
+
+        this.batteryPack.position.set(0.52, 0.84, -0.55);
+        this.batteryPack.name = "battery_module";
+        this.scene.add(this.batteryPack);
+        this.interactiveObjects.push(this.batteryPack);
+      }
+
+      createCompletionHologram() {
+        this.completionBadgeGroup = new THREE.Group();
+        this.completionBadgeGroup.position.set(0, 1.35, -0.65);
+
+        const badgeGeom = new THREE.RingGeometry(0.16, 0.175, 48);
+        const badgeMat = new THREE.MeshBasicMaterial({
+          color: 0x00ff88,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.85,
+          blending: THREE.AdditiveBlending
+        });
+        const badgeRing = new THREE.Mesh(badgeGeom, badgeMat);
+        const innerRing = new THREE.Mesh(new THREE.RingGeometry(0.12, 0.125, 48), badgeMat);
+        this.completionBadgeGroup.add(badgeRing, innerRing);
+        this.completionBadgeGroup.visible = false;
+        this.scene.add(this.completionBadgeGroup);
+      }
+
+      updateLeadLines() {
+        if (!this.redLeadGeo || !this.blackLeadGeo) return;
+        this.redLeadGeo.setFromPoints([
+          new THREE.Vector3(0.22, 0.76, -0.66),
+          this.redProbe.position
+        ]);
+        this.blackLeadGeo.setFromPoints([
+          new THREE.Vector3(0.26, 0.76, -0.66),
+          this.blackProbe.position
+        ]);
+      }
+
+      updateDMMDisplay(valStr, statusStr = "") {
+        const c = this.dmmCtx;
+        c.fillStyle = "#16201b";
+        c.fillRect(0, 0, 256, 128);
+
+        c.fillStyle = "#00e5ff";
+        c.font = "bold 18px 'SF Mono', monospace";
+        c.fillText("DC VOLTAGE", 18, 30);
+
+        if (valStr.includes("0.00")) c.fillStyle = "#00ff88";
+        else if (valStr.includes("480")) c.fillStyle = "#ff3344";
+        else c.fillStyle = "#ffffff";
+
+        c.font = "bold 38px 'SF Mono', monospace";
+        c.fillText(valStr, 18, 78);
+
+        c.font = "bold 16px 'SF Mono', monospace";
+        c.fillStyle = valStr.includes("0.00") ? "#00ff88" : "#ff9100";
+        c.fillText(statusStr, 18, 110);
+
+        this.dmmTexture.needsUpdate = true;
+      }
+
+      reset() {
+        this.doorLeft.position.x = -0.5;
+        this.doorRight.position.x = 0.5;
+        this.keypadLensMat.color.setHex(0x00e5ff);
+
+        this.lidPivot.rotation.y = 0;
+        this.rotaryKnob.rotation.z = 0;
+        this.fuseMesh.position.set(0, 0, 0.015);
+        this.fuseMesh.visible = true;
+
+        this.replacementFuse.position.set(-0.08, 0.13, 0.02);
+        this.replacementFuse.rotation.set(0, 0, Math.PI / 2);
+        this.replacementFuse.parent = this.toolboxGroup;
+
+        this.toolboxLidPivot.rotation.x = 0;
+
+        this.batteryPack.position.set(0.52, 0.84, -0.55);
+        this.bayLedMat.color.setHex(0xff8800);
+        this.bayLedMat.emissive.setHex(0xff8800);
+
+        this.redProbe.position.set(0.20, 0.78, -0.46);
+        this.redProbe.rotation.set(Math.PI / 2, 0, 0);
+        this.blackProbe.position.set(0.28, 0.78, -0.46);
+        this.blackProbe.rotation.set(Math.PI / 2, 0, 0);
+        this.updateLeadLines();
+
+        this.ledMat.color.setHex(0xff0022);
+        this.ledMat.emissive.setHex(0xff0022);
+        this.ledLight.color.setHex(0xff0022);
+        this.updateDMMDisplay("--- V", "STANDBY");
+        this.updateRoofTelemetryDisplay("480.0 V", "880 W/m²", "42.5°C", "VOC OPEN CKT");
+      }
+    }
+
+    /* ==========================================================================
+       8. MAIN APPLICATION ORCHESTRATOR
+       ========================================================================== */
+    class WebXRTrainingApp {
+      constructor() {
+        this.container = document.getElementById('webgl-container');
+        this.clock = new THREE.Clock();
+
+        this.sound = new SoundEngine();
+        this.jarvis = new JarvisVoice(this.sound);
+        this.micListener = new JarvisMicListener(this);
+        this.isRooftopView = false;
+
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 50);
+
+        this.camera.position.set(0, 1.4, 2.6);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.1;
+        this.container.appendChild(this.renderer.domElement);
+
+        this.renderer.xr.enabled = true;
+        document.body.appendChild(VRButton.createButton(this.renderer));
+
+        this.setupLights();
+
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.05;
+        this.controls.target.set(0, 1.3, 1.8);
+        this.controls.maxPolarAngle = Math.PI / 2 + 0.1;
+        this.controls.minDistance = 0.4;
+        this.controls.maxDistance = 4.0;
+
+        this.env = new EnvironmentAndEquipment(this.scene);
+        this.ghostGuides = new HolographicGhostGuides(this.scene);
+        this.diegeticHUD = new Diegetic3DHUD(this.scene);
+
+        this.fsm = new TrainingFSM(this);
+
+        this.setupInteractions();
+        this.setupWebXRControllers();
+        this.setupWaveformVisualizer();
+        this.bindDOMEvents();
+
+        window.addEventListener('resize', () => this.onWindowResize());
+        this.fsm.init();
+        this.renderer.setAnimationLoop((t, frame) => this.render(t, frame));
+      }
+
+      setupLights() {
+        const ambientLight = new THREE.AmbientLight(0xdde8f5, 0.65);
+        this.scene.add(ambientLight);
+
+        // Sunlight streaming down through the skylight onto rooftop panels and workbench
+        const sunLight = new THREE.DirectionalLight(0xfff8ee, 1.8);
+        sunLight.position.set(3.5, 10.0, 2.5);
+        sunLight.target.position.set(0, 2.0, -0.6);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 25;
+        sunLight.shadow.camera.left = -4;
+        sunLight.shadow.camera.right = 4;
+        sunLight.shadow.camera.top = 4;
+        sunLight.shadow.camera.bottom = -4;
+        this.scene.add(sunLight);
+        this.scene.add(sunLight.target);
+
+        const spotLight = new THREE.SpotLight(0xffffff, 2.8);
+        spotLight.position.set(0, 3.2, 0.2);
+        spotLight.target.position.set(0, 0.95, -0.65);
+        spotLight.angle = Math.PI / 3.5;
+        spotLight.penumbra = 0.4;
+        spotLight.castShadow = true;
+        spotLight.shadow.mapSize.width = 1024;
+        spotLight.shadow.mapSize.height = 1024;
+        this.scene.add(spotLight);
+        this.scene.add(spotLight.target);
+
+        const gateLight = new THREE.PointLight(0x00e5ff, 1.5, 5);
+        gateLight.position.set(0, 2.6, 2.0);
+        this.scene.add(gateLight);
+
+        // Subtle rooftop cyan beacon light
+        const roofLight = new THREE.PointLight(0x00e5ff, 0.8, 6);
+        roofLight.position.set(2.0, 4.3, -0.5);
+        this.scene.add(roofLight);
+      }
+
+      setupInteractions() {
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
+
+        const dom = this.renderer.domElement;
+
+        dom.addEventListener('pointerdown', (e) => {
+          if (e.button !== 0) return;
+          this.sound.ensureUnlocked();
+
+          this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+          this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+          this.raycaster.setFromCamera(this.mouse, this.camera);
+          const intersects = this.raycaster.intersectObjects(this.env.interactiveObjects, true);
+
+          if (intersects.length > 0) {
+            let target = intersects[0].object;
+            while (target.parent && !target.name) target = target.parent;
+            this.handleDirectInteraction(target);
+          }
+        });
+
+        window.addEventListener('keydown', (e) => {
+          const moveStep = 0.06;
+          switch (e.key.toLowerCase()) {
+            case 'w':
+              this.camera.position.z -= moveStep;
+              this.controls.target.z -= moveStep;
+              break;
+            case 's':
+              this.camera.position.z += moveStep;
+              this.controls.target.z += moveStep;
+              break;
+            case 'a':
+              this.camera.position.x -= moveStep;
+              this.controls.target.x -= moveStep;
+              break;
+            case 'd':
+              this.camera.position.x += moveStep;
+              this.controls.target.x += moveStep;
+              break;
+            case 'r':
+              this.resetCamera();
+              break;
+            case 't':
+            case 'p':
+              this.toggleRooftopView();
+              break;
+            case 'm':
+            case 'v':
+              this.micListener.toggleListening();
+              break;
+            case ' ':
+              this.jarvis.repeat();
+              break;
+          }
+        });
+      }
+
+      handleDirectInteraction(obj) {
+        if (!obj) return;
+
+        if (obj.name === 'gate_keypad' || obj.name === 'gate_door_left' || obj.name === 'gate_door_right') {
+          if (this.fsm.currentState === STATES.STEP1_GATE_ENTRY) {
+            this.animateOpenGateAndEnter();
+          }
+        }
+        else if (obj.name === 'combiner_lid' || obj.parent?.name === 'combiner_lid') {
+          if (this.fsm.currentState === STATES.STEP2_ISOLATOR_OFF) {
+            this.animateOpenLid();
+          }
+        } else if (obj.name === 'rotary_isolator' || obj.parent?.name === 'rotary_isolator') {
+          if (this.fsm.currentState === STATES.STEP2_ISOLATOR_OFF) {
+            this.animateRotarySwitch();
+          }
+        }
+        else if (obj.name === 'probe_red' || obj.name === 'probe_black' ||
+                 obj.name === 'pos_terminal' || obj.name === 'neg_terminal') {
+          this.handleProbingInteraction();
+        }
+        else if (obj.name === 'fuse_cartridge' || obj.name === 'replacement_fuse') {
+          if (this.fsm.currentState === STATES.STEP4_CORRECT_CIRCUIT) {
+            this.animateCorrectCircuit();
+          }
+        }
+        else if (obj.name === 'toolbox_lid' || obj.parent?.name === 'toolbox_lid') {
+          if (this.fsm.currentState === STATES.STEP5_OPEN_TOOLBOX) {
+            this.animateOpenToolbox();
+          }
+        }
+        else if (obj.name === 'battery_module' || obj.parent?.name === 'battery_module') {
+          if (this.fsm.currentState === STATES.STEP6_INSTALL_BATTERY) {
+            this.animateInstallBattery();
+          }
+        }
+        else if (obj.name?.startsWith('roof_') || obj.name?.startsWith('pv_panel') ||
+                 obj.parent?.name?.startsWith('roof_') || obj.parent?.name?.startsWith('pv_panel')) {
+          this.handleRooftopSolarInteraction();
+        }
+      }
+
+      handleRooftopSolarInteraction() {
+        this.sound.ensureUnlocked();
+        this.sound.playProbeBeep();
+        this.sound.playSolarTelemetryChime();
+        this.env.flashRooftopTelemetry();
+        this.jarvis.speak(
+          "Rooftop solar telemetry: Open-circuit voltage is 480.0 Volts Direct Current across two series strings. Solar irradiance measures 880 Watts per square meter at 42.5 degrees Celsius.",
+          true
+        );
+        if (this.diegeticHUD) {
+          this.diegeticHUD.updateVoiceTranscript("ROOF PV: 480.0V DC // 880 W/m² // VOC OK");
+        }
+        const solarElem = document.getElementById('hud-solar-voltage');
+        if (solarElem) {
+          solarElem.style.textShadow = "0 0 14px #00e5ff";
+          setTimeout(() => { solarElem.style.textShadow = "none"; }, 1200);
+        }
+      }
+
+      toggleRooftopView() {
+        this.sound.ensureUnlocked();
+        this.sound.playCameraSwoosh();
+        this.isRooftopView = !this.isRooftopView;
+
+        const btn = document.getElementById('btn-rooftop-view');
+        const label = document.getElementById('rooftop-btn-label');
+
+        if (this.isRooftopView) {
+          if (btn) btn.classList.add('btn-primary');
+          if (label) label.textContent = "WORKBENCH VIEW";
+
+          this.animateCameraTo(
+            new THREE.Vector3(0, 4.4, 1.2),
+            new THREE.Vector3(0, 3.9, -0.8),
+            900,
+            () => {
+              this.controls.minDistance = 0.5;
+              this.controls.maxDistance = 5.0;
+              this.handleRooftopSolarInteraction();
+            }
+          );
+        } else {
+          if (btn) btn.classList.remove('btn-primary');
+          if (label) label.textContent = "ROOFTOP ARRAY";
+
+          const targetPos = this.fsm.currentState === STATES.STEP1_GATE_ENTRY
+            ? new THREE.Vector3(0, 1.4, 2.6)
+            : new THREE.Vector3(0, 1.25, 0.65);
+          const targetLook = this.fsm.currentState === STATES.STEP1_GATE_ENTRY
+            ? new THREE.Vector3(0, 1.3, 1.8)
+            : new THREE.Vector3(0, 0.95, -0.65);
+
+          this.animateCameraTo(targetPos, targetLook, 800, () => {
+            this.controls.minDistance = 0.4;
+            this.controls.maxDistance = 4.0;
+            this.jarvis.speak("Returned to workbench laboratory viewpoint.");
+          });
+        }
+      }
+
+      animateCameraTo(targetPos, targetLook, duration = 800, onComplete = null) {
+        const startPos = this.camera.position.clone();
+        const startLook = this.controls.target.clone();
+        const startTime = performance.now();
+
+        const anim = (time) => {
+          const elapsed = time - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const ease = 1 - Math.pow(1 - progress, 3);
+
+          this.camera.position.lerpVectors(startPos, targetPos, ease);
+          this.controls.target.lerpVectors(startLook, targetLook, ease);
+
+          if (progress < 1) {
+            requestAnimationFrame(anim);
+          } else {
+            if (onComplete) onComplete();
+          }
+        };
+        requestAnimationFrame(anim);
+      }
+
+      animateOpenGateAndEnter() {
+        this.sound.playHydraulicGateWhoosh();
+        this.env.keypadLensMat.color.setHex(0x00ff88);
+
+        const startTime = performance.now();
+        const duration = 1400;
+
+        const startDoorL = this.env.doorLeft.position.x;
+        const startDoorR = this.env.doorRight.position.x;
+        const targetDoorL = -1.2;
+        const targetDoorR = 1.2;
+
+        const startCamZ = this.camera.position.z;
+        const startCamY = this.camera.position.y;
+        const targetCamZ = 0.65;
+        const targetCamY = 1.25;
+
+        const startTargetZ = this.controls.target.z;
+        const targetTargetZ = -0.65;
+
+        const animate = (now) => {
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const ease = 1 - Math.pow(1 - progress, 3);
+
+          this.env.doorLeft.position.x = startDoorL + (targetDoorL - startDoorL) * ease;
+          this.env.doorRight.position.x = startDoorR + (targetDoorR - startDoorR) * ease;
+
+          this.camera.position.z = startCamZ + (targetCamZ - startCamZ) * ease;
+          this.camera.position.y = startCamY + (targetCamY - startCamY) * ease;
+          this.controls.target.z = startTargetZ + (targetTargetZ - startTargetZ) * ease;
+          this.controls.target.y = 0.95;
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            this.fsm.enterState(STATES.STEP2_ISOLATOR_OFF);
+          }
+        };
+        requestAnimationFrame(animate);
+      }
+
+      animateOpenLid() {
+        const startY = this.env.lidPivot.rotation.y;
+        const targetY = Math.PI * 0.55;
+        const startTime = performance.now();
+        const duration = 600;
+
+        const animate = (time) => {
+          const elapsed = time - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const ease = 1 - Math.pow(1 - progress, 3);
+          this.env.lidPivot.rotation.y = startY + (targetY - startY) * ease;
+          if (progress < 1) requestAnimationFrame(animate);
+          else this.animateRotarySwitch();
+        };
+        requestAnimationFrame(animate);
+      }
+
+      animateRotarySwitch() {
+        this.sound.playSwitchClick();
+        const startZ = this.env.rotaryKnob.rotation.z;
+        const targetZ = -Math.PI / 2;
+        const startTime = performance.now();
+        const duration = 350;
+
+        const animate = (time) => {
+          const elapsed = time - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const ease = 1 - Math.pow(1 - progress, 3);
+          this.env.rotaryKnob.rotation.z = startZ + (targetZ - startZ) * ease;
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            this.fsm.setCircuitDeenergized();
+            this.env.ledMat.color.setHex(0x00ff66);
+            this.env.ledMat.emissive.setHex(0x00ff66);
+            this.env.ledLight.color.setHex(0x00ff66);
+            this.fsm.enterState(STATES.STEP3_VERIFY_VOLTAGE);
+          }
+        };
+        requestAnimationFrame(animate);
+      }
+
+      handleProbingInteraction() {
+        if (this.fsm.circuitEnergized) {
+          this.env.updateDMMDisplay("480.0 V", "HIGH VOLTAGE DANGER");
+          this.fsm.triggerArcFlashViolation();
+          return;
+        }
+
+        if (this.fsm.currentState === STATES.STEP3_VERIFY_VOLTAGE) {
+          this.sound.playProbeBeep();
+          const pStartRed = this.env.redProbe.position.clone();
+          const pStartBlack = this.env.blackProbe.position.clone();
+          const pTargetRed = new THREE.Vector3(0.045, 0.88, -0.61);
+          const pTargetBlack = new THREE.Vector3(0.095, 0.88, -0.61);
+
+          const startTime = performance.now();
+          const duration = 500;
+
+          const animate = (time) => {
+            const elapsed = time - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+
+            this.env.redProbe.position.lerpVectors(pStartRed, pTargetRed, ease);
+            this.env.blackProbe.position.lerpVectors(pStartBlack, pTargetBlack, ease);
+            this.env.updateLeadLines();
+
+            if (progress < 1) {
+              requestAnimationFrame(animate);
+            } else {
+              this.env.updateDMMDisplay("0.00 V", "SAFE TO TOUCH");
+              setTimeout(() => {
+                this.fsm.enterState(STATES.STEP4_CORRECT_CIRCUIT);
+              }, 400);
+            }
+          };
+          requestAnimationFrame(animate);
+        }
+      }
+
+      animateCorrectCircuit() {
+        this.sound.playFuseSnap();
+        const startY = this.env.fuseMesh.position.y;
+        const targetY = 0.12;
+        const startTime = performance.now();
+        const duration = 400;
+
+        const animateOut = (time) => {
+          const elapsed = time - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const ease = 1 - Math.pow(1 - progress, 3);
+          this.env.fuseMesh.position.y = startY + (targetY - startY) * ease;
+
+          if (progress < 1) {
+            requestAnimationFrame(animateOut);
+          } else {
+            this.env.fuseMesh.visible = false;
+            this.sound.playFuseSnap();
+            this.scene.attach(this.env.replacementFuse);
+            this.env.replacementFuse.position.set(-0.07, 0.89, -0.585);
+            this.env.replacementFuse.rotation.set(0, 0, 0);
+
+            setTimeout(() => {
+              this.fsm.enterState(STATES.STEP5_OPEN_TOOLBOX);
+            }, 500);
+          }
+        };
+        requestAnimationFrame(animateOut);
+      }
+
+      animateOpenToolbox() {
+        this.sound.playToolboxOpen();
+        const startRot = this.env.toolboxLidPivot.rotation.x;
+        const targetRot = -Math.PI * 0.55;
+        const startTime = performance.now();
+        const duration = 500;
+
+        const animate = (time) => {
+          const elapsed = time - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const ease = 1 - Math.pow(1 - progress, 3);
+          this.env.toolboxLidPivot.rotation.x = startRot + (targetRot - startRot) * ease;
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            this.fsm.enterState(STATES.STEP6_INSTALL_BATTERY);
+          }
+        };
+        requestAnimationFrame(animate);
+      }
+
+      animateInstallBattery() {
+        const startPos = this.env.batteryPack.position.clone();
+        const targetPos = new THREE.Vector3(-0.85, 0.76, -0.56);
+        const startTime = performance.now();
+        const duration = 750;
+
+        const animate = (time) => {
+          const elapsed = time - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const ease = 1 - Math.pow(1 - progress, 3);
+
+          this.env.batteryPack.position.lerpVectors(startPos, targetPos, ease);
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            this.sound.playBatteryDocking();
+            this.env.bayLedMat.color.setHex(0x00ff88);
+            this.env.bayLedMat.emissive.setHex(0x00ff88);
+            this.fsm.enterState(STATES.COMPLETED);
+          }
+        };
+        requestAnimationFrame(animate);
+      }
+
+      setupWebXRControllers() {
+        this.controller1 = this.renderer.xr.getController(0);
+        this.controller2 = this.renderer.xr.getController(1);
+
+        const buildController = (controller) => {
+          const beamGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0, 0, -2.5)
+          ]);
+          const beamMat = new THREE.LineBasicMaterial({
+            color: 0x00e5ff,
+            transparent: true,
+            opacity: 0.65,
+            blending: THREE.AdditiveBlending
+          });
+          const beam = new THREE.Line(beamGeo, beamMat);
+          beam.name = 'laser';
+          controller.add(beam);
+
+          controller.addEventListener('selectstart', () => this.onXRSelect(controller));
+          controller.addEventListener('squeezestart', () => this.onXRSqueeze(controller));
+          this.scene.add(controller);
+        };
+
+        buildController(this.controller1);
+        buildController(this.controller2);
+
+        const controllerModelFactory = new XRControllerModelFactory();
+        this.controllerGrip1 = this.renderer.xr.getControllerGrip(0);
+        this.controllerGrip1.add(controllerModelFactory.createControllerModel(this.controllerGrip1));
+        this.scene.add(this.controllerGrip1);
+
+        this.controllerGrip2 = this.renderer.xr.getControllerGrip(1);
+        this.controllerGrip2.add(controllerModelFactory.createControllerModel(this.controllerGrip2));
+        this.scene.add(this.controllerGrip2);
+      }
+
+      onXRSelect(controller) {
+        const tempMatrix = new THREE.Matrix4();
+        tempMatrix.identity().extractRotation(controller.matrixWorld);
+
+        const ray = new THREE.Raycaster();
+        ray.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+        ray.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+
+        const intersects = ray.intersectObjects(this.env.interactiveObjects, true);
+        if (intersects.length > 0) {
+          let target = intersects[0].object;
+          while (target.parent && !target.name) target = target.parent;
+          if (controller.gamepad?.hapticActuators?.[0]) {
+            controller.gamepad.hapticActuators[0].pulse(0.7, 80);
+          }
+          this.handleDirectInteraction(target);
+        }
+      }
+
+      onXRSqueeze(controller) {
+        // Grip button toggles microphone listening in VR!
+        this.micListener.toggleListening();
+        if (controller.gamepad?.hapticActuators?.[0]) {
+          controller.gamepad.hapticActuators[0].pulse(0.8, 100);
+        }
+      }
+
+      setupWaveformVisualizer() {
+        this.waveCanvas = document.getElementById('speech-waveform-canvas');
+        this.waveCtx = this.waveCanvas.getContext('2d');
+      }
+
+      renderWaveform() {
+        const c = this.waveCtx;
+        const w = this.waveCanvas.width;
+        const h = this.waveCanvas.height;
+        c.clearRect(0, 0, w, h);
+
+        const isSpeaking = this.jarvis.isSpeaking;
+        const isListening = this.micListener.isListening;
+        const time = this.clock.getElapsedTime();
+
+        // Check real frequency data if analyser is active
+        let micEnergy = 0;
+        if (this.sound.analyser && this.sound.dataArray) {
+          this.sound.analyser.getByteFrequencyData(this.sound.dataArray);
+          let sum = 0;
+          for (let i = 0; i < this.sound.dataArray.length; i++) sum += this.sound.dataArray[i];
+          micEnergy = (sum / this.sound.dataArray.length) / 255;
+        }
+
+        c.beginPath();
+        if (isListening) {
+          c.strokeStyle = "#ff9100"; // Amber when listening to user
+        } else if (isSpeaking) {
+          c.strokeStyle = "#00e5ff"; // Cyan when Jarvis speaks
+        } else {
+          c.strokeStyle = "rgba(0, 229, 255, 0.4)";
+        }
+        c.lineWidth = 2;
+
+        const points = 32;
+        for (let i = 0; i <= points; i++) {
+          const x = (i / points) * w;
+          let amp = 2.5;
+          if (isListening) {
+            amp = 3 + micEnergy * 16 + 4 * Math.sin(time * 12 + i * 0.7);
+          } else if (isSpeaking) {
+            amp = 6 + 10 * Math.sin(time * 15 + i * 0.8);
+          }
+          const y = (h / 2) + Math.sin(time * 4 + i * 0.4) * amp;
+          if (i === 0) c.moveTo(x, y);
+          else c.lineTo(x, y);
+        }
+        c.stroke();
+      }
+
+      bindDOMEvents() {
+        // Microphone toggle button
+        document.getElementById('btn-mic-toggle').addEventListener('click', () => {
+          this.micListener.toggleListening();
+        });
+
+        // Rooftop Solar Array View button
+        document.getElementById('btn-rooftop-view')?.addEventListener('click', () => {
+          this.toggleRooftopView();
+        });
+
+        document.getElementById('btn-replay-voice').addEventListener('click', () => {
+          this.sound.ensureUnlocked();
+          this.jarvis.repeat();
+        });
+
+        document.getElementById('btn-action-help').addEventListener('click', () => {
+          this.sound.ensureUnlocked();
+          switch (this.fsm.currentState) {
+            case STATES.STEP1_GATE_ENTRY:
+              this.animateOpenGateAndEnter();
+              break;
+            case STATES.STEP2_ISOLATOR_OFF:
+              this.animateOpenLid();
+              break;
+            case STATES.STEP3_VERIFY_VOLTAGE:
+              this.handleProbingInteraction();
+              break;
+            case STATES.STEP4_CORRECT_CIRCUIT:
+              this.animateCorrectCircuit();
+              break;
+            case STATES.STEP5_OPEN_TOOLBOX:
+              this.animateOpenToolbox();
+              break;
+            case STATES.STEP6_INSTALL_BATTERY:
+              this.animateInstallBattery();
+              break;
+          }
+        });
+
+        document.getElementById('btn-reset-scene').addEventListener('click', () => {
+          this.resetAll();
+        });
+
+        document.getElementById('btn-modal-restart').addEventListener('click', () => {
+          this.resetAll();
+        });
+      }
+
+      resetAll() {
+        this.sound.ensureUnlocked();
+        if (this.isRooftopView) {
+          this.isRooftopView = false;
+          const btn = document.getElementById('btn-rooftop-view');
+          const label = document.getElementById('rooftop-btn-label');
+          if (btn) btn.classList.remove('btn-primary');
+          if (label) label.textContent = "ROOFTOP ARRAY";
+          this.controls.minDistance = 0.4;
+          this.controls.maxDistance = 4.0;
+        }
+        this.env.reset();
+        this.camera.position.set(0, 1.4, 2.6);
+        this.controls.target.set(0, 1.3, 1.8);
+        this.fsm.reset();
+        this.micListener.setLiveTranscript("System reset. Say: 'Jarvis, open gate'");
+      }
+
+      resetCamera() {
+        if (this.fsm.currentState === STATES.STEP1_GATE_ENTRY) {
+          this.camera.position.set(0, 1.4, 2.6);
+          this.controls.target.set(0, 1.3, 1.8);
+        } else {
+          this.camera.position.set(0, 1.25, 0.65);
+          this.controls.target.set(0, 0.95, -0.65);
+        }
+      }
+
+      onWindowResize() {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      render(timestamp, frame) {
+        const delta = this.clock.getDelta();
+        const time = this.clock.getElapsedTime();
+
+        if (!this.renderer.xr.isPresenting) {
+          this.controls.update();
+        } else {
+          const headPos = this.renderer.xr.getCamera().position;
+          this.diegeticHUD.mesh.lookAt(headPos.x, headPos.y * 0.9, headPos.z);
+        }
+
+        this.ghostGuides.update(delta);
+        this.renderWaveform();
+
+        if (Math.floor(time * 20) % 2 === 0) {
+          this.diegeticHUD.renderCanvas(this.jarvis.isSpeaking || this.micListener.isListening, time);
+        }
+
+        if (this.env.completionBadgeGroup.visible) {
+          this.env.completionBadgeGroup.rotation.z += delta * 0.8;
+        }
+
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      window.app = new WebXRTrainingApp();
+    });
+  </script>
+</body>
+</html>
