@@ -19,9 +19,28 @@ The prototype runs seamlessly on desktop browsers (via OrbitControls, mouse drag
 | **Voice & Mic Engine** | Web Speech API (`SpeechRecognition`) + `getUserMedia` | Real-time hands-free speech recognition; mic audio stream drives holographic waveforms dynamically. Includes voice inquiries for safety gear and equipment diagnostics. |
 | **Render Engine** | Three.js (r168) + WebXR Device API | Instant execution via standard URL without heavyweight game engine binaries. |
 | **Diegetic 3D HUD** | Canvas-backed 3D texture (`THREE.CanvasTexture`) | In-world floating HUD (1.25m high) with live telemetry, voice transcripts, and animated audio waveform. |
-| **Logic & State Engine** | JavaScript FSM (State Pattern) | Enforces strict 6-step OSHA LOTO & equipment service procedure. |
+| **Multilingual Voice & HUD** | Web Speech API (`hi-IN` / `en-US`) + Dynamic DOM Localization | One-click language switch between English and Hindi (`EN | हिंदी`). When opted, Jarvis speaks authentic Hindi voice guidance, understands Hindi voice commands ("जार्विस गेट खोलो", "स्विच बंद करो", "वोल्टेज चेक करो", etc.), and updates Task Guide & HUD controls in real time. |
+| **Logic & State Engine** | JavaScript FSM (State Pattern) | Enforces strict 6-step OSHA LOTO & equipment service procedure with bilingual audio debriefs. |
 | **Hologram Shaders** | `THREE.AdditiveBlending` + procedural wireframes | Glowing cyan pulsing "Ghost Guides" showing exact target orientation for hands and tools. |
-| **Audio & Speech** | Web Audio API + Web Speech API (`speechSynthesis`) | Socratic Jarvis mentor voice prompts, dynamic reactive waveform, and procedural SFX (hydraulics, clicks, relays, arc buzz, battery docking, camera swoosh, solar telemetry chime). |
+| **Audio & Speech** | Web Audio API + Web Speech API (`speechSynthesis`) | Socratic Jarvis mentor voice prompts in English and Hindi, dynamic reactive waveform, and procedural SFX (hydraulics, clicks, relays, arc buzz, battery docking, camera swoosh, solar telemetry chime). |
+
+---
+
+## Multilingual Support: English & हिंदी (Hindi Option)
+
+The simulator includes a native **Hindi (हिंदी)** mode for all audio instructions, voice recognition, and HUD interface elements:
+
+1. **How to Toggle**:
+   - Click the **`EN | हिंदी`** toggle in the top Jarvis card.
+   - Click the **`🌐 EN / हिंदी`** button in the bottom action bar.
+   - Press **`L`** on your keyboard anytime.
+   - Speak naturally: *"Jarvis, speak in Hindi"* or *"जार्विस, हिंदी में बोलो"*.
+
+2. **Full Hindi Experience**:
+   - **Jarvis Spoken Directives**: Synthesized using high-definition Hindi neural/speech synthesis voices (`hi-IN`) across all 6 training steps, safety warnings, equipment inspections, and the final Report Card audit.
+   - **Hindi Voice Recognition**: Microphone listens for both Devanagari script and transliterated Hindi/Hinglish commands.
+   - **Bilingual Task Guide HUD**: Task step tags (`चरण 1 / 6`), step titles (`मुख्य गेट खोलें`, `सुरक्षित अलगाव`), instructions, and progress pills (`1. मुख्य गेट`, `2. सुरक्षित अलगाव`, etc.) dynamically update into Hindi.
+   - **Bilingual Action Controls**: Bottom action buttons update to `टास्क गाइड`, `रूफटॉप सोलर`, `जार्विस से बोलें`, `जार्विस दोहराएं`, `चरण निष्पादित करें`, and `रीसेट`.
 
 ---
 
@@ -29,25 +48,27 @@ The prototype runs seamlessly on desktop browsers (via OrbitControls, mouse drag
 
 Click the **"TALK TO JARVIS"** button on the HUD or press **`M`** (or squeeze the controller grip in VR) to activate voice listening:
 
-| Voice Command | Action Executed by Jarvis |
-| :--- | :--- |
-| **"Jarvis, open the gate"** / *"open door"* / *"enter"* | Unlocks security blast door, slides gates open, and walks into the lab. |
-| **"Jarvis, check solar panels"** / *"check roof voltage"* / *"inspect solar"* | Transitions camera up to the rooftop solar array and reads live open-circuit voltage ($480.0\text{V}$) and irradiance. |
-| **"Jarvis, isolate circuit"** / *"turn off switch"* / *"open lid"* | Swings open combiner box lid and rotates DC isolator to 0V. |
-| **"Jarvis, verify voltage"** / *"probe terminals"* / *"test voltage"* | Deploys multimeter probes to verify 0.00V potential. |
-| **"Jarvis, replace fuse"** / *"fix circuit"* / *"correct circuit"* | Extracts blown cartridge fuse and inserts fresh replacement fuse. |
-| **"Jarvis, open toolbox"** / *"open tool chest"* / *"get tools"* | Unlatches and opens the industrial tool box on the workbench. |
-| **"Jarvis, install battery"** / *"mount battery"* / *"dock battery"* | Mounts 48V Lithium Battery Pack into Energy Storage Rack bay. |
-| **"Jarvis, workbench view"** / *"return to lab"* / *"go back down"* | Smoothly glides camera back down from the roof to the workbench. |
-| **"Jarvis, hide guide"** / *"close guide"* / *"show guide"* | Hides or shows the floating task guide window to clear the execution line of sight. |
-| **"Jarvis, check fire extinguisher"** / *"extinguisher"* | Jarvis inspects the Class C CO2 extinguisher, pressure gauge, and annual certification tag. |
-| **"Jarvis, check eyewash"** / *"eye wash"* | Jarvis verifies the emergency eyewash station nozzles and stay-open valve. |
-| **"Jarvis, check PPE"** / *"safety gloves"* / *"hard hat"* | Jarvis reports readiness of Class 0 1000V insulating rubber gloves and dielectric helmet. |
-| **"Jarvis, check tools"** / *"pegboard"* / *"pliers"* | Jarvis audits the 1000V VDE insulated hand tool set on the pegboard. |
-| **"Jarvis, check oscilloscope"** / *"power analyzer"* | Jarvis reports digital power analyzer telemetry and 480V DC bus waveform ripple. |
-| **"Jarvis, status report"** / *"telemetry"* | Jarvis speaks live status (current step, bus voltage, solar array Voc, safety score). |
-| **"Jarvis, repeat instructions"** | Jarvis speaks current step instructions aloud. |
-| **"Jarvis, reset"** / *"restart"* | Restores simulation to the beginning outside the main gate. |
+| Voice Command (English) | Voice Command (हिंदी) | Action Executed by Jarvis |
+| :--- | :--- | :--- |
+| **"Jarvis, open the gate"** / *"enter"* | **"जार्विस गेट खोलो"** / *"दरवाजा खोलो"* | Unlocks security blast door, slides gates open, and walks into the lab. |
+| **"Jarvis, check solar panels"** | **"जार्विस सोलर पैनल चेक करो"** / *"छत का वोल्टेज"* | Transitions camera up to the rooftop solar array and reads live $V_{oc}$ ($480.0\text{V}$) and irradiance. |
+| **"Jarvis, isolate circuit"** / *"turn off switch"* | **"जार्विस स्विच बंद करो"** / *"ढक्कन खोलो"* | Swings open combiner box lid and rotates DC isolator to 0V. |
+| **"Jarvis, verify voltage"** / *"probe terminals"* | **"जार्विस वोल्टेज चेक करो"** / *"प्रोब लगाओ"* | Deploys multimeter probes to verify 0.00V potential. |
+| **"Jarvis, replace fuse"** / *"fix circuit"* | **"जार्विस फ्यूज बदलो"** / *"सर्किट ठीक करो"* | Extracts blown cartridge fuse and inserts fresh replacement fuse. |
+| **"Jarvis, open toolbox"** / *"get tools"* | **"जार्विस टूलबॉक्स खोलो"** / *"टूल बॉक्स"* | Unlatches and opens the industrial tool box on the workbench. |
+| **"Jarvis, install battery"** / *"mount battery"* | **"जार्विस बैटरी लगाओ"** / *"बैटरी पैक"* | Mounts 48V Lithium Battery Pack into Energy Storage Rack bay. |
+| **"Jarvis, speak in Hindi"** / *"Hindi mode"* | **"जार्विस हिंदी में बात करो"** / *"हिंदी मोड"* | Switches language mode to Hindi with spoken confirmation. |
+| **"Jarvis, speak in English"** | **"जार्विस अंग्रेजी में बोलो"** / *"इंग्लिश मोड"* | Switches language mode back to English. |
+| **"Jarvis, workbench view"** / *"return to lab"* | **"जार्विस लैब में वापस जाओ"** / *"वर्कबेंच दृश्य"* | Smoothly glides camera back down from the roof to the workbench. |
+| **"Jarvis, hide guide"** / *"show guide"* | **"जार्विस गाइड छुपाओ"** / *"गाइड दिखाओ"* | Hides or shows the floating task guide window to clear the line of sight. |
+| **"Jarvis, check fire extinguisher"** | **"जार्विस अग्निशामक चेक करो"** | Jarvis inspects the Class C CO2 extinguisher and pressure gauge. |
+| **"Jarvis, check eyewash"** | **"जार्विस आईवॉश स्टेशन"** | Jarvis verifies the emergency eyewash station nozzles and flow rate. |
+| **"Jarvis, check PPE"** / *"gloves"* | **"जार्विस सुरक्षा दस्ताने"** / *"पीपीई किट"* | Jarvis reports readiness of Class 0 1000V insulating rubber gloves and helmet. |
+| **"Jarvis, check tools"** / *"pliers"* | **"जार्विस इंसुलेटेड टूल्स"** / *"औजार"* | Jarvis audits the 1000V VDE insulated hand tool set on the pegboard. |
+| **"Jarvis, check oscilloscope"** | **"जार्विस ऑसिलोस्कोप"** / *"पावर विश्लेषक"* | Jarvis reports digital power analyzer telemetry and DC bus ripple. |
+| **"Jarvis, show report card"** | **"जार्विस रिपोर्ट कार्ड दिखाओ"** | Opens the training audit report card modal. |
+| **"Jarvis, repeat instructions"** | **"जार्विस दोहराएं"** / *"फिर से बोलो"* | Jarvis speaks current step instructions aloud. |
+| **"Jarvis, reset"** / *"restart"* | **"जार्विस रीसेट करो"** / *"दोबारा शुरू करो"* | Restores simulation to the beginning outside the main gate. |
 
 ---
 

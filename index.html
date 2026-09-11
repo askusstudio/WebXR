@@ -533,21 +533,65 @@
     @keyframes mic-pulse {
       0% { box-shadow: 0 0 10px var(--amber-dim); }
       100% { box-shadow: 0 0 24px rgba(255, 145, 0, 0.6); }
+    .btn-lang-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .btn-lang-toggle:hover {
+      border-color: var(--cyan-glow);
+      background: rgba(0, 229, 255, 0.12);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+    }
+
+    .btn-lang-toggle .lang-code {
+      color: var(--text-dim);
+      transition: color 0.2s;
+    }
+
+    .btn-lang-toggle .lang-code.active {
+      color: var(--cyan-glow);
+      text-shadow: 0 0 8px rgba(0, 229, 255, 0.7);
+      font-weight: 900;
+    }
+
+    .btn-lang-toggle .lang-divider {
+      color: rgba(255, 255, 255, 0.25);
+      font-size: 9px;
     }
 
     #VRButton {
       font-family: var(--font-mono) !important;
-      font-size: 12px !important;
+      font-size: 11px !important;
       font-weight: 700 !important;
-      letter-spacing: 1.5px !important;
+      letter-spacing: 1px !important;
       border-radius: 6px !important;
-      background: rgba(0, 229, 255, 0.22) !important;
+      background: rgba(0, 229, 255, 0.15) !important;
       border: 1px solid var(--cyan-glow) !important;
       color: var(--cyan-glow) !important;
-      box-shadow: 0 0 16px var(--cyan-dim) !important;
-      padding: 10px 20px !important;
+      box-shadow: 0 0 14px var(--cyan-dim) !important;
+      padding: 7px 14px !important;
       text-transform: uppercase !important;
       transition: all 0.2s ease !important;
+      position: fixed !important;
+      top: 92px !important;
+      left: 24px !important;
+      right: auto !important;
+      bottom: auto !important;
+      transform: none !important;
+      z-index: 50 !important;
     }
 
     #VRButton:hover {
@@ -972,10 +1016,18 @@
         </div>
       </div>
 
-      <div class="glass-card center-jarvis-card">
-        <div class="jarvis-status-row">
-          <div class="jarvis-dot" id="jarvis-dot"></div>
-          <span id="jarvis-status-text">JARVIS ACTIVE // MONITORING</span>
+      <div class="glass-card center-jarvis-card interactive-ui">
+        <div class="jarvis-status-row" style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <div class="jarvis-dot" id="jarvis-dot"></div>
+            <span id="jarvis-status-text">JARVIS ACTIVE // MONITORING</span>
+          </div>
+          <!-- Language Toggle (EN / HI) -->
+          <button class="btn-lang-toggle" id="btn-language-toggle" title="Switch Language / भाषा बदलें (English / हिंदी)">
+            <span class="lang-code active" id="lang-code-en">EN</span>
+            <span class="lang-divider">|</span>
+            <span class="lang-code" id="lang-code-hi">हिंदी</span>
+          </button>
         </div>
         <canvas id="speech-waveform-canvas" width="280" height="32"></canvas>
         <div class="live-speech-row" id="live-speech-row">
@@ -1049,7 +1101,7 @@
 
     <!-- Bottom Deck Controls -->
     <div class="bottom-bar">
-      <div class="glass-card controls-help-card interactive-ui">
+      <div class="glass-card controls-help-card interactive-ui" id="controls-help-card">
         <div><span>Voice:</span> Press <span>M</span> or click Mic | Speak: <em>"Jarvis, open gate"</em>, <em>"check solar panels"</em>, <em>"isolate switch"</em></div>
         <div><span>Guide HUD:</span> Drag title bar to move | <span>H</span> to Hide/Show | <span>T</span> for Roof PV | WASD to Walk</div>
       </div>
@@ -1100,11 +1152,17 @@
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
           </svg>
-          JARVIS REPEAT
+          <span id="replay-btn-label">JARVIS REPEAT</span>
+        </button>
+
+        <!-- Bottom Language Toggle Button -->
+        <button class="btn-hud" id="btn-lang-bottom" title="Switch Voice Language / भाषा बदलें (English / हिंदी)">
+          <span style="font-size: 13px;">🌐</span>
+          <span id="lang-btn-label">EN / हिंदी</span>
         </button>
 
         <button class="btn-hud btn-primary" id="btn-action-help" title="Perform active step directly">
-          INTERACT STEP
+          <span id="action-step-btn-label">INTERACT STEP</span>
         </button>
 
         <!-- View Report Card Button (visible when module completed) -->
@@ -1116,11 +1174,11 @@
             <line x1="16" y1="17" x2="8" y2="17"></line>
             <polyline points="10 9 9 9 8 9"></polyline>
           </svg>
-          REPORT CARD
+          <span id="report-btn-label">REPORT CARD</span>
         </button>
 
         <button class="btn-hud" id="btn-reset-scene" title="Reset procedure">
-          RESET
+          <span id="reset-btn-label">RESET</span>
         </button>
       </div>
     </div>
@@ -1552,19 +1610,33 @@
         this.soundEngine = soundEngine;
         this.isSpeaking = false;
         this.speechSynth = window.speechSynthesis;
-        this.selectedVoice = null;
+        this.selectedVoiceEn = null;
+        this.selectedVoiceHi = null;
         this.lastSpokenText = '';
+        this.lastSpokenObj = null;
+        this.language = 'en'; // 'en' or 'hi'
         this.loadVoices();
+      }
+
+      setLanguage(lang) {
+        this.language = lang === 'hi' ? 'hi' : 'en';
       }
 
       loadVoices() {
         if (!this.speechSynth) return;
         const updateVoices = () => {
           const voices = this.speechSynth.getVoices();
-          this.selectedVoice = voices.find(v => v.name.includes('UK English Male') || v.name.includes('Daniel') || v.name.includes('Google UK English Male'))
+          // English voice priority: British English Male / Daniel / Google UK / general EN
+          this.selectedVoiceEn = voices.find(v => v.name.includes('UK English Male') || v.name.includes('Daniel') || v.name.includes('Google UK English Male'))
             || voices.find(v => v.lang === 'en-GB')
             || voices.find(v => v.lang.startsWith('en'))
             || voices[0];
+
+          // Hindi voice priority: hi-IN, Kalpana, Hemant, Google हिन्दी, or Indian English fallback
+          this.selectedVoiceHi = voices.find(v => v.lang === 'hi-IN' || v.lang.startsWith('hi'))
+            || voices.find(v => v.name.toLowerCase().includes('hindi') || v.name.toLowerCase().includes('india') || v.name.toLowerCase().includes('kalpana') || v.name.toLowerCase().includes('hemant'))
+            || voices.find(v => v.lang.includes('IN'))
+            || this.selectedVoiceEn;
         };
         updateVoices();
         if (this.speechSynth.onvoiceschanged !== undefined) {
@@ -1572,40 +1644,71 @@
         }
       }
 
-      speak(text, priority = false) {
+      speak(textOrObj, priority = false) {
         if (!this.speechSynth) return;
         if (this.speechSynth.speaking) {
           if (priority) this.speechSynth.cancel();
           else return;
         }
 
+        this.lastSpokenObj = textOrObj;
+        let text = '';
+        if (typeof textOrObj === 'object' && textOrObj !== null) {
+          text = this.language === 'hi' && textOrObj.hi ? textOrObj.hi : (textOrObj.en || textOrObj.hi || '');
+        } else {
+          text = String(textOrObj || '');
+        }
+
         this.lastSpokenText = text;
         const utterance = new SpeechSynthesisUtterance(text);
-        if (this.selectedVoice) utterance.voice = this.selectedVoice;
-        utterance.rate = 1.05;
-        utterance.pitch = 0.95;
+
+        if (this.language === 'hi') {
+          utterance.lang = 'hi-IN';
+          if (this.selectedVoiceHi) utterance.voice = this.selectedVoiceHi;
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+        } else {
+          utterance.lang = 'en-GB';
+          if (this.selectedVoiceEn) utterance.voice = this.selectedVoiceEn;
+          utterance.rate = 1.05;
+          utterance.pitch = 0.95;
+        }
 
         utterance.onstart = () => {
           this.isSpeaking = true;
-          document.getElementById('jarvis-status-text').textContent = "JARVIS SPEAKING // DIRECTIVE";
+          const statusElem = document.getElementById('jarvis-status-text');
+          if (statusElem) {
+            statusElem.textContent = this.language === 'hi' ? "जार्विस बोल रहा है // निर्देश" : "JARVIS SPEAKING // DIRECTIVE";
+          }
         };
 
         utterance.onend = () => {
           this.isSpeaking = false;
           const micActive = window.app?.micListener?.isListening;
-          document.getElementById('jarvis-status-text').textContent = micActive ? "JARVIS LISTENING // VOICE ACTIVE" : "JARVIS ACTIVE // MONITORING";
+          const statusElem = document.getElementById('jarvis-status-text');
+          if (statusElem) {
+            if (this.language === 'hi') {
+              statusElem.textContent = micActive ? "जार्विस सुन रहा है // माइक्रोफोन चालू" : "जार्विस सक्रिय // निगरानी जारी";
+            } else {
+              statusElem.textContent = micActive ? "JARVIS LISTENING // VOICE ACTIVE" : "JARVIS ACTIVE // MONITORING";
+            }
+          }
         };
 
         utterance.onerror = () => {
           this.isSpeaking = false;
-          document.getElementById('jarvis-status-text').textContent = "JARVIS READY";
+          const statusElem = document.getElementById('jarvis-status-text');
+          if (statusElem) {
+            statusElem.textContent = this.language === 'hi' ? "जार्विस तैयार" : "JARVIS READY";
+          }
         };
 
         this.speechSynth.speak(utterance);
       }
 
       repeat() {
-        if (this.lastSpokenText) this.speak(this.lastSpokenText, true);
+        if (this.lastSpokenObj) this.speak(this.lastSpokenObj, true);
+        else if (this.lastSpokenText) this.speak(this.lastSpokenText, true);
       }
     }
 
@@ -1615,12 +1718,20 @@
     class JarvisMicListener {
       constructor(app) {
         this.app = app;
+        this.language = 'en';
         this.isListening = false;
         this.recognition = null;
         this.hasMicPermission = false;
         this.micStream = null;
 
         this.setupRecognition();
+      }
+
+      setLanguage(lang) {
+        this.language = lang === 'hi' ? 'hi' : 'en';
+        if (this.recognition) {
+          this.recognition.lang = this.language === 'hi' ? 'hi-IN' : 'en-US';
+        }
       }
 
       setupRecognition() {
@@ -1751,88 +1862,154 @@
         }
       }
 
-      handleVoiceCommand(text) {
+      handleVoiceCommand(rawText) {
+        const text = (rawText || '').toLowerCase().trim();
         console.log("Voice Command Recognized:", text);
-        this.setLiveTranscript(`"${text}"`);
+        this.setLiveTranscript(`"${rawText}"`);
+
+        // Language toggle via voice
+        if (text.includes("hindi") || text.includes("हिंदी") || text.includes("speak in hindi") || text.includes("talk in hindi") || text.includes("हिंदी में") || text.includes("hindi mode")) {
+          this.app.setLanguage('hi');
+          return;
+        }
+
+        if (text.includes("english") || text.includes("अंग्रेजी") || text.includes("speak in english") || text.includes("talk in english") || text.includes("अंग्रेजी में") || text.includes("english mode")) {
+          this.app.setLanguage('en');
+          return;
+        }
 
         // Check command intents:
         // 1. Gate Entry
-        if (text.includes("gate") || text.includes("door") || text.includes("enter") || text.includes("unlock")) {
+        if (text.includes("gate") || text.includes("door") || text.includes("enter") || text.includes("unlock") ||
+            text.includes("गेट") || text.includes("दरवाजा") || text.includes("खोलो") || text.includes("खोलिए") || text.includes("प्रवेश")) {
           if (this.app.fsm.currentState === STATES.STEP1_GATE_ENTRY) {
-            this.app.jarvis.speak("Understood, sir. Initiating gate entry protocol.", true);
+            this.app.jarvis.speak({
+              en: "Understood, sir. Initiating gate entry protocol.",
+              hi: "समझ गया सर। मुख्य गेट खोला जा रहा है।"
+            }, true);
             this.app.animateOpenGateAndEnter();
           } else {
-            this.app.jarvis.speak("Facility gate is already open, sir.");
+            this.app.jarvis.speak({
+              en: "Facility gate is already open, sir.",
+              hi: "मुख्य गेट पहले से ही खुला हुआ है, सर।"
+            });
           }
           return;
         }
 
         // 2. Safe Isolation
         if (text.includes("isolate") || text.includes("switch") || text.includes("turn off") ||
-            text.includes("safe isolation") || text.includes("open lid") || text.includes("de-energize")) {
+            text.includes("safe isolation") || text.includes("open lid") || text.includes("de-energize") ||
+            text.includes("स्विच") || text.includes("आइसोलेट") || text.includes("ढक्कन") || text.includes("बंद करो")) {
           if (this.app.fsm.currentState === STATES.STEP2_ISOLATOR_OFF) {
-            this.app.jarvis.speak("Disengaging 480-volt DC rotary isolator.", true);
+            this.app.jarvis.speak({
+              en: "Disengaging 480-volt DC rotary isolator.",
+              hi: "480-वोल्ट डीसी रोटरी आइसोलेटर को बंद किया जा रहा है।"
+            }, true);
             this.app.animateOpenLid();
           } else if (this.app.fsm.currentState < STATES.STEP2_ISOLATOR_OFF) {
-            this.app.jarvis.speak("Sir, please open the main gate first.");
+            this.app.jarvis.speak({
+              en: "Sir, please open the main gate first.",
+              hi: "सर, कृपया पहले मुख्य गेट खोलें।"
+            });
           } else {
-            this.app.jarvis.speak("Circuit is already safely de-energized.");
+            this.app.jarvis.speak({
+              en: "Circuit is already safely de-energized.",
+              hi: "सर्किट पहले से ही सुरक्षित रूप से बंद है।"
+            });
           }
           return;
         }
 
         // 3. Probing / Voltage Verification
         if (text.includes("probe") || text.includes("voltage") || text.includes("multimeter") ||
-            text.includes("test") || text.includes("verify") || text.includes("measure")) {
+            text.includes("test") || text.includes("verify") || text.includes("measure") ||
+            text.includes("वोल्टेज") || text.includes("जांच") || text.includes("मल्टीमीटर") || text.includes("चेक") || text.includes("नापो")) {
           if (this.app.fsm.circuitEnergized) {
             this.app.handleProbingInteraction(); // triggers arc flash violation warning!
           } else if (this.app.fsm.currentState === STATES.STEP3_VERIFY_VOLTAGE) {
-            this.app.jarvis.speak("Deploying multimeter probes to verify zero potential.", true);
+            this.app.jarvis.speak({
+              en: "Deploying multimeter probes to verify zero potential.",
+              hi: "शून्य विभव की जांच के लिए मल्टीमीटर प्रोब्स लगाए जा रहे हैं।"
+            }, true);
             this.app.handleProbingInteraction();
           } else {
-            this.app.jarvis.speak("Voltage verification is already complete.");
+            this.app.jarvis.speak({
+              en: "Voltage verification is already complete.",
+              hi: "वोल्टेज सत्यापन पहले ही पूर्ण हो चुका है।"
+            });
           }
           return;
         }
 
         // 4. Correct Circuit / Fuse Replacement
         if (text.includes("fuse") || text.includes("circuit") || text.includes("replace") ||
-            text.includes("fix circuit") || text.includes("new fuse") || text.includes("correct")) {
+            text.includes("fix circuit") || text.includes("new fuse") || text.includes("correct") ||
+            text.includes("फ्यूज") || text.includes("सर्किट") || text.includes("बदलो") || text.includes("ठीक करो")) {
           if (this.app.fsm.currentState === STATES.STEP4_CORRECT_CIRCUIT) {
-            this.app.jarvis.speak("Extracting blown fuse and seating fresh replacement cartridge.", true);
+            this.app.jarvis.speak({
+              en: "Extracting blown fuse and seating fresh replacement cartridge.",
+              hi: "खराब फ्यूज निकाला जा रहा है और नया फ्यूज लगाया जा रहा है।"
+            }, true);
             this.app.animateCorrectCircuit();
           } else if (this.app.fsm.currentState < STATES.STEP4_CORRECT_CIRCUIT) {
-            this.app.jarvis.speak("Safety protocol requires verifying zero voltage before touching fuses.");
+            this.app.jarvis.speak({
+              en: "Safety protocol requires verifying zero voltage before touching fuses.",
+              hi: "सुरक्षा नियम के अनुसार फ्यूज छूने से पहले शून्य वोल्टेज जांचना अनिवार्य है।"
+            });
           } else {
-            this.app.jarvis.speak("Circuit continuity has already been corrected.");
+            this.app.jarvis.speak({
+              en: "Circuit continuity has already been corrected.",
+              hi: "सर्किट पहले ही ठीक किया जा चुका है।"
+            });
           }
           return;
         }
 
         // 5. Open Tool Box
         if (text.includes("toolbox") || text.includes("tool box") || text.includes("tool chest") ||
-            text.includes("tools") || text.includes("open box")) {
+            text.includes("tools") || text.includes("open box") ||
+            text.includes("टूलबॉक्स") || text.includes("औजार") || text.includes("पेटी") || text.includes("बक्सा")) {
           if (this.app.fsm.currentState === STATES.STEP5_OPEN_TOOLBOX) {
-            this.app.jarvis.speak("Unlatching equipment tool chest.", true);
+            this.app.jarvis.speak({
+              en: "Unlatching equipment tool chest.",
+              hi: "वर्कबेंच पर रखा टूलबॉक्स खोला जा रहा है।"
+            }, true);
             this.app.animateOpenToolbox();
           } else if (this.app.fsm.currentState < STATES.STEP5_OPEN_TOOLBOX) {
-            this.app.jarvis.speak("Please complete the combiner circuit correction first.");
+            this.app.jarvis.speak({
+              en: "Please complete the combiner circuit correction first.",
+              hi: "कृपया पहले कंबाइनर सर्किट की मरम्मत पूरी करें।"
+            });
           } else {
-            this.app.jarvis.speak("Tool box is already opened.");
+            this.app.jarvis.speak({
+              en: "Tool box is already opened.",
+              hi: "टूलबॉक्स पहले से खुला है।"
+            });
           }
           return;
         }
 
         // 6. Install Battery
         if (text.includes("battery") || text.includes("install") || text.includes("mount") ||
-            text.includes("dock") || text.includes("connect battery")) {
+            text.includes("dock") || text.includes("connect battery") ||
+            text.includes("बैटरी") || text.includes("लगाओ") || text.includes("रैक")) {
           if (this.app.fsm.currentState === STATES.STEP6_INSTALL_BATTERY) {
-            this.app.jarvis.speak("Mounting 48-volt lithium battery pack into storage rack.", true);
+            this.app.jarvis.speak({
+              en: "Mounting 48-volt lithium battery pack into storage rack.",
+              hi: "48-वोल्ट लिथियम बैटरी पैक को स्टोरेज रैक में स्थापित किया जा रहा है।"
+            }, true);
             this.app.animateInstallBattery();
           } else if (this.app.fsm.currentState < STATES.STEP6_INSTALL_BATTERY) {
-            this.app.jarvis.speak("We must access the tool box before installing the battery.");
+            this.app.jarvis.speak({
+              en: "We must access the tool box before installing the battery.",
+              hi: "बैटरी लगाने से पहले हमें टूलबॉक्स खोलना होगा।"
+            });
           } else {
-            this.app.jarvis.speak("Battery module is fully docked and online.");
+            this.app.jarvis.speak({
+              en: "Battery module is fully docked and online.",
+              hi: "बैटरी मॉड्यूल पूरी तरह से जुड़ गया है और ऑनलाइन है।"
+            });
           }
           return;
         }
@@ -1840,7 +2017,7 @@
         // 7. Rooftop Solar PV Array & Voltage Check
         if (text.includes("solar") || text.includes("roof") || text.includes("rooftop") ||
             text.includes("panel") || text.includes("photovoltaic") || text.includes("irradiance") ||
-            text.includes("voc")) {
+            text.includes("voc") || text.includes("सोलर") || text.includes("छत")) {
           if (!this.app.isRooftopView) {
             this.app.toggleRooftopView();
           } else {
@@ -1851,102 +2028,150 @@
 
         // 8. Return to Workbench View
         if (text.includes("workbench") || text.includes("lab") || text.includes("go back") ||
-            text.includes("downstairs") || text.includes("table")) {
+            text.includes("downstairs") || text.includes("table") || text.includes("वर्कबेंच") || text.includes("नीचे")) {
           if (this.app.isRooftopView) {
             this.app.toggleRooftopView();
           } else {
-            this.app.jarvis.speak("Already stationed at the workbench, sir.");
+            this.app.jarvis.speak({
+              en: "Already stationed at the workbench, sir.",
+              hi: "पहले से ही वर्कबेंच पर तैनात हैं, सर।"
+            });
           }
           return;
         }
 
         // 9. Hide / Show Task Guide HUD
-        if (text.includes("hide guide") || text.includes("close guide") || text.includes("remove guide") || text.includes("dismiss guide")) {
+        if (text.includes("hide guide") || text.includes("close guide") || text.includes("remove guide") || text.includes("dismiss guide") || text.includes("गाइड छुपाओ") || text.includes("गाइड बंद")) {
           const widget = document.getElementById('task-guide-widget');
           if (widget && !widget.classList.contains('hidden')) {
             this.app.toggleTaskGuide();
-            this.app.jarvis.speak("Task guide hidden, sir. Line of sight cleared. Press H or say 'show guide' to restore it.", true);
+            this.app.jarvis.speak({
+              en: "Task guide hidden, sir. Line of sight cleared. Press H or say 'show guide' to restore it.",
+              hi: "टास्क गाइड छुपा दी गई है, सर। देखने का रास्ता साफ है।"
+            }, true);
           } else {
-            this.app.jarvis.speak("Task guide is already hidden, sir.");
+            this.app.jarvis.speak({
+              en: "Task guide is already hidden, sir.",
+              hi: "टास्क गाइड पहले से ही छुपी हुई है, सर।"
+            });
           }
           return;
         }
 
-        if (text.includes("show guide") || text.includes("open guide") || text.includes("display guide")) {
+        if (text.includes("show guide") || text.includes("open guide") || text.includes("display guide") || text.includes("गाइड दिखाओ") || text.includes("गाइड खोलो")) {
           const widget = document.getElementById('task-guide-widget');
           if (widget && widget.classList.contains('hidden')) {
             this.app.toggleTaskGuide();
-            this.app.jarvis.speak("Task guide restored. You can click and drag its title bar anywhere on screen.", true);
+            this.app.jarvis.speak({
+              en: "Task guide restored. You can click and drag its title bar anywhere on screen.",
+              hi: "टास्क गाइड पुनः प्रदर्शित कर दी गई है।"
+            }, true);
           } else {
-            this.app.jarvis.speak("Task guide is already visible, sir.");
+            this.app.jarvis.speak({
+              en: "Task guide is already visible, sir.",
+              hi: "टास्क गाइड पहले से ही दिखाई दे रही है, सर।"
+            });
           }
           return;
         }
 
         // Utility: Reset
-        if (text.includes("reset") || text.includes("restart") || text.includes("start over")) {
-          this.app.jarvis.speak("Resetting simulation.", true);
+        if (text.includes("reset") || text.includes("restart") || text.includes("start over") || text.includes("रीसेट") || text.includes("फिर से शुरू")) {
+          this.app.jarvis.speak({
+            en: "Resetting simulation.",
+            hi: "सिम्युलेशन को रीसेट किया जा रहा है।"
+          }, true);
           this.app.resetAll();
           return;
         }
 
         // Utility: Repeat instructions
-        if (text.includes("repeat") || text.includes("what next") || text.includes("instructions")) {
+        if (text.includes("repeat") || text.includes("what next") || text.includes("instructions") || text.includes("दोहराओ") || text.includes("आगे क्या")) {
           this.app.jarvis.repeat();
           return;
         }
 
         // Performance Report Card / Evaluation
-        if (text.includes("report card") || text.includes("audit") || text.includes("evaluation") || text.includes("accuracy") || text.includes("grade") || text.includes("my score") || text.includes("how did i do")) {
+        if (text.includes("report card") || text.includes("audit") || text.includes("evaluation") || text.includes("accuracy") || text.includes("grade") || text.includes("my score") || text.includes("how did i do") ||
+            text.includes("रिपोर्ट") || text.includes("स्कोर") || text.includes("कार्ड") || text.includes("सटीकता") || text.includes("परिणाम")) {
           if (this.app.fsm.currentState === STATES.COMPLETED) {
             this.app.showReportCard();
-            this.app.jarvis.speak("Displaying your official training report card and performance audit.", true);
+            this.app.jarvis.speak({
+              en: "Displaying your official training report card and performance audit.",
+              hi: "आपका आधिकारिक प्रशिक्षण रिपोर्ट कार्ड और ऑडिट प्रदर्शित किया जा रहा है।"
+            }, true);
           } else {
             const totalPenalty = this.app.fsm.errors.reduce((sum, e) => sum + (e.penalty || 0), 0);
             const currentAcc = Math.max(0, 100 - totalPenalty);
-            this.app.jarvis.speak(`Training in progress at step ${this.app.fsm.currentState} of 6. Current operational accuracy is ${currentAcc} percent with ${this.app.fsm.errors.length} infraction${this.app.fsm.errors.length === 1 ? '' : 's'}. Complete all steps to generate your certified final report.`);
+            this.app.jarvis.speak({
+              en: `Training in progress at step ${this.app.fsm.currentState} of 6. Current operational accuracy is ${currentAcc} percent with ${this.app.fsm.errors.length} infraction${this.app.fsm.errors.length === 1 ? '' : 's'}. Complete all steps to generate your certified final report.`,
+              hi: `प्रशिक्षण चरण ${this.app.fsm.currentState} पर जारी है। वर्तमान सटीकता ${currentAcc} प्रतिशत है और ${this.app.fsm.errors.length} गलतियां हुई हैं। अंतिम रिपोर्ट कार्ड के लिए सभी चरण पूरे करें।`
+            });
           }
           return;
         }
 
         // Utility: Status Report
-        if (text.includes("status") || text.includes("telemetry") || (text.includes("report") && !text.includes("card"))) {
+        if (text.includes("status") || text.includes("telemetry") || (text.includes("report") && !text.includes("card")) || text.includes("स्थिति") || text.includes("हाल")) {
           const volt = this.app.fsm.circuitEnergized ? "480 volts energized" : "zero volts safe";
+          const voltHi = this.app.fsm.circuitEnergized ? "480 वोल्ट सक्रिय" : "शून्य वोल्ट सुरक्षित";
           const score = this.app.fsm.safetyScore;
           const step = this.app.fsm.currentState;
-          this.app.jarvis.speak(`Status report: We are at step ${step} of 6. Bus potential is ${volt}. Safety compliance is at ${score} percent.`);
+          this.app.jarvis.speak({
+            en: `Status report: We are at step ${step} of 6. Bus potential is ${volt}. Safety compliance is at ${score} percent.`,
+            hi: `स्टेटस रिपोर्ट: हम 6 में से चरण ${step} पर हैं। बस वोल्टेज ${voltHi} है। सुरक्षा स्कोर ${score} प्रतिशत है।`
+          });
           return;
         }
 
         // Environmental Equipment Voice Inquiries
-        if (text.includes("extinguisher") || text.includes("fire")) {
-          this.app.jarvis.speak("Class C carbon dioxide fire extinguisher inspected. Pressure gauge in normal operating green zone, rated for energized electrical fires up to 1000 Volts.", true);
+        if (text.includes("extinguisher") || text.includes("fire") || text.includes("अग्निशामक") || text.includes("आग")) {
+          this.app.jarvis.speak({
+            en: "Class C carbon dioxide fire extinguisher inspected. Pressure gauge in normal operating green zone, rated for energized electrical fires up to 1000 Volts.",
+            hi: "क्लास सी कार्बन डाइऑक्साइड अग्निशामक की जांच की गई। प्रेशर गेज सामान्य हरे क्षेत्र में है, 1000 वोल्ट तक की बिजली की आग के लिए प्रमाणित है।"
+          }, true);
           return;
         }
 
-        if (text.includes("eyewash") || text.includes("eye wash")) {
-          this.app.jarvis.speak("Emergency eyewash station operational. Dual aerated spray heads tested and ready at zero-point-four gallons per minute.", true);
+        if (text.includes("eyewash") || text.includes("eye wash") || text.includes("आईवॉश") || text.includes("आंख")) {
+          this.app.jarvis.speak({
+            en: "Emergency eyewash station operational. Dual aerated spray heads tested and ready at zero-point-four gallons per minute.",
+            hi: "आपातकालीन आईवॉश स्टेशन चालू है। दोनों स्प्रे हेड ठीक से काम कर रहे हैं और उपयोग के लिए तैयार हैं।"
+          }, true);
           return;
         }
 
-        if (text.includes("ppe") || text.includes("gloves") || text.includes("hard hat") || text.includes("helmet")) {
-          this.app.jarvis.speak("NFPA 70E Class 0 electrical insulating gloves rated for 1000 Volts AC with leather outer protectors and dielectric safety helmet on standby at the PPE station.", true);
+        if (text.includes("ppe") || text.includes("gloves") || text.includes("hard hat") || text.includes("helmet") || text.includes("दस्ताने") || text.includes("हेलमेट")) {
+          this.app.jarvis.speak({
+            en: "NFPA 70E Class 0 electrical insulating gloves rated for 1000 Volts AC with leather outer protectors and dielectric safety helmet on standby at the PPE station.",
+            hi: "1000 वोल्ट एसी प्रमाणित रबर सुरक्षा दस्ताने और विद्युत रोधी सुरक्षा हेलमेट पीपीई स्टेशन पर तैयार हैं।"
+          }, true);
           return;
         }
 
-        if (text.includes("tool") || text.includes("pliers") || text.includes("screwdriver") || text.includes("pegboard")) {
-          this.app.jarvis.speak("VDE certified 1000-Volt insulated hand tool set organized on the pegboard. Pliers, screwdrivers, and non-contact voltage detector available.", true);
+        if (text.includes("tool") || text.includes("pliers") || text.includes("screwdriver") || text.includes("pegboard") || text.includes("औजार") || text.includes("पेचकस") || text.includes("प्लास")) {
+          this.app.jarvis.speak({
+            en: "VDE certified 1000-Volt insulated hand tool set organized on the pegboard. Pliers, screwdrivers, and non-contact voltage detector available.",
+            hi: "1000 वोल्ट वीडीई प्रमाणित इंसुलेटेड औजार सेट पेगबोर्ड पर व्यवस्थित है। प्लास, पेचकस और वोल्टेज डिटेक्टर उपलब्ध हैं।"
+          }, true);
           return;
         }
 
-        if (text.includes("oscilloscope") || text.includes("analyzer") || text.includes("waveform")) {
+        if (text.includes("oscilloscope") || text.includes("analyzer") || text.includes("waveform") || text.includes("ऑसिलोस्कोप") || text.includes("वेवफॉर्म")) {
           const v = this.app.fsm.circuitEnergized ? "480 Volts energized with steady-state ripple under 0.2%" : "zero Volts safe";
-          this.app.jarvis.speak(`Digital power analyzer online: Bus waveform currently reading ${v}.`, true);
+          const vHi = this.app.fsm.circuitEnergized ? "480 वोल्ट सक्रिय है और रिपल 0.2 प्रतिशत से कम है" : "शून्य वोल्ट सुरक्षित है";
+          this.app.jarvis.speak({
+            en: `Digital power analyzer online: Bus waveform currently reading ${v}.`,
+            hi: `डिजिटल पावर एनालाइजर: डीसी बस वेवफॉर्म वर्तमान में ${vHi} पढ़ रहा है।`
+          }, true);
           return;
         }
 
         // Unrecognized phrase hint
-        this.app.jarvis.speak(`Command received: "${text}". You can say "open gate", "isolate switch", "verify voltage", "replace fuse", "open toolbox", "install battery", or check "fire extinguisher", "eyewash", "PPE", or "oscilloscope".`);
+        this.app.jarvis.speak({
+          en: `Command received: "${rawText}". You can say "open gate", "isolate switch", "verify voltage", "replace fuse", "open toolbox", "install battery", or "speak in Hindi".`,
+          hi: `कमांड प्राप्त हुई: "${rawText}". आप कह सकते हैं "गेट खोलो", "स्विच बंद करो", "वोल्टेज चेक करो", "फ्यूज बदलो", "टूलबॉक्स खोलो", या "बैटरी लगाओ"।`
+        });
       }
     }
 
@@ -2036,54 +2261,60 @@
 
         switch (newState) {
           case STATES.STEP1_GATE_ENTRY:
-            this.app.jarvis.speak(
-              "Jarvis online. Facility perimeter secured. Step one: Access the security keypad or say 'Jarvis, open the gate' to unlock entrance."
-            );
+            this.app.jarvis.speak({
+              en: "Jarvis online. Facility perimeter secured. Step one: Access the security keypad or say 'Jarvis, open the gate' to unlock entrance.",
+              hi: "जार्विस ऑनलाइन है। सुविधा की परिधि सुरक्षित है। पहला चरण: सुरक्षा कीपैड का उपयोग करें या प्रवेश द्वार खोलने के लिए कहें 'जार्विस, गेट खोलो'।"
+            });
             this.app.ghostGuides.setStep(1);
             break;
 
           case STATES.STEP2_ISOLATOR_OFF:
             this.app.sound.playSuccessChime();
             this.flashScreen('green');
-            this.app.jarvis.speak(
-              "Security blast gate open. Inside testing facility. Step two: Open the combiner box lid and rotate the DC isolator switch to zero volts."
-            );
+            this.app.jarvis.speak({
+              en: "Security blast gate open. Inside testing facility. Step two: Open the combiner box lid and rotate the DC isolator switch to zero volts.",
+              hi: "सुरक्षा ब्लास्ट गेट खुल गया है। आप परीक्षण केंद्र के अंदर हैं। दूसरा चरण: कंबाइनर बॉक्स का ढक्कन खोलें और डीसी आइसोलेटर स्विच को शून्य वोल्ट पर घुमाएं।"
+            });
             this.app.ghostGuides.setStep(2);
             break;
 
           case STATES.STEP3_VERIFY_VOLTAGE:
             this.app.sound.playSuccessChime();
             this.flashScreen('green');
-            this.app.jarvis.speak(
-              "Array isolator turned off. Step three: Voltage verification. Touch multimeter probes to positive and negative terminals to confirm zero potential."
-            );
+            this.app.jarvis.speak({
+              en: "Array isolator turned off. Step three: Voltage verification. Touch multimeter probes to positive and negative terminals to confirm zero potential.",
+              hi: "सोलर ऐरे आइसोलेटर बंद कर दिया गया है। तीसरा चरण: वोल्टेज सत्यापन। शून्य विभव की पुष्टि के लिए मल्टीमीटर प्रोब्स को पॉजिटिव और नेगेटिव टर्मिनल्स पर लगाएं।"
+            });
             this.app.ghostGuides.setStep(3);
             break;
 
           case STATES.STEP4_CORRECT_CIRCUIT:
             this.app.sound.playSuccessChime();
             this.flashScreen('green');
-            this.app.jarvis.speak(
-              "Zero voltage verified. Step four: Correct the circuit. Extract the defective blown fuse and insert the replacement high-voltage cartridge into the DIN rail."
-            );
+            this.app.jarvis.speak({
+              en: "Zero voltage verified. Step four: Correct the circuit. Extract the defective blown fuse and insert the replacement high-voltage cartridge into the DIN rail.",
+              hi: "शून्य वोल्टेज की पुष्टि हो गई है। चौथा चरण: सर्किट सुधार। खराब फ्यूज को बाहर निकालें और डीआईएन रेल में नया हाई-वोल्टेज फ्यूज लगाएं।"
+            });
             this.app.ghostGuides.setStep(4);
             break;
 
           case STATES.STEP5_OPEN_TOOLBOX:
             this.app.sound.playSuccessChime();
             this.flashScreen('green');
-            this.app.jarvis.speak(
-              "Circuit continuity corrected. Step five: Open the industrial tool box on the workbench to access the new lithium battery module and insulated torque tool."
-            );
+            this.app.jarvis.speak({
+              en: "Circuit continuity corrected. Step five: Open the industrial tool box on the workbench to access the new lithium battery module and insulated torque tool.",
+              hi: "सर्किट निरंतरता ठीक हो गई है। पांचवां चरण: नए लिथियम बैटरी मॉड्यूल और इंसुलेटेड टॉर्क टूल को निकालने के लिए कार्यक्षेत्र पर टूलबॉक्स खोलें।"
+            });
             this.app.ghostGuides.setStep(5);
             break;
 
           case STATES.STEP6_INSTALL_BATTERY:
             this.app.sound.playSuccessChime();
             this.flashScreen('green');
-            this.app.jarvis.speak(
-              "Tool box ready. Step six: Mount the new 48-volt battery pack into the Energy Storage Rack bay, locking terminals into place."
-            );
+            this.app.jarvis.speak({
+              en: "Tool box ready. Step six: Mount the new 48-volt battery pack into the Energy Storage Rack bay, locking terminals into place.",
+              hi: "टूलबॉक्स तैयार है। छठा चरण: ऊर्जा भंडारण रैक में नया 48-वोल्ट बैटरी पैक स्थापित करें और टर्मिनल्स को लॉक करें।"
+            });
             this.app.ghostGuides.setStep(6);
             break;
 
@@ -2103,9 +2334,10 @@
 
             const mins = String(Math.floor(this.elapsedSeconds / 60)).padStart(2, '0');
             const secs = String(this.elapsedSeconds % 60).padStart(2, '0');
-            const debrief = `Module complete. Final report generated: Accuracy ${report.accuracy} percent, Grade ${report.grade}, Safety score ${report.finalScore} percent. Time taken: ${mins} minutes and ${secs} seconds. ${this.errors.length === 0 ? "Flawless execution, sir. Zero safety infractions recorded." : `${this.errors.length} protocol ${this.errors.length === 1 ? 'infraction was' : 'infractions were'} detected. Review your training report card on screen.`}`;
+            const debriefEn = `Module complete. Final report generated: Accuracy ${report.accuracy} percent, Grade ${report.grade}, Safety score ${report.finalScore} percent. Time taken: ${mins} minutes and ${secs} seconds. ${this.errors.length === 0 ? "Flawless execution, sir. Zero safety infractions recorded." : `${this.errors.length} protocol ${this.errors.length === 1 ? 'infraction was' : 'infractions were'} detected. Review your training report card on screen.`}`;
+            const debriefHi = `प्रशिक्षण मॉड्यूल पूरा हुआ। अंतिम रिपोर्ट तैयार: सटीकता ${report.accuracy} प्रतिशत, ग्रेड ${report.grade}, सुरक्षा स्कोर ${report.finalScore} प्रतिशत। लिया गया समय: ${mins} मिनट और ${secs} सेकंड। ${this.errors.length === 0 ? "उत्कृष्ट प्रदर्शन, सर। शून्य सुरक्षा उल्लंघन दर्ज किए गए।" : `${this.errors.length} प्रोटोकॉल त्रुटियां पाई गईं। स्क्रीन पर अपना रिपोर्ट कार्ड देखें।`}`;
 
-            this.app.jarvis.speak(debrief);
+            this.app.jarvis.speak({ en: debriefEn, hi: debriefHi });
             this.app.ghostGuides.setStep(7);
             document.getElementById('completion-modal').classList.add('show');
             if (this.app.env.completionBadgeGroup) {
@@ -2122,10 +2354,10 @@
           'Multimeter test probes touched energized 480V DC terminals prior to lock-out / tag-out isolation.',
           25
         );
-        this.app.jarvis.speak(
-          "Warning: Circuit is still energized at 480 volts! Turn the isolation switch first to prevent an arc flash.",
-          true
-        );
+        this.app.jarvis.speak({
+          en: "Warning: Circuit is still energized at 480 volts! Turn the isolation switch first to prevent an arc flash.",
+          hi: "चेतावनी: सर्किट अभी भी 480 वोल्ट पर सक्रिय है! आर्क फ्लैश से बचने के लिए पहले आइसोलेटर स्विच बंद करें।"
+        }, true);
       }
 
       generateReportCard() {
@@ -2363,7 +2595,25 @@
       }
 
       updateHUDForState() {
+        const isHi = this.app.language === 'hi';
         const stepPills = [1, 2, 3, 4, 5, 6].map(n => document.getElementById(`step-pill-${n}`));
+        const pillLabelsEn = [
+          "1. MAIN GATE",
+          "2. SAFE ISOLATION",
+          "3. PROBE VOLTAGE",
+          "4. FIX CIRCUIT",
+          "5. TOOL BOX",
+          "6. NEW BATTERY"
+        ];
+        const pillLabelsHi = [
+          "1. मुख्य गेट",
+          "2. सुरक्षित अलगाव",
+          "3. वोल्टेज जांच",
+          "4. सर्किट सुधार",
+          "5. टूलबॉक्स",
+          "6. नई बैटरी"
+        ];
+        const pillLabels = isHi ? pillLabelsHi : pillLabelsEn;
         stepPills.forEach((pill, idx) => {
           const stepNum = idx + 1;
           pill.classList.remove('active', 'completed');
@@ -2372,9 +2622,10 @@
           } else if (stepNum === this.currentState) {
             pill.classList.add('active');
           }
+          if (pill) pill.textContent = pillLabels[idx];
         });
 
-        const titles = {
+        const titlesEn = {
           1: "Open Main Facility Gate",
           2: "Lockout / Safe Isolation (LOTO)",
           3: "Voltage Verification (Probing)",
@@ -2384,7 +2635,17 @@
           7: "All Training Modules Completed"
         };
 
-        const instructions = {
+        const titlesHi = {
+          1: "मुख्य गेट खोलें",
+          2: "सुरक्षित अलगाव (LOTO स्विच बंद)",
+          3: "वोल्टेज सत्यापन (मल्टीमीटर प्रोब)",
+          4: "सर्किट सुधार (फ्यूज प्रतिस्थापन)",
+          5: "औद्योगिक टूलबॉक्स खोलें",
+          6: "नया बैटरी मॉड्यूल लगाएं",
+          7: "सभी प्रशिक्षण मॉड्यूल पूर्ण"
+        };
+
+        const instructionsEn = {
           1: "Click the keypad or say: 'Jarvis, open the gate' to enter the testing facility.",
           2: "Open the combiner lid and rotate the DC switch to 0V (or say: 'Jarvis, isolate switch').",
           3: "Pick up multimeter probes to touch terminals (or say: 'Jarvis, verify voltage').",
@@ -2394,16 +2655,32 @@
           7: "Substation entrance, circuit isolation, circuit correction, and battery rack installation successfully verified."
         };
 
-        const stepText = this.currentState <= 6 ? `STEP ${this.currentState} OF 6` : "MODULE COMPLETE";
+        const instructionsHi = {
+          1: "कीपैड पर क्लिक करें या कहें: 'जार्विस, गेट खोलो' प्रयोगशाला में प्रवेश के लिए।",
+          2: "कंबाइनर बॉक्स का ढक्कन खोलें और स्विच 0V पर घुमाएं (या कहें: 'जार्विस, स्विच बंद करो')।",
+          3: "टर्मिनल्स को छूने के लिए प्रोब्स उठाएं (या कहें: 'जार्विस, वोल्टेज चेक करो')।",
+          4: "खराब फ्यूज निकालें और नया फ्यूज लगाएं (या कहें: 'जार्विस, फ्यूज बदलो')।",
+          5: "कार्यक्षेत्र पर रखे टूलबॉक्स को खोलें (या कहें: 'जार्विस, टूलबॉक्स खोलो')।",
+          6: "रैक बे में नया बैटरी मॉड्यूल लगाएं (या कहें: 'जार्विस, बैटरी लगाओ')।",
+          7: "सबस्टेशन प्रवेश, सर्किट अलगाव, फ्यूज सुधार और बैटरी इंस्टॉलेशन सफलतापूर्वक सत्यापित हुआ।"
+        };
+
+        const titles = isHi ? titlesHi : titlesEn;
+        const instructions = isHi ? instructionsHi : instructionsEn;
+
+        const stepText = isHi
+          ? (this.currentState <= 6 ? `चरण ${this.currentState} / 6` : "मॉड्यूल पूर्ण")
+          : (this.currentState <= 6 ? `STEP ${this.currentState} OF 6` : "MODULE COMPLETE");
+
         document.getElementById('task-step-tag').textContent = stepText;
         document.getElementById('task-title').textContent = titles[this.currentState];
         document.getElementById('task-instruction').textContent = instructions[this.currentState];
 
         const handleText = document.getElementById('guide-handle-text');
         if (handleText) {
-          handleText.textContent = this.currentState <= 6 
-            ? `TASK GUIDE // STEP ${this.currentState}/6: ${titles[this.currentState].substring(0, 18)}`
-            : `TASK GUIDE // COMPLETE`;
+          handleText.textContent = isHi
+            ? (this.currentState <= 6 ? `टास्क गाइड // चरण ${this.currentState}/6: ${titles[this.currentState].substring(0, 18)}` : `टास्क गाइड // पूर्ण`)
+            : (this.currentState <= 6 ? `TASK GUIDE // STEP ${this.currentState}/6: ${titles[this.currentState].substring(0, 18)}` : `TASK GUIDE // COMPLETE`);
         }
 
         if (this.app.diegeticHUD) {
@@ -4756,6 +5033,7 @@
         this.sound = new SoundEngine();
         this.jarvis = new JarvisVoice(this.sound);
         this.micListener = new JarvisMicListener(this);
+        this.language = 'en';
         this.isRooftopView = false;
 
         this.scene = new THREE.Scene();
@@ -4773,7 +5051,16 @@
         this.container.appendChild(this.renderer.domElement);
 
         this.renderer.xr.enabled = true;
-        document.body.appendChild(VRButton.createButton(this.renderer));
+        this.vrBtn = VRButton.createButton(this.renderer);
+        this.vrBtn.id = 'VRButton';
+        this.vrBtn.style.setProperty('position', 'fixed', 'important');
+        this.vrBtn.style.setProperty('top', '92px', 'important');
+        this.vrBtn.style.setProperty('left', '24px', 'important');
+        this.vrBtn.style.setProperty('right', 'auto', 'important');
+        this.vrBtn.style.setProperty('bottom', 'auto', 'important');
+        this.vrBtn.style.setProperty('transform', 'none', 'important');
+        this.vrBtn.style.setProperty('z-index', '50', 'important');
+        document.body.appendChild(this.vrBtn);
 
         this.setupLights();
 
@@ -4940,6 +5227,9 @@
             case 'v':
               this.micListener.toggleListening();
               break;
+            case 'l':
+              this.toggleLanguage();
+              break;
             case ' ':
               this.jarvis.repeat();
               break;
@@ -4982,7 +5272,10 @@
               'Attempted interior equipment operation prior to security keypad verification and blast gate clearance.',
               10
             );
-            this.jarvis.speak("Access denied. Please authenticate on the security keypad and enter through the blast gate first.", true);
+            this.jarvis.speak({
+              en: "Access denied. Please authenticate on the security keypad and enter through the blast gate first.",
+              hi: "प्रवेश अस्वीकृत। कृपया पहले सुरक्षा कीपैड पर प्रमाणीकरण करें और ब्लास्ट गेट से अंदर आएं।"
+            }, true);
             return;
           }
         }
@@ -5013,7 +5306,10 @@
               'Attempted physical fuse extraction while 480V DC potential remained active across the combiner bus.',
               25
             );
-            this.jarvis.speak("Danger! Severe shock hazard! Do not touch or extract fuses while the 480-volt bus is live! Rotate the isolation switch first!", true);
+            this.jarvis.speak({
+              en: "Danger! Severe shock hazard! Do not touch or extract fuses while the 480-volt bus is live! Rotate the isolation switch first!",
+              hi: "खतरा! गंभीर करंट लगने का जोखिम! जब तक 480-वोल्ट बस सक्रिय है, फ़्यूज़ को न छुएं! पहले आइसोलेशन स्विच घुमाएं!"
+            }, true);
           } else if (this.fsm.currentState < STATES.STEP4_CORRECT_CIRCUIT) {
             this.fsm.recordError(
               'UNVERIFIED_VOLTAGE',
@@ -5021,7 +5317,10 @@
               'Attempted fuse servicing before confirming 0.00V potential using the multimeter probes.',
               15
             );
-            this.jarvis.speak("Protocol breach: You must verify zero voltage with the multimeter probes before touching internal components.", true);
+            this.jarvis.speak({
+              en: "Protocol breach: You must verify zero voltage with the multimeter probes before touching internal components.",
+              hi: "प्रोटोकॉल उल्लंघन: आंतरिक घटकों को छूने से पहले आपको मल्टीमीटर प्रोब्स से शून्य वोल्टेज सत्यापित करना होगा।"
+            }, true);
           }
         }
         // Industrial Tool Box
@@ -5029,7 +5328,10 @@
           if (this.fsm.currentState === STATES.STEP5_OPEN_TOOLBOX) {
             this.animateOpenToolbox();
           } else if (this.fsm.currentState < STATES.STEP5_OPEN_TOOLBOX) {
-            this.jarvis.speak("The tool box will be required after verifying and correcting the combiner circuit, sir.", true);
+            this.jarvis.speak({
+              en: "The tool box will be required after verifying and correcting the combiner circuit, sir.",
+              hi: "कंबाइनर सर्किट की जांच और सुधार के बाद टूलबॉक्स की आवश्यकता होगी, सर।"
+            }, true);
           }
         }
         // Battery Module Installation
@@ -5043,7 +5345,10 @@
               'Attempted battery mounting before opening the toolbox to retrieve insulated torque tools.',
               15
             );
-            this.jarvis.speak("Sir, open the tool box first to retrieve the insulated torque driver and mounting brackets.", true);
+            this.jarvis.speak({
+              en: "Sir, open the tool box first to retrieve the insulated torque driver and mounting brackets.",
+              hi: "सर, इंसुलेटेड टॉर्क ड्राइवर और ब्रैकेट निकालने के लिए पहले टूलबॉक्स खोलें।"
+            }, true);
           } else if (this.fsm.currentState < STATES.STEP5_OPEN_TOOLBOX) {
             this.fsm.recordError(
               'SEQUENCE_BREACH',
@@ -5051,7 +5356,10 @@
               'Attempted battery installation before upstream solar circuit isolation and fuse correction were verified.',
               20
             );
-            this.jarvis.speak("Safety lockout active. Upstream combiner circuit must be de-energized and repaired before installing battery modules.", true);
+            this.jarvis.speak({
+              en: "Safety lockout active. Upstream combiner circuit must be de-energized and repaired before installing battery modules.",
+              hi: "सुरक्षा लॉकआउट सक्रिय है। बैटरी मॉड्यूल स्थापित करने से पहले अपस्ट्रीम सर्किट को बंद और ठीक किया जाना चाहिए।"
+            }, true);
           }
         }
         else if (obj.name?.startsWith('roof_') || obj.name?.startsWith('pv_panel') ||
@@ -5060,38 +5368,44 @@
         }
         else if (obj.name === 'fire_extinguisher' || obj.parent?.name === 'fire_extinguisher') {
           this.sound.playProbeBeep();
-          this.jarvis.speak(
-            "Class C carbon dioxide fire extinguisher inspected. Pressure gauge in normal operating green zone, certified for energized electrical fires up to 1000 Volts.",
-            true
-          );
+          this.jarvis.speak({
+            en: "Class C carbon dioxide fire extinguisher inspected. Pressure gauge in normal operating green zone, certified for energized electrical fires up to 1000 Volts.",
+            hi: "क्लास सी कार्बन डाइऑक्साइड अग्निशामक यंत्र की जांच पूर्ण। प्रेशर गेज सामान्य हरे क्षेत्र में है, 1000 वोल्ट तक की विद्युत आग के लिए प्रमाणित।"
+          }, true);
         }
         else if (obj.name === 'eyewash_station' || obj.parent?.name === 'eyewash_station') {
           this.sound.playProbeBeep();
-          this.jarvis.speak(
-            "Emergency eyewash station operational. Dual aerated spray heads tested and ready at zero-point-four gallons per minute with hands-free activation paddle.",
-            true
-          );
+          this.jarvis.speak({
+            en: "Emergency eyewash station operational. Dual aerated spray heads tested and ready at zero-point-four gallons per minute with hands-free activation paddle.",
+            hi: "आपातकालीन आईवॉश स्टेशन चालू स्थिति में है। दोहरे स्प्रे हेड्स का परीक्षण किया गया है और यह कार्य के लिए तैयार है।"
+          }, true);
         }
         else if (obj.name === 'ppe_station' || obj.parent?.name === 'ppe_station') {
           this.sound.playProbeBeep();
-          this.jarvis.speak(
-            "NFPA 70E Class 0 electrical insulating rubber gloves rated for 1000 Volts AC with leather outer protectors, and dielectric safety helmet on standby.",
-            true
-          );
+          this.jarvis.speak({
+            en: "NFPA 70E Class 0 electrical insulating rubber gloves rated for 1000 Volts AC with leather outer protectors, and dielectric safety helmet on standby.",
+            hi: "एनएफपीए 70ई क्लास 0 इंसुलेटिंग रबर दस्ताने 1000 वोल्ट एसी क्षमता और सुरक्षा हेलमेट स्टैंडबाय पर उपलब्ध हैं।"
+          }, true);
         }
         else if (obj.name?.startsWith('tool_') || obj.parent?.name?.startsWith('tool_')) {
           this.sound.playProbeBeep();
-          this.jarvis.speak(
-            "VDE certified 1000-Volt insulated hand tool set. Dual-component safety grips rated for live electrical isolation and maintenance under IEC 60900.",
-            true
-          );
+          this.jarvis.speak({
+            en: "VDE certified 1000-Volt insulated hand tool set. Dual-component safety grips rated for live electrical isolation and maintenance under IEC 60900.",
+            hi: "वीडीई प्रमाणित 1000-वोल्ट इंसुलेटेड हैंड टूल्स सेट। लाइव इलेक्ट्रिकल आइसोलेशन और सुरक्षा मानकों के अनुरूप।"
+          }, true);
         }
         else if (obj.name === 'bench_oscilloscope' || obj.parent?.name === 'bench_oscilloscope') {
           this.sound.playProbeBeep();
-          const stateStr = this.fsm.circuitEnergized
+          const stateStrEn = this.fsm.circuitEnergized
             ? "DC bus potential active at 480 Volts with steady state ripple under zero-point-two percent."
             : "DC bus de-energized. Potential verified zero Volts across all phases.";
-          this.jarvis.speak(`Digital power analyzer telemetry: ${stateStr}`, true);
+          const stateStrHi = this.fsm.circuitEnergized
+            ? "डीसी बस क्षमता 480 वोल्ट पर सक्रिय है।"
+            : "डीसी बस डी-एनर्जाइज्ड है। सभी चरणों में शून्य वोल्ट सत्यापित हुआ।";
+          this.jarvis.speak({
+            en: `Digital power analyzer telemetry: ${stateStrEn}`,
+            hi: `डिजिटल पावर विश्लेषक टेलीमेट्री: ${stateStrHi}`
+          }, true);
         }
       }
 
@@ -5100,10 +5414,10 @@
         this.sound.playProbeBeep();
         this.sound.playSolarTelemetryChime();
         this.env.flashRooftopTelemetry();
-        this.jarvis.speak(
-          "Rooftop solar telemetry: Open-circuit voltage is 480.0 Volts Direct Current across two series strings. Solar irradiance measures 880 Watts per square meter at 42.5 degrees Celsius.",
-          true
-        );
+        this.jarvis.speak({
+          en: "Rooftop solar telemetry: Open-circuit voltage is 480.0 Volts Direct Current across two series strings. Solar irradiance measures 880 Watts per square meter at 42.5 degrees Celsius.",
+          hi: "रूफटॉप सोलर टेलीमेट्री: दो श्रृंखला स्ट्रिंग्स में ओपन-सर्किट वोल्टेज 480.0 वोल्ट डीसी है। सौर विकिरण 880 वाट प्रति वर्ग मीटर और तापमान 42.5 डिग्री सेल्सियस है।"
+        }, true);
         if (this.diegeticHUD) {
           this.diegeticHUD.updateVoiceTranscript("ROOF PV: 480.0V DC // 880 W/m² // VOC OK");
         }
@@ -5124,7 +5438,7 @@
 
         if (this.isRooftopView) {
           if (btn) btn.classList.add('btn-primary');
-          if (label) label.textContent = "WORKBENCH VIEW";
+          if (label) label.textContent = this.language === 'hi' ? "वर्कबेंच दृश्य" : "WORKBENCH VIEW";
 
           this.animateCameraTo(
             new THREE.Vector3(0, 4.4, 1.2),
@@ -5138,7 +5452,7 @@
           );
         } else {
           if (btn) btn.classList.remove('btn-primary');
-          if (label) label.textContent = "ROOFTOP ARRAY";
+          if (label) label.textContent = this.language === 'hi' ? "रूफटॉप सोलर" : "ROOFTOP ARRAY";
 
           const targetPos = this.fsm.currentState === STATES.STEP1_GATE_ENTRY
             ? new THREE.Vector3(0, 1.4, 2.6)
@@ -5150,7 +5464,10 @@
           this.animateCameraTo(targetPos, targetLook, 800, () => {
             this.controls.minDistance = 0.4;
             this.controls.maxDistance = 4.0;
-            this.jarvis.speak("Returned to workbench laboratory viewpoint.");
+            this.jarvis.speak({
+              en: "Returned to workbench laboratory viewpoint.",
+              hi: "कार्यक्षेत्र प्रयोगशाला दृश्य पर वापस आ गए हैं।"
+            });
           });
         }
       }
@@ -5552,6 +5869,119 @@
         document.getElementById('btn-modal-close')?.addEventListener('click', () => {
           document.getElementById('completion-modal').classList.remove('show');
         });
+
+        // Language Toggle buttons (Header & Bottom Deck)
+        document.getElementById('btn-language-toggle')?.addEventListener('click', () => {
+          this.sound.ensureUnlocked();
+          this.toggleLanguage();
+        });
+
+        document.getElementById('btn-lang-bottom')?.addEventListener('click', () => {
+          this.sound.ensureUnlocked();
+          this.toggleLanguage();
+        });
+      }
+
+      setLanguage(lang) {
+        if (lang !== 'en' && lang !== 'hi') lang = 'en';
+        this.language = lang;
+        this.jarvis.setLanguage(lang);
+        if (this.micListener) this.micListener.setLanguage(lang);
+        this.updateUILanguage();
+        this.fsm.updateHUDForState();
+
+        if (lang === 'hi') {
+          this.jarvis.speak({
+            en: "Hindi language mode activated. How may I assist you?",
+            hi: "नमस्ते सर! जार्विस हिंदी भाषा प्रणाली सक्रिय है। मैं आपकी क्या सेवा कर सकता हूँ?"
+          });
+        } else {
+          this.jarvis.speak({
+            en: "English language mode activated. Standing by for instructions.",
+            hi: "अंग्रेजी भाषा प्रणाली सक्रिय है।"
+          });
+        }
+      }
+
+      toggleLanguage() {
+        const nextLang = this.language === 'en' ? 'hi' : 'en';
+        this.setLanguage(nextLang);
+      }
+
+      updateUILanguage() {
+        const isHi = this.language === 'hi';
+
+        // Top bar language toggle pills
+        const topEn = document.getElementById('lang-code-en');
+        const topHi = document.getElementById('lang-code-hi');
+        if (topEn && topHi) {
+          topEn.classList.toggle('active', !isHi);
+          topHi.classList.toggle('active', isHi);
+        }
+
+        // Bottom deck language toggle button label
+        const bottomLabel = document.getElementById('lang-btn-label');
+        if (bottomLabel) {
+          bottomLabel.textContent = isHi ? "भाषा: हिंदी" : "EN / हिंदी";
+        }
+
+        // Bottom deck action button labels
+        const micBtnLabel = document.getElementById('mic-btn-label');
+        if (micBtnLabel && !this.micListener.isListening) {
+          micBtnLabel.textContent = isHi ? "जार्विस से बोलें" : "TALK TO JARVIS";
+        }
+
+        const rooftopLabel = document.getElementById('rooftop-btn-label');
+        if (rooftopLabel) {
+          if (this.isRooftopView) {
+            rooftopLabel.textContent = isHi ? "वर्कबेंच दृश्य" : "WORKBENCH VIEW";
+          } else {
+            rooftopLabel.textContent = isHi ? "रूफटॉप सोलर" : "ROOFTOP ARRAY";
+          }
+        }
+
+        const replayLabel = document.getElementById('replay-btn-label');
+        if (replayLabel) {
+          replayLabel.textContent = isHi ? "जार्विस दोहराएं" : "JARVIS REPEAT";
+        }
+
+        const guideBtnLabel = document.getElementById('guide-btn-label');
+        if (guideBtnLabel) {
+          guideBtnLabel.textContent = isHi ? "टास्क गाइड" : "TASK GUIDE";
+        }
+
+        const actionStepLabel = document.getElementById('action-step-btn-label');
+        if (actionStepLabel) {
+          actionStepLabel.textContent = isHi ? "चरण निष्पादित करें" : "INTERACT STEP";
+        }
+
+        const reportBtnLabel = document.getElementById('report-btn-label');
+        if (reportBtnLabel) {
+          reportBtnLabel.textContent = isHi ? "रिपोर्ट कार्ड" : "REPORT CARD";
+        }
+
+        const resetBtnLabel = document.getElementById('reset-btn-label');
+        if (resetBtnLabel) {
+          resetBtnLabel.textContent = isHi ? "रीसेट" : "RESET";
+        }
+
+        // Live speech placeholder when idle
+        if (!this.micListener.isListening) {
+          const liveSpeechText = document.getElementById('live-speech-text');
+          if (liveSpeechText && (liveSpeechText.textContent.includes('TALK TO JARVIS') || liveSpeechText.textContent.includes('जार्विस से बोलें'))) {
+            liveSpeechText.textContent = isHi
+              ? 'क्लिक करें "जार्विस से बोलें" या "M" दबाएं'
+              : 'Click "TALK TO JARVIS" or press \'M\'';
+          }
+        }
+
+        // Bottom deck controls help card
+        const helpCard = document.getElementById('controls-help-card');
+        if (helpCard) {
+          helpCard.innerHTML = isHi
+            ? `<div><span>आवाज:</span> <span>M</span> दबाएं या माइक क्लिक करें | बोलें: <em>"जार्विस गेट खोलो"</em>, <em>"सोलर पैनल चेक करो"</em>, <em>"स्विच बंद करो"</em></div><div><span>टास्क गाइड:</span> हिलाने के लिए ड्रैग करें | <span>H</span> छुपाएं/दिखाएं | <span>T</span> सोलर दृश्य | WASD नेविगेशन</div>`
+            : `<div><span>Voice:</span> Press <span>M</span> or click Mic | Speak: <em>"Jarvis, open gate"</em>, <em>"check solar panels"</em>, <em>"isolate switch"</em></div><div><span>Guide HUD:</span> Drag title bar to move | <span>H</span> to Hide/Show | <span>T</span> for Roof PV | WASD to Walk</div>`;
+        }
       }
 
       showReportCard() {
@@ -5663,7 +6093,7 @@
           const btn = document.getElementById('btn-rooftop-view');
           const label = document.getElementById('rooftop-btn-label');
           if (btn) btn.classList.remove('btn-primary');
-          if (label) label.textContent = "ROOFTOP ARRAY";
+          if (label) label.textContent = this.language === 'hi' ? "रूफटॉप सोलर" : "ROOFTOP ARRAY";
           this.controls.minDistance = 0.4;
           this.controls.maxDistance = 4.0;
         }
@@ -5674,7 +6104,11 @@
         const reportBtn = document.getElementById('btn-view-report');
         if (reportBtn) reportBtn.style.display = 'none';
         document.getElementById('completion-modal').classList.remove('show');
-        this.micListener.setLiveTranscript("System reset. Say: 'Jarvis, open gate'");
+        this.micListener.setLiveTranscript(
+          this.language === 'hi'
+            ? "प्रणाली रीसेट। कहें: 'जार्विस, गेट खोलो'"
+            : "System reset. Say: 'Jarvis, open gate'"
+        );
       }
 
       resetCamera() {
