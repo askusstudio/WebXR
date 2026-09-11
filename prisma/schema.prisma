@@ -1,0 +1,54 @@
+// Prisma Schema: MAYAVUE End-to-End VR Certification Platform
+// Datasource: PostgreSQL (configurable via DATABASE_URL)
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model UserProfile {
+  id              String              @id @default(uuid()) @db.Uuid
+  verificationId  String              @unique @map("verification_id") @db.VarChar(20) // e.g. MVSTU001
+  fullName        String              @map("full_name") @db.VarChar(255)
+  email           String              @unique @db.VarChar(255)
+  role            String              @default("LEARNER") @db.VarChar(50) // LEARNER, INSTRUCTOR, ADMIN
+  practiceHours   Float               @default(0.0) @map("practice_hours")
+  solvedFaults    Int                 @default(0) @map("solved_faults")
+  safetyRating    Float               @default(5.0) @map("safety_rating") // 0.0 - 5.0 Stars
+  profileTag      String              @default("Certified PV Installer - Level 1") @map("profile_tag") @db.VarChar(100)
+  avatarUrl       String?             @map("avatar_url") @db.Text
+  skillMatrix     Json?               @map("skill_matrix")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  sessions        SimulationSession[]
+
+  @@map("user_profiles")
+}
+
+model SimulationSession {
+  id                  String      @id @default(uuid()) @db.Uuid
+  userId              String      @map("user_id") @db.Uuid
+  user                UserProfile @relation(fields: [userId], references: [id], onDelete: Restrict)
+  moduleCode          String      @map("module_code") @db.VarChar(100) // e.g. "SOLAR-BOX-01", "3PHASE-SUB-02"
+  durationMinutes     Float       @map("duration_minutes")
+  troubleshootPct     Float       @map("troubleshoot_pct")
+  safetyPct           Float       @map("safety_pct")
+  toolUsePct          Float       @map("tool_use_pct")
+  safetyAlerts        Int         @default(0) @map("safety_alerts")
+  aiFeedback          Json        @map("ai_feedback") // Strengths, Improvements, ReviewRecommendations
+  qrPayload           String      @map("qr_payload") @db.Text // Encrypted verification string
+  tamperHash          String      @unique @map("tamper_hash") @db.VarChar(64) // SHA-256 audit signature
+  previousRecordHash  String?     @map("previous_record_hash") @db.VarChar(64)
+  telemetryLog        Json?       @map("telemetry_log")
+  createdAt           DateTime    @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([moduleCode])
+  @@index([tamperHash])
+  @@map("simulation_sessions")
+}

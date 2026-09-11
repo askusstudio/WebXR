@@ -1315,8 +1315,502 @@
       }
     }
   </script>
+
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              cyan: '#00e5ff',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              red: '#ef4444'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Global Platform Navigation Bar */
+    #global-platform-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 56px;
+      background: rgba(8, 13, 22, 0.96);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .nav-link:hover {
+      color: #f1f5f9;
+      background: rgba(30, 41, 59, 0.6);
+    }
+    .nav-link.nav-link-active {
+      color: #38bdf8;
+      background: rgba(14, 165, 233, 0.12);
+      border-color: rgba(14, 165, 233, 0.35);
+    }
+
+    .app-screen {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      width: 100%;
+      height: calc(100% - 56px);
+      overflow-y: auto;
+      background: #080d1a;
+      color: #e2e8f0;
+      z-index: 100;
+      padding: 28px;
+    }
+    .app-screen.hidden {
+      display: none !important;
+    }
+
+    #view-simulation {
+      padding: 0;
+      overflow: hidden;
+      z-index: 10;
+      background: transparent;
+      pointer-events: auto;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: #f1f5f9;
+    }
+    .tab-btn.tab-btn-active {
+      color: #38bdf8;
+      border-bottom-color: #38bdf8;
+      background: rgba(14, 165, 233, 0.08);
+    }
+
+    /* Print certificate styles */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #view-report-card, #view-report-card * {
+        visibility: visible;
+      }
+      #view-report-card {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white !important;
+        color: black !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+
 </head>
 <body>
+
+  <!-- Global Platform Navigation Bar -->
+  
+
+
+
+<!-- MAYAVUE_PLATFORM_UI_START -->
+  <!-- ======================================================== -->
+  <!-- MAYAVUE 6-STAGE GLOBAL NAVIGATION BAR                    -->
+  <!-- ======================================================== -->
+  <nav id="global-platform-nav">
+    <div class="flex items-center gap-4">
+      <a href="#/dashboard" class="flex items-center gap-2 text-decoration-none">
+        <div class="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-400/40 flex items-center justify-center font-bold text-sky-400 font-mono text-sm">
+          MV
+        </div>
+        <span class="font-extrabold tracking-wider text-sm text-white font-sans">MAYAVUE</span>
+        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800">
+          6-STAGE VR
+        </span>
+      </a>
+
+      <!-- 6-Stage Route Links -->
+      <div class="hidden xl:flex items-center gap-1 border-l border-slate-800 pl-4">
+        <a href="#/auth/onboarding" class="nav-link" title="Stage 1: Onboarding & Biometrics">
+          <span class="font-mono text-sky-400">1</span> Onboarding
+        </a>
+        <a href="#/dashboard" class="nav-link nav-link-active" title="Stage 2: Learner Hub & Curriculum">
+          <span class="font-mono text-sky-400">2</span> Learner Hub
+        </a>
+        <a href="#/course/solar-pv/theory/solar_troubleshooting_04" class="nav-link" title="Stage 3: Multimodal Theory Lab">
+          <span class="font-mono text-sky-400">3</span> Theory &amp; 3D
+        </a>
+        <a href="#/simulate/solar_troubleshooting_04" class="nav-link" title="Stage 4: 3D/VR Simulator">
+          <span class="font-mono text-sky-400">4</span> VR Simulator
+        </a>
+        <a href="#/admin/live" class="nav-link" title="Stage 5: Master Admin Fleet Console">
+          <span class="font-mono text-sky-400">5</span> Fleet Admin
+        </a>
+        <a href="#/certificate/8a8c5cff-d47e-4adf-a5fd-ea8ebfe380b6" class="nav-link" title="Stage 6: Smart Scorecard & Certificate">
+          <span class="font-mono text-sky-400">6</span> Scorecard
+        </a>
+      </div>
+    </div>
+
+    <!-- Candidate Profile & Controls -->
+    <div class="flex items-center gap-3">
+      <!-- Role Toggle Button -->
+      <button id="nav-role-toggle" class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-700 hover:border-slate-500 text-xs font-mono transition-colors">
+        <span class="text-slate-400 text-[10px]">ROLE:</span>
+        <span id="nav-role-badge" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800">LEARNER</span>
+      </button>
+
+      <!-- Active Candidate Pill -->
+      <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-700/80 text-xs">
+        <img id="nav-candidate-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=64&q=80" class="w-5 h-5 rounded-full object-cover">
+        <span id="nav-candidate-name" class="font-semibold text-slate-200">Alex Rivera</span>
+        <span id="nav-stuid-badge" class="text-[10px] font-mono px-1 rounded bg-slate-800 text-emerald-400 border border-slate-700">MVSTU001</span>
+      </div>
+
+      <!-- Hindi / English Voice Toggle -->
+      <button id="lang-toggle-btn" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-xs font-mono text-slate-300 hover:text-white transition-colors">
+        EN | हिंदी
+      </button>
+    </div>
+  </nav>
+
+  <!-- ======================================================== -->
+  <!-- STAGE 1: ONBOARDING & BIOMETRIC AUTH SCREEN              -->
+  <!-- ======================================================== -->
+  <div id="view-onboarding" class="app-screen hidden">
+    <div class="max-w-4xl mx-auto space-y-8">
+      <div>
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-950/80 border border-sky-700/60 text-sky-400 text-xs font-mono mb-3">
+          <span>STAGE 01</span> • <span>IDENTITY ACCREDITATION &amp; ONBOARDING</span>
+        </div>
+        <h1 class="text-3xl font-extrabold tracking-tight text-white">Trainee Sign Up &amp; Biometric Verification</h1>
+        <p class="text-slate-400 text-sm mt-1">Provision a tamper-proof candidate verification identifier (<span class="font-mono text-sky-400">MVSTU###</span>) and initialize persistent safety credentials.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Biometric / WebAuthn Card -->
+        <div class="rounded-xl bg-slate-900/90 border border-slate-800 p-6 space-y-6">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-200 uppercase font-mono tracking-wider">Biometric 2FA / Passwordless</h3>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800">FIDO2 / WebAuthn</span>
+          </div>
+
+          <div class="flex flex-col items-center justify-center p-8 rounded-xl bg-slate-950/80 border border-slate-800 text-center space-y-4">
+            <button id="bio-scan-btn" class="w-20 h-20 rounded-full bg-sky-500/10 border-2 border-sky-500/40 hover:border-sky-400 flex items-center justify-center transition-all hover:scale-105 active:scale-95 group">
+              <svg id="bio-fingerprint-icon" class="w-10 h-10 text-sky-400 group-hover:text-sky-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 004 11m0 0a8 8 0 0015.171 2.868"/>
+              </svg>
+            </button>
+            <div id="bio-status-text" class="text-xs font-mono text-slate-400">
+              Click fingerprint scanner to authenticate passkey
+            </div>
+          </div>
+
+          <!-- Trainee Registration Form -->
+          <form id="onboarding-register-form" class="space-y-4 pt-4 border-t border-slate-800">
+            <div>
+              <label class="block text-xs font-mono text-slate-300 mb-1">Full Legal Name</label>
+              <input id="reg-name" type="text" required placeholder="e.g. Jordan Lee" class="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-sky-500">
+            </div>
+            <div>
+              <label class="block text-xs font-mono text-slate-300 mb-1">Corporate / Institute Email</label>
+              <input id="reg-email" type="email" required placeholder="jordan.lee@grid-academy.org" class="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-sky-500">
+            </div>
+            <div>
+              <label class="block text-xs font-mono text-slate-300 mb-1">Platform Role</label>
+              <select id="reg-role" class="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-sky-500">
+                <option value="LEARNER">Trainee / Learner</option>
+                <option value="INSTRUCTOR">Instructor / Master Admin</option>
+              </select>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition-colors">
+              Provision Unique MVSTU ID &amp; Enroll →
+            </button>
+          </form>
+
+          <div id="provisioned-badge-display"></div>
+        </div>
+
+        <!-- Candidate Directory Switcher Card -->
+        <div class="rounded-xl bg-slate-900/90 border border-slate-800 p-6 space-y-5">
+          <div>
+            <h3 class="text-sm font-bold text-slate-200 uppercase font-mono tracking-wider mb-1">Pre-Seeded Candidate Profiles</h3>
+            <p class="text-xs text-slate-400">Switch between pre-provisioned trainees or instructors to test role-specific workflows.</p>
+          </div>
+
+          <div id="candidate-switcher-list" class="space-y-3">
+            <!-- Rendered dynamically by app.js -->
+          </div>
+
+          <div class="pt-4 border-t border-slate-800">
+            <a href="#/dashboard" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 text-decoration-none shadow-lg shadow-emerald-950/40">
+              Proceed to Stage 2: Learner Dashboard →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- STAGE 2: LEARNER DASHBOARD & MULTI-TRACK HUB             -->
+  <!-- ======================================================== -->
+  <div id="view-dashboard" class="app-screen">
+    <div class="max-w-7xl mx-auto space-y-8">
+      <!-- Candidate Profile Summary Card -->
+      <div class="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-950 border border-sky-500/30 p-6 shadow-xl relative overflow-hidden">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <div class="flex items-center gap-5">
+            <div class="relative">
+              <img id="dashboard-candidate-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80" class="w-20 h-20 rounded-2xl object-cover border-2 border-sky-400/80 shadow-lg shadow-sky-500/20">
+              <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center text-[10px] text-white">✓</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-3">
+                <h1 id="dashboard-candidate-name" class="text-2xl font-bold text-white tracking-tight">Alex Rivera</h1>
+                <span id="dashboard-candidate-tag" class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-950 text-sky-300 border border-sky-700/60">Certified PV Installer - Level 1</span>
+              </div>
+              <p class="text-slate-400 text-xs font-mono mt-1">Verification ID: <span id="dashboard-stuid" class="text-sky-400 font-bold">MVSTU001</span> • Baseline Safety Accreditation: PASS</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <a href="#/certificate/8a8c5cff-d47e-4adf-a5fd-ea8ebfe380b6" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-mono font-semibold transition-all flex items-center gap-2 text-decoration-none">
+              View Smart Scorecard
+            </a>
+            <a href="#/simulate/solar_troubleshooting_04" class="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold font-sans tracking-wide transition-all flex items-center gap-2 text-decoration-none shadow-lg shadow-sky-500/25">
+              ⚡ Resume 3D/VR Lab
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Metrics Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="rounded-xl bg-slate-900/80 border border-slate-800 p-5">
+          <span class="text-xs font-mono text-slate-400 uppercase tracking-wider block mb-1">Active Practice Hours</span>
+          <div id="stat-practice-hours" class="text-2xl font-bold font-mono text-sky-400">18.5 hrs</div>
+          <span class="text-[11px] text-slate-400 mt-1 block">Cumulative simulation duration</span>
+        </div>
+        <div class="rounded-xl bg-slate-900/80 border border-slate-800 p-5">
+          <span class="text-xs font-mono text-slate-400 uppercase tracking-wider block mb-1">Faults Solved Ratio</span>
+          <div id="stat-solved-faults" class="text-2xl font-bold font-mono text-emerald-400">15 / 20</div>
+          <span class="text-[11px] text-slate-400 mt-1 block">75% procedural resolution</span>
+        </div>
+        <div class="rounded-xl bg-slate-900/80 border border-slate-800 p-5">
+          <span class="text-xs font-mono text-slate-400 uppercase tracking-wider block mb-1">Safety Rating</span>
+          <div id="stat-safety-rating" class="text-2xl font-bold font-mono text-amber-400">4.9 / 5.0</div>
+          <span class="text-[11px] text-slate-400 mt-1 block">OSHA 1910 zero-harm metric</span>
+        </div>
+        <div class="rounded-xl bg-slate-900/80 border border-slate-800 p-5">
+          <span class="text-xs font-mono text-slate-400 uppercase tracking-wider block mb-1">Enrolled Tracks</span>
+          <div class="text-2xl font-bold font-mono text-purple-400">3 Courses</div>
+          <span class="text-[11px] text-slate-400 mt-1 block">Solar PV • Sub-Station • BESS</span>
+        </div>
+      </div>
+
+      <!-- Competency Matrix & Industry Standards -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- SVG Radar Chart -->
+        <div class="rounded-xl bg-slate-900/80 border border-slate-800 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-slate-200 uppercase font-mono tracking-wider">Multi-Axis Competency Matrix</h3>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800">TIER 1 RATED</span>
+          </div>
+          <div class="flex items-center justify-center">
+            <svg id="skill-radar-svg" width="320" height="260" viewBox="0 0 320 260">
+              <polygon points="160,40 245,102 213,200 107,200 75,102" fill="none" stroke="#334155" stroke-width="1"/>
+              <polygon points="160,70 218,111 195,180 125,180 102,111" fill="none" stroke="#1e293b" stroke-width="1"/>
+              <polygon id="radar-skill-polygon" points="160,43 238,105 208,194 112,194 77,105" fill="rgba(14, 165, 233, 0.25)" stroke="#38bdf8" stroke-width="2"/>
+              <text x="160" y="28" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="monospace">Electrical Safety (97%)</text>
+              <text x="255" y="105" fill="#94a3b8" font-size="10" text-anchor="start" font-family="monospace">Mounting (92%)</text>
+              <text x="220" y="218" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="monospace">DC Wiring (94%)</text>
+              <text x="100" y="218" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="monospace">Inverter (88%)</text>
+              <text x="65" y="105" fill="#94a3b8" font-size="10" text-anchor="end" font-family="monospace">Fault Isolation (98%)</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Industry Compliance Standards -->
+        <div class="rounded-xl bg-slate-900/80 border border-slate-800 p-6 space-y-4">
+          <h3 class="text-sm font-bold text-slate-200 uppercase font-mono tracking-wider">Industrial Accreditations</h3>
+          <div class="p-4 rounded-lg bg-slate-950/60 border border-slate-800 flex items-start gap-3">
+            <span class="text-emerald-400 font-bold">✓</span>
+            <div>
+              <div class="text-xs font-bold text-slate-200">NFPA 70E Arc Flash Safe Isolation</div>
+              <div class="text-[11px] text-slate-400">Zero energized contact violations logged across 12 practical sessions.</div>
+            </div>
+          </div>
+          <div class="p-4 rounded-lg bg-slate-950/60 border border-slate-800 flex items-start gap-3">
+            <span class="text-emerald-400 font-bold">✓</span>
+            <div>
+              <div class="text-xs font-bold text-slate-200">OSHA 1910.269 High Voltage Substation Entry</div>
+              <div class="text-[11px] text-slate-400">Class 4 rubber glove donning &amp; grounding ball stud torque confirmed.</div>
+            </div>
+          </div>
+          <div class="p-4 rounded-lg bg-slate-950/60 border border-slate-800 flex items-start gap-3">
+            <span class="text-sky-400 font-bold">⚡</span>
+            <div>
+              <div class="text-xs font-bold text-slate-200">NABCEP PV Installation Associate (PVA)</div>
+              <div class="text-[11px] text-slate-400">480V DC Stringing, MC4 assembly, and combiner box fault resolution passed.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enrolled Multi-Track Course Catalog -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold text-white">Enrolled Curriculum Tracks</h2>
+          <span class="text-xs font-mono text-slate-400">3 Flagship Programs Available</span>
+        </div>
+        <div id="dashboard-courses-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Rendered dynamically by app.js -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- STAGE 3: MULTIMODAL THEORY & 3D PREP CENTER              -->
+  <!-- ======================================================== -->
+  <div id="view-topic-detail" class="app-screen hidden">
+    <div class="max-w-6xl mx-auto space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <a href="#/dashboard" class="text-xs text-sky-400 hover:underline">Courses</a>
+            <span class="text-xs text-slate-600">/</span>
+            <span id="topic-module-badge" class="text-xs font-mono text-slate-400">Module 04: Combiner Box &amp; Battery Safe Isolation</span>
+          </div>
+          <h1 id="topic-title" class="text-2xl md:text-3xl font-bold text-white tracking-tight">DC Combiner Box Isolation, Blown Fuse Replacement &amp; Battery Installation</h1>
+          <p id="topic-overview-text" class="text-xs md:text-sm text-slate-400 mt-2 max-w-3xl">Execute OSHA &amp; NFPA 70E safe isolation procedure on a live 480V DC solar array combiner box.</p>
+        </div>
+        <button id="topic-launch-sim-btn" class="px-6 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-sky-500/25 transition-all">
+          ⚡ Launch 3D/VR Lab (Stage 4)
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex items-center gap-2 border-b border-slate-800">
+        <button id="tab-btn-syllabus" class="tab-btn tab-btn-active">Tab 1: Books &amp; PDFs (SLD)</button>
+        <button id="tab-btn-video" class="tab-btn">Tab 2: Videos (Masterclass)</button>
+        <button id="tab-btn-3d" class="tab-btn">Tab 3: Animated Circuits (3D Exploded)</button>
+      </div>
+
+      <!-- Tab 1: Books & PDFs -->
+      <div id="tab-content-syllabus" class="space-y-6">
+        <div class="rounded-xl bg-slate-900 border border-slate-800 p-6">
+          <h3 class="text-sm font-bold text-slate-200 uppercase font-mono mb-3">Single Line Diagram (SLD) Schematic</h3>
+          <div id="topic-sld-diagram" class="p-4 rounded-lg bg-slate-950 border border-slate-800 font-mono text-xs text-sky-400 overflow-x-auto">
+            PV STRINGS (480V Voc) -&gt; 15A gPV FUSES -&gt; 1000V DC ROTARY ISOLATOR -&gt; SURGE ARRESTER (SPD) -&gt; LAB 48V LiFePO4 BATTERY BUS
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="rounded-xl bg-slate-900 border border-slate-800 p-6">
+            <h3 class="text-sm font-bold text-slate-200 uppercase font-mono mb-4">Electrical Component Ratings</h3>
+            <table class="w-full text-left">
+              <tbody id="topic-ratings-tbody"></tbody>
+            </table>
+          </div>
+          <div class="rounded-xl bg-slate-900 border border-slate-800 p-6">
+            <h3 class="text-sm font-bold text-slate-200 uppercase font-mono mb-4">Required Tools &amp; PPE Checklist</h3>
+            <ul id="topic-tools-list" class="space-y-2.5"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Videos -->
+      <div id="tab-content-video" class="space-y-6 hidden">
+        <div class="rounded-xl bg-slate-900 border border-slate-800 p-6">
+          <h3 class="text-sm font-bold text-slate-200 uppercase font-mono mb-2">Video Masterclass Chapters</h3>
+          <div id="video-timestamp-display" class="p-3 rounded bg-slate-950 border border-slate-800 text-xs font-mono text-sky-400 mb-4">
+            Playing Chapter: Arc Flash Hazard Review &amp; NFPA 70E Donning (00:00)
+          </div>
+          <div id="topic-video-chapters" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Animated Circuits (3D Exploded View) -->
+      <div id="tab-content-3d" class="space-y-6 hidden">
+        <div class="rounded-xl bg-slate-900 border border-slate-800 p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-slate-200 uppercase font-mono">Interactive Component Exploded Assembly View</h3>
+              <p class="text-xs text-slate-400">Drag to orbit, scroll to zoom. Use slider to explode internal components.</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-mono text-slate-400">Explode:</span>
+              <input id="exploded-view-slider" type="range" min="0" max="1" step="0.01" value="0" class="w-32 accent-sky-400">
+            </div>
+          </div>
+          <div id="exploded-3d-canvas-container" class="w-full h-80 rounded-xl overflow-hidden border border-slate-800 relative"></div>
+          <div class="flex flex-wrap items-center justify-between gap-4 mt-4 text-xs font-mono text-slate-400">
+            <span>DIN Rail 35mm • Touch-Safe Fuse Holders • 15A gPV Fuses • 1000V DC Switch</span>
+            <span class="text-sky-400">Three.js WebGL Engine</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- STAGE 4: 3D/VR SIMULATION LAB                            -->
+  <!-- ======================================================== -->
+  <div id="view-simulation" class="app-screen hidden">
+    <!-- Simulation Top HUD Bar -->
+    <div class="fixed top-14 left-0 w-full h-11 bg-slate-950/90 border-b border-sky-500/20 px-4 flex items-center justify-between z-50 text-xs font-mono">
+      <div class="flex items-center gap-3">
+        <a href="#/dashboard" class="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-decoration-none flex items-center gap-1">
+          ← Exit to Hub
+        </a>
+        <span class="text-slate-300 font-semibold hidden sm:inline">Module 4: Combiner Box &amp; Battery Safe Isolation</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="sim-telemetry-rate-badge" class="text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/80">TELEMETRY: 10 Hz LIVE</span>
+        <button id="sim-complete-trigger-btn" class="px-3 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors">
+          Finish &amp; Generate Scorecard →
+        </button>
+      </div>
+    </div>
+
   <div id="webgl-container"></div>
 
   <!-- Screen HUD Overlay -->
@@ -1582,12 +2076,286 @@
       </div>
     </div>
 
+  
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- STAGE 5: DUAL-VIEW TELEMETRY & MASTER ADMIN CONSOLE      -->
+  <!-- ======================================================== -->
+  <div id="view-admin-fleet" class="app-screen hidden">
+    <div class="max-w-7xl mx-auto space-y-8">
+      <div>
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-950/80 border border-amber-700/60 text-amber-400 text-xs font-mono mb-3">
+          <span>STAGE 05</span> • <span>MASTER ADMIN &amp; FLEET TELEMETRY CONSOLE</span>
+        </div>
+        <h1 class="text-3xl font-extrabold tracking-tight text-white">Live Proctor Fleet Telemetry &amp; Fault Injector</h1>
+        <p class="text-slate-400 text-sm mt-1">Multi-trainee active session monitor, real-time safety violation alerts, and remote glitch injection triggers.</p>
+      </div>
+
+      <!-- Top KPI Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div class="rounded-xl bg-slate-900 border border-slate-800 p-5">
+          <span class="text-xs font-mono text-slate-400 uppercase tracking-wider block mb-1">Connected Trainees</span>
+          <div id="admin-fleet-count" class="text-2xl font-bold font-mono text-sky-400">2 Active</div>
+        </div>
+        <div class="rounded-xl bg-slate-900 border border-slate-800 p-5">
+          <span class="text-xs font-mono text-slate-400 uppercase tracking-wider block mb-1">Average Resolution Time</span>
+          <div id="admin-avg-fixtime" class="text-2xl font-bold font-mono text-emerald-400">3.45 min</div>
+        </div>
+        <div class="rounded-xl bg-slate-900 border border-slate-800 p-5">
+          <span class="text-xs font-mono text-slate-400 uppercase tracking-wider block mb-1">Safety Alert Logs</span>
+          <div id="admin-active-alerts-count" class="text-2xl font-bold font-mono text-rose-400">2 Logged</div>
+        </div>
+      </div>
+
+      <!-- Live Fleet Table -->
+      <div class="rounded-xl bg-slate-900 border border-slate-800 p-6 space-y-4">
+        <h3 class="text-sm font-bold text-slate-200 uppercase font-mono tracking-wider">Active Trainee Fleet Map (10 Hz Telemetry Sync)</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 text-xs font-mono">
+                <th class="py-2.5 px-3">TRAINEE</th>
+                <th class="py-2.5 px-3">ACTIVE MODULE</th>
+                <th class="py-2.5 px-3">STATE</th>
+                <th class="py-2.5 px-3">ELAPSED</th>
+                <th class="py-2.5 px-3">SAFETY VIOLATIONS</th>
+                <th class="py-2.5 px-3">DEVICE / CLIENT</th>
+              </tr>
+            </thead>
+            <tbody id="admin-fleet-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dual Column: Real-time Alerts & Remote Fault Injector -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Safety Alert Ticker -->
+        <div class="rounded-xl bg-slate-900 border border-slate-800 p-6 space-y-4">
+          <h3 class="text-sm font-bold text-slate-200 uppercase font-mono tracking-wider">Live Safety Violation Alerts</h3>
+          <div id="admin-alerts-ticker" class="space-y-3"></div>
+        </div>
+
+        <!-- Remote Glitch Injector -->
+        <div class="rounded-xl bg-slate-900 border border-slate-800 p-6 space-y-4">
+          <div>
+            <h3 class="text-sm font-bold text-slate-200 uppercase font-mono tracking-wider">Remote Glitch &amp; Fault Injector</h3>
+            <p class="text-xs text-slate-400 mt-1">Inject procedural errors into active trainee headsets to test emergency response protocols.</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <button id="btn-inject-fuse" class="p-3 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-amber-500 text-left transition-all">
+              <span class="text-xs font-bold text-amber-400 block mb-1">⚡ Blown 1000V DC Fuse</span>
+              <span class="text-[10px] font-mono text-slate-400">Open-circuit string 3</span>
+            </button>
+            <button id="btn-inject-polarity" class="p-3 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-rose-500 text-left transition-all">
+              <span class="text-xs font-bold text-rose-400 block mb-1">⚠️ Reverse DC Polarity</span>
+              <span class="text-[10px] font-mono text-slate-400">Reverse MC4 connection</span>
+            </button>
+            <button id="btn-inject-arc" class="p-3 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-rose-500 text-left transition-all">
+              <span class="text-xs font-bold text-rose-400 block mb-1">🔥 Arc Flash Hazard</span>
+              <span class="text-[10px] font-mono text-slate-400">Trigger ungrounded probe alert</span>
+            </button>
+            <button id="btn-inject-torque" class="p-3 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-sky-500 text-left transition-all">
+              <span class="text-xs font-bold text-sky-400 block mb-1">🔧 Loose Busbar Terminal</span>
+              <span class="text-[10px] font-mono text-slate-400">High-resistance contact</span>
+            </button>
+          </div>
+
+          <div id="admin-injection-status" class="pt-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- STAGE 6: SMART SCORECARD & COMPETENCY PASSPORT           -->
+  <!-- ======================================================== -->
+  <div id="view-report-card" class="app-screen hidden">
+    <div class="max-w-4xl mx-auto space-y-8">
+      <div class="rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-sky-500/40 p-8 shadow-2xl space-y-8">
+        <!-- Certificate Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+          <div>
+            <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-400 text-xs font-mono mb-2">
+              <span>STAGE 06</span> • <span>OFFICIAL COMPETENCY PASSPORT</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white">MAYAVUE Certified Skill Assessment Report</h1>
+            <p class="text-xs text-slate-400 mt-1">Solar PV Combiner Box Safe Isolation &amp; Battery Commissioning</p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-mono font-bold px-2 py-1 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+              PASSED / DISTINCTION 🎓
+            </span>
+          </div>
+        </div>
+
+        <!-- Candidate & Granular Scores Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="md:col-span-1 rounded-xl bg-slate-950/80 border border-slate-800 p-4">
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider block mb-1">Candidate</span>
+            <div id="report-candidate-name" class="text-sm font-bold text-white">Alex Rivera</div>
+            <span id="report-candidate-stuid" class="text-xs font-mono text-sky-400 font-bold block mt-0.5">MVSTU001</span>
+            <span id="report-date" class="text-[10px] text-slate-400 block mt-2">Date: Today</span>
+            <span id="report-session-id" class="text-[9px] font-mono text-slate-500 block truncate mt-1"></span>
+          </div>
+          <div class="rounded-xl bg-slate-950/80 border border-slate-800 p-4 text-center">
+            <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1">Troubleshooting</span>
+            <div id="score-troubleshoot-pct" class="text-2xl font-bold font-mono text-emerald-400">99.2%</div>
+            <span class="text-[10px] text-slate-400">Circuit Fault Diagnosis</span>
+          </div>
+          <div class="rounded-xl bg-slate-950/80 border border-slate-800 p-4 text-center">
+            <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1">Safety Compliance</span>
+            <div id="score-safety-pct" class="text-2xl font-bold font-mono text-sky-400">100%</div>
+            <span class="text-[10px] text-slate-400">NFPA 70E Protocol</span>
+          </div>
+          <div class="rounded-xl bg-slate-950/80 border border-slate-800 p-4 text-center">
+            <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1">Tool Precision</span>
+            <div id="score-tooluse-pct" class="text-2xl font-bold font-mono text-amber-400">98.5%</div>
+            <span class="text-[10px] text-slate-400">Calibrated Torquing</span>
+          </div>
+        </div>
+
+        <!-- Socratic AI Actionable Feedback Card -->
+        <div class="rounded-xl bg-slate-950/80 border border-slate-800 p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-200 uppercase font-mono tracking-wider">Socratic AI Actionable Feedback</h3>
+            <span class="text-[10px] font-mono text-sky-400">NFPA 70E &amp; OSHA 1910 Grounded</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 rounded-lg bg-slate-900/60 border border-slate-800 space-y-2">
+              <span class="text-xs font-bold text-emerald-400 font-mono block">HIGHLIGHTED STRENGTHS</span>
+              <ul id="ai-feedback-strengths" class="space-y-2"></ul>
+            </div>
+            <div class="p-4 rounded-lg bg-slate-900/60 border border-slate-800 space-y-2">
+              <span class="text-xs font-bold text-amber-400 font-mono block">TARGETED GROWTH POINTS</span>
+              <ul id="ai-feedback-improvements" class="space-y-2"></ul>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-lg bg-sky-950/30 border border-sky-800/40">
+            <span class="text-xs font-bold text-sky-400 font-mono block mb-1">RECOMMENDED PROCEDURAL NEXT STEPS</span>
+            <ul id="ai-feedback-recommendations" class="space-y-1"></ul>
+          </div>
+        </div>
+
+        <!-- Scannable QR Matrix & Tamper Proof Audit Stamp -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 rounded-xl bg-slate-950 border border-slate-800 items-center">
+          <div class="md:col-span-1 flex flex-col items-center text-center">
+            <div id="scorecard-qr-matrix" class="w-32 h-32 rounded-lg p-2 bg-slate-900 border border-sky-500/40 flex items-center justify-center"></div>
+            <span class="text-[10px] font-mono text-slate-400 mt-2">Scan to Verify Authenticity</span>
+          </div>
+
+          <div class="md:col-span-3 space-y-2 font-mono text-xs">
+            <div class="flex items-center gap-2 text-sky-400 font-bold">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              IMMUTABLE CRYPTOGRAPHIC VERIFICATION LEDGER PROOF
+            </div>
+            <div class="text-slate-400">
+              TAMPER HASH (SHA-256): <span id="report-verification-hash" class="text-sky-300 font-bold break-all"></span>
+            </div>
+            <div class="text-slate-400">
+              PREVIOUS HASH: <span id="report-previous-hash" class="text-slate-400 break-all"></span>
+            </div>
+            <p class="text-[11px] text-slate-400 font-sans pt-1">
+              Security Policy: This record is written to an append-only database table enforced by database triggers. Test scores cannot be edited, modified, or deleted.
+            </p>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-800">
+          <div class="flex items-center gap-3">
+            <button onclick="window.print()" class="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs flex items-center gap-2 transition-colors">
+              Download Tamper-Proof PDF
+            </button>
+            <button onclick="navigator.clipboard.writeText(window.location.href); alert('Recruiter verification link copied to clipboard!');" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition-colors">
+              Share Recruiter Link
+            </button>
+          </div>
+          <div class="flex items-center gap-3">
+            <a href="#/dashboard" class="text-xs text-slate-400 hover:text-white transition-colors">
+              Return to Hub
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ======================================================== -->
+  <!-- PUBLIC RECRUITER VERIFICATION VIEW                       -->
+  <!-- ======================================================== -->
+  <div id="view-verify" class="app-screen hidden">
+    <div class="max-w-xl mx-auto space-y-6 text-center">
+      <div class="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center text-emerald-400">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+
+      <div>
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-700/60 text-emerald-400 text-xs font-mono mb-2">
+          <span>AUTHENTICATED ACCREDITATION</span>
+        </div>
+        <h1 class="text-2xl font-extrabold text-white">MAYAVUE Competency Verification</h1>
+        <p class="text-xs text-slate-400 mt-1">Cryptographically validated against immutable on-chain training records.</p>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-6 text-left space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <div class="text-xs text-slate-400 uppercase font-mono">Candidate</div>
+            <div id="verify-candidate-name" class="font-bold text-slate-100 text-base">Alex Rivera</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-400 uppercase font-mono">Verification ID</div>
+            <div id="verify-stuid" class="font-mono text-sky-400 font-bold">MVSTU001</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 py-2 text-center">
+          <div class="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50">
+            <div class="text-[10px] text-slate-400 uppercase font-mono">Status</div>
+            <div id="verify-grade" class="text-lg font-extrabold text-emerald-400">PASSED</div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50">
+            <div class="text-[10px] text-slate-400 uppercase font-mono">Troubleshoot</div>
+            <div id="verify-troubleshoot" class="text-lg font-extrabold text-sky-400">96%</div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50">
+            <div class="text-[10px] text-slate-400 uppercase font-mono">Safety Compliance</div>
+            <div id="verify-safety" class="text-lg font-extrabold text-amber-400">100%</div>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 text-[11px] font-mono text-slate-400">
+          <div class="text-slate-400 font-bold mb-1">SHA-256 LEDGER AUDIT HASH:</div>
+          <div id="verify-hash" class="text-sky-300 break-all bg-slate-950 p-2 rounded border border-slate-800"></div>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <a href="#/dashboard" class="px-5 py-2.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs inline-block transition-colors">
+          Return to Platform Hub
+        </a>
+      </div>
+    </div>
+  </div>
+<!-- MAYAVUE_PLATFORM_UI_END -->
+
+
+
+
   <!-- Application Logic -->
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { VRButton } from 'three/addons/webxr/VRButton.js';
     import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+
+    window.THREE = THREE;
+    window.OrbitControls = OrbitControls;
 
     /* ==========================================================================
        1. SOUND & AUDIO SYNTHESIZER (WEB AUDIO API)
@@ -2668,6 +3436,26 @@
             const secs = String(this.elapsedSeconds % 60).padStart(2, '0');
             const debriefEn = `Module complete. Final report generated: Accuracy ${report.accuracy} percent, Grade ${report.grade}, Safety score ${report.finalScore} percent. Time taken: ${mins} minutes and ${secs} seconds. ${this.errors.length === 0 ? "Flawless execution, sir. Zero safety infractions recorded." : `${this.errors.length} protocol ${this.errors.length === 1 ? 'infraction was' : 'infractions were'} detected. Review your training report card on screen.`}`;
             const debriefHi = `प्रशिक्षण मॉड्यूल पूरा हुआ। अंतिम रिपोर्ट तैयार: सटीकता ${report.accuracy} प्रतिशत, ग्रेड ${report.grade}, सुरक्षा स्कोर ${report.finalScore} प्रतिशत। लिया गया समय: ${mins} मिनट और ${secs} सेकंड। ${this.errors.length === 0 ? "उत्कृष्ट प्रदर्शन, सर। शून्य सुरक्षा उल्लंघन दर्ज किए गए।" : `${this.errors.length} प्रोटोकॉल त्रुटियां पाई गईं। स्क्रीन पर अपना रिपोर्ट कार्ड देखें।`}`;
+
+            
+            // Notify MAYAVUE Certification Platform of simulation completion
+            if (window.mayaVue) {
+              window.mayaVue.handleSimulationCompleted({
+                topicId: 'solar_troubleshooting_04',
+                accuracyScore: report.accuracy,
+                safetyViolationsCount: this.errors.length,
+                activeDurationSeconds: this.elapsedSeconds || 180,
+                telemetryData: {
+                  voc_probed: '480.0V DC',
+                  isolated_bus_voltage: '0.0V DC',
+                  fuse_continuity: 'FUSE 3 REPLACED PASS',
+                  battery_bus: '48V LiFePO4 BUS CONNECTED 15 N*m',
+                  safetyScore: report.finalScore,
+                  grade: report.grade,
+                  errors: this.errors
+                }
+              });
+            }
 
             this.app.jarvis.speak({ en: debriefEn, hi: debriefHi });
             this.app.ghostGuides.setStep(7);
@@ -6871,5 +7659,6 @@
       window.app = new WebXRTrainingApp();
     });
   </script>
+  <script src="/app.js"></script>
 </body>
 </html>
