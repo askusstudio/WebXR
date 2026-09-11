@@ -3859,9 +3859,9 @@
         });
 
         const roofSlabMat = new THREE.MeshStandardMaterial({
-          color: 0x0a0e16,
-          roughness: 0.7,
-          metalness: 0.3
+          color: 0x273549, // Clean industrial commercial slate rooftop membrane
+          roughness: 0.85,
+          metalness: 0.2
         });
 
         // Surrounding roof slabs creating an opening for the glass skylight (X: -2.4 to 2.4, Z: -2.4 to 0.4)
@@ -3875,6 +3875,22 @@
         ceilingE.position.set(5.2, 3.6, -1.0);
 
         this.solarRoofGroup.add(ceilingN, ceilingS, ceilingW, ceilingE);
+
+        // OSHA Yellow Rooftop Perimeter Demarcation Lines
+        const yellowLineMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+        const yellowLineN = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 0.08), yellowLineMat);
+        yellowLineN.rotation.x = -Math.PI / 2;
+        yellowLineN.position.set(0, 3.68, -2.52);
+        const yellowLineS = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 0.08), yellowLineMat);
+        yellowLineS.rotation.x = -Math.PI / 2;
+        yellowLineS.position.set(0, 3.68, 0.52);
+        const yellowLineW = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 3.12), yellowLineMat);
+        yellowLineW.rotation.x = -Math.PI / 2;
+        yellowLineW.position.set(-2.55, 3.68, -1.0);
+        const yellowLineE = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 3.12), yellowLineMat);
+        yellowLineE.rotation.x = -Math.PI / 2;
+        yellowLineE.position.set(2.55, 3.68, -1.0);
+        this.solarRoofGroup.add(yellowLineN, yellowLineS, yellowLineW, yellowLineE);
 
         // Structural Steel Trusses / I-Beams framing the skylight opening
         const trussMat = new THREE.MeshStandardMaterial({ color: 0x243042, metalness: 0.85, roughness: 0.3 });
@@ -3949,26 +3965,49 @@
         this.solarPanelsGroup = new THREE.Group();
         this.solarPanelsGroup.position.set(0, 4.08, -0.9);
 
+        // Procedural Monocrystalline Solar Cell Texture with Multi-Busbars & Silicon Wafer Chamfers
+        const solarCellTexture = this.createSolarPhotovoltaicTexture();
+
+        // Anodized Satin Silver-Blue Aerospace Aluminum Frame Material
         const frameMat = new THREE.MeshStandardMaterial({
-          color: 0xc4cdd5,
-          metalness: 0.95,
-          roughness: 0.18
+          color: 0xdbeafe,
+          metalness: 0.92,
+          roughness: 0.22
         });
 
-        // Monocrystalline Silicon Solar Cell Material (High-efficiency dark blue/indigo-black)
+        // High-Efficiency Monocrystalline Silicon Cell Material
         const cellMat = new THREE.MeshStandardMaterial({
-          color: 0x071529,
-          metalness: 0.7,
-          roughness: 0.25,
-          emissive: 0x010815,
-          emissiveIntensity: 0.4
+          map: solarCellTexture,
+          metalness: 0.78,
+          roughness: 0.18,
+          emissive: 0x062852,
+          emissiveIntensity: 0.45
         });
 
-        const busbarMat = new THREE.MeshBasicMaterial({
+        // Anti-Reflective ARC Tempered Solar Glass Material with Specular Sheen
+        const glassCoverMat = new THREE.MeshPhysicalMaterial({
           color: 0x38bdf8,
           transparent: true,
-          opacity: 0.7
+          opacity: 0.22,
+          roughness: 0.04,
+          metalness: 0.15,
+          transmission: 0.90,
+          ior: 1.52,
+          reflectivity: 0.95,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.04
         });
+
+        // Black Composite Corner Protective Bracket Material
+        const cornerMat = new THREE.MeshStandardMaterial({
+          color: 0x0f172a,
+          roughness: 0.5,
+          metalness: 0.3
+        });
+
+        // Mounting Hardware Materials (End & Mid-Clamps)
+        const clampMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.95, roughness: 0.12 });
+        const boltMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
 
         const panelW = 1.12;
         const panelThick = 0.04;
@@ -3989,46 +4028,69 @@
           modGroup.position.set(cfg.x, cfg.y, cfg.z);
           modGroup.rotation.x = tilt;
 
-          // Outer Aluminum Frame
+          // Outer Anodized Aluminum Extrusion Frame
           const pFrame = new THREE.Mesh(new THREE.BoxGeometry(panelW, panelThick, panelD), frameMat);
           modGroup.add(pFrame);
 
-          // Silicon Wafer Layer
-          const wafer = new THREE.Mesh(new THREE.PlaneGeometry(panelW - 0.05, panelD - 0.05), cellMat);
+          // 4 Corner Protector Caps (High-durability black composite)
+          const cornerGeo = new THREE.BoxGeometry(0.04, panelThick + 0.002, 0.04);
+          [
+            [-panelW / 2 + 0.02, 0, -panelD / 2 + 0.02],
+            [ panelW / 2 - 0.02, 0, -panelD / 2 + 0.02],
+            [-panelW / 2 + 0.02, 0,  panelD / 2 - 0.02],
+            [ panelW / 2 - 0.02, 0,  panelD / 2 - 0.02]
+          ].forEach(([cx, cy, cz]) => {
+            const corner = new THREE.Mesh(cornerGeo, cornerMat);
+            corner.position.set(cx, cy, cz);
+            modGroup.add(corner);
+          });
+
+          // Monocrystalline Silicon Wafer Surface
+          const wafer = new THREE.Mesh(new THREE.PlaneGeometry(panelW - 0.045, panelD - 0.045), cellMat);
           wafer.rotation.x = -Math.PI / 2;
           wafer.position.y = panelThick / 2 + 0.001;
           modGroup.add(wafer);
 
-          // Photovoltaic Contact Busbars (Metallic silver conduct ribbons)
-          for (let b = -3; b <= 3; b++) {
-            const bb = new THREE.Mesh(new THREE.PlaneGeometry(0.006, panelD - 0.06), busbarMat);
-            bb.rotation.x = -Math.PI / 2;
-            bb.position.set(b * 0.15, panelThick / 2 + 0.002, 0);
-            modGroup.add(bb);
-          }
-
-          // Anti-Reflective ARC Tempered Glass Coating
+          // Tempered Anti-Reflective ARC Solar Glass Pane
           const glassCover = new THREE.Mesh(
             new THREE.PlaneGeometry(panelW - 0.04, panelD - 0.04),
-            new THREE.MeshPhysicalMaterial({
-              color: 0x93c5fd,
-              transparent: true,
-              opacity: 0.22,
-              roughness: 0.05,
-              metalness: 0.05,
-              transmission: 0.92,
-              ior: 1.5
-            })
+            glassCoverMat
           );
           glassCover.rotation.x = -Math.PI / 2;
           glassCover.position.y = panelThick / 2 + 0.003;
           modGroup.add(glassCover);
+
+          // Rail Mounting Mid & End Clamps with Stainless Steel Hex Bolts
+          const clampGeo = new THREE.BoxGeometry(0.035, 0.016, 0.055);
+          const boltGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.018, 8);
+          [
+            [-panelW / 2 + 0.01, panelThick / 2 + 0.008, 0],
+            [ panelW / 2 - 0.01, panelThick / 2 + 0.008, 0]
+          ].forEach(([clX, clY, clZ]) => {
+            const cl = new THREE.Mesh(clampGeo, clampMat);
+            cl.position.set(clX, clY, clZ);
+            const b = new THREE.Mesh(boltGeo, boltMat);
+            b.position.set(0, 0.008, 0);
+            cl.add(b);
+            modGroup.add(cl);
+          });
 
           modGroup.name = `pv_panel_${idx + 1}`;
           this.solarPanelsGroup.add(modGroup);
           this.pvPanels.push(modGroup);
           this.interactiveObjects.push(modGroup);
         });
+
+        // Copper & Green Equipment Grounding Lug & Wire on Rail
+        const gLugGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.02, 16);
+        const gLugMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.95, roughness: 0.15 });
+        const gLug = new THREE.Mesh(gLugGeo, gLugMat);
+        gLug.rotation.x = Math.PI / 2;
+        gLug.position.set(-1.8, 3.86, 0.0);
+        const gConductorMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.35 });
+        const gConductor = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.45, 12), gConductorMat);
+        gConductor.position.set(-1.8, 3.7, 0.0);
+        this.solarRoofGroup.add(gLug, gConductor);
 
         this.solarRoofGroup.add(this.solarPanelsGroup);
 
@@ -4041,27 +4103,254 @@
         this.scene.add(this.solarRoofGroup);
       }
 
+      createSolarPhotovoltaicTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024;
+        canvas.height = 1024;
+        const ctx = canvas.getContext('2d');
+
+        // 1. Crisp White/Silver Reflective Backsheet base
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(0, 0, 1024, 1024);
+
+        // 6 columns x 10 rows of monocrystalline silicon solar cells
+        const cols = 6;
+        const rows = 10;
+        const marginX = 26;
+        const marginY = 32;
+        const spacingX = 6;
+        const spacingY = 6;
+        const cellW = (1024 - marginX * 2 - spacingX * (cols - 1)) / cols; // ~157px
+        const cellH = (1024 - marginY * 2 - spacingY * (rows - 1)) / rows; // ~90px
+        const chamfer = 9; // Monocrystalline pseudo-square corner chamfer
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const x = marginX + c * (cellW + spacingX);
+            const y = marginY + r * (cellH + spacingY);
+
+            // Chamfered corner silicon wafer path
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(x + chamfer, y);
+            ctx.lineTo(x + cellW - chamfer, y);
+            ctx.lineTo(x + cellW, y + chamfer);
+            ctx.lineTo(x + cellW, y + cellH - chamfer);
+            ctx.lineTo(x + cellW - chamfer, y + cellH);
+            ctx.lineTo(x + chamfer, y + cellH);
+            ctx.lineTo(x, y + cellH - chamfer);
+            ctx.lineTo(x, y + chamfer);
+            ctx.closePath();
+            ctx.clip();
+
+            // Vibrant multi-spectral photovoltaic gradient:
+            // Rich cobalt/azure at top to deep sapphire blue and rich navy at base
+            const grad = ctx.createLinearGradient(x, y, x + cellW, y + cellH);
+            const cellVariant = (r * 5 + c * 11) % 4;
+            if (cellVariant === 0) {
+              grad.addColorStop(0, '#2563eb');
+              grad.addColorStop(0.25, '#1d4ed8');
+              grad.addColorStop(0.65, '#0f317e');
+              grad.addColorStop(1, '#081c4c');
+            } else if (cellVariant === 1) {
+              grad.addColorStop(0, '#0284c7');
+              grad.addColorStop(0.3, '#1e40af');
+              grad.addColorStop(0.7, '#0e2b70');
+              grad.addColorStop(1, '#07183e');
+            } else if (cellVariant === 2) {
+              grad.addColorStop(0, '#3b82f6');
+              grad.addColorStop(0.35, '#1d4ed8');
+              grad.addColorStop(0.75, '#113488');
+              grad.addColorStop(1, '#091f52');
+            } else {
+              grad.addColorStop(0, '#0369a1');
+              grad.addColorStop(0.3, '#1e3a8a');
+              grad.addColorStop(0.7, '#0d2562');
+              grad.addColorStop(1, '#061338');
+            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, y, cellW, cellH);
+
+            // Anti-Reflective Nano-Coating ARC iridescent optical sheen
+            const arcGrad = ctx.createLinearGradient(x, y + cellH, x + cellW, y);
+            arcGrad.addColorStop(0, 'rgba(0, 229, 255, 0.0)');
+            arcGrad.addColorStop(0.4, 'rgba(0, 229, 255, 0.16)');
+            arcGrad.addColorStop(0.6, 'rgba(56, 189, 248, 0.22)');
+            arcGrad.addColorStop(1, 'rgba(168, 85, 247, 0.12)');
+            ctx.fillStyle = arcGrad;
+            ctx.fillRect(x, y, cellW, cellH);
+
+            // Micro-Grid Fine Silver Finger Lines (collecting current horizontally)
+            ctx.strokeStyle = 'rgba(241, 245, 249, 0.42)';
+            ctx.lineWidth = 1;
+            const fingers = 13;
+            for (let f = 1; f < fingers; f++) {
+              const fy = y + (cellH / fingers) * f;
+              ctx.beginPath();
+              ctx.moveTo(x + 1, fy);
+              ctx.lineTo(x + cellW - 1, fy);
+              ctx.stroke();
+            }
+
+            // Multi-Busbar (MBB: 9 bright silver conductive ribbons running vertically)
+            const busbars = 9;
+            for (let b = 1; b <= busbars; b++) {
+              const bx = x + (cellW / (busbars + 1)) * b;
+              
+              // Shadow/relief on ribbon
+              ctx.strokeStyle = 'rgba(148, 163, 184, 0.7)';
+              ctx.lineWidth = 2.4;
+              ctx.beginPath();
+              ctx.moveTo(bx + 0.5, y);
+              ctx.lineTo(bx + 0.5, y + cellH);
+              ctx.stroke();
+
+              // High-reflective silver core ribbon
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 1.4;
+              ctx.beginPath();
+              ctx.moveTo(bx, y);
+              ctx.lineTo(bx, y + cellH);
+              ctx.stroke();
+
+              // Micro solder pad contacts along the busbar
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(bx - 1.5, y + cellH * 0.25 - 1.5, 3, 3);
+              ctx.fillRect(bx - 1.5, y + cellH * 0.50 - 1.5, 3, 3);
+              ctx.fillRect(bx - 1.5, y + cellH * 0.75 - 1.5, 3, 3);
+            }
+
+            // Silicon wafer outline
+            ctx.strokeStyle = 'rgba(15, 23, 42, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+
+        // Heavy Silver Busbar Interconnects on top and bottom module margins
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(marginX - 6, marginY - 16, 1024 - (marginX - 6) * 2, 8);
+        ctx.fillRect(marginX - 6, 1024 - marginY + 8, 1024 - (marginX - 6) * 2, 8);
+
+        // Dark metallic rating plate on bottom margin
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(marginX + 8, 1024 - marginY + 6, 360, 20);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText('STARK PV-480W // MONOCRYSTALLINE BIFACIAL', marginX + 16, 1024 - marginY + 20);
+
+        // High Voltage Caution Decal on bottom right
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(1024 - marginX - 190, 1024 - marginY + 6, 182, 20);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText('⚡ 480V VOC / 1500V DC MAX', 1024 - marginX - 182, 1024 - marginY + 20);
+
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.anisotropy = 8;
+        tex.generateMipmaps = true;
+        return tex;
+      }
+
+      createWarningPlateTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 384;
+        canvas.height = 96;
+        const ctx = canvas.getContext('2d');
+
+        // Safety yellow background
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(0, 0, 384, 96);
+
+        // Hazard chevron stripes on top and bottom borders
+        const stripeW = 16;
+        ctx.fillStyle = '#0f172a';
+        for (let x = -stripeW; x < 384 + stripeW; x += stripeW * 2) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x + stripeW, 0);
+          ctx.lineTo(x + stripeW * 0.5, 12);
+          ctx.lineTo(x - stripeW * 0.5, 12);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(x, 84);
+          ctx.lineTo(x + stripeW, 84);
+          ctx.lineTo(x + stripeW * 0.5, 96);
+          ctx.lineTo(x - stripeW * 0.5, 96);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Inner black border
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(6, 14, 372, 68);
+
+        // Hazard symbol
+        ctx.fillStyle = '#dc2626';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText('⚠ ⚡', 16, 54);
+
+        // Text
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '900 15px monospace';
+        ctx.fillText('DANGER: 480V DC VOC', 70, 42);
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText('SOLAR COMBINER // LIVE IN SUNLIGHT', 70, 62);
+
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.anisotropy = 4;
+        return tex;
+      }
+
       createRooftopJunctionBox() {
         this.roofJunctionGroup = new THREE.Group();
         this.roofJunctionGroup.position.set(2.0, 4.05, -0.6);
 
-        // Weatherproof NEMA 4X Industrial Enclosure
-        const boxGeo = new THREE.BoxGeometry(0.36, 0.44, 0.16);
+        // Weatherproof NEMA 4X Industrial Enclosure in Dark Slate Matte
+        const boxGeo = new THREE.BoxGeometry(0.38, 0.46, 0.16);
         const boxMat = new THREE.MeshStandardMaterial({
-          color: 0x1a2332,
-          roughness: 0.45,
-          metalness: 0.4
+          color: 0x1e293b,
+          roughness: 0.35,
+          metalness: 0.5
         });
         const boxBody = new THREE.Mesh(boxGeo, boxMat);
         boxBody.castShadow = true;
         this.roofJunctionGroup.add(boxBody);
 
-        // Solar Array Warning Label Decal
-        const labelGeo = new THREE.PlaneGeometry(0.30, 0.06);
-        const labelMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+        // Solar Array Warning Label Decal with Chevron Stripes & Danger Symbol
+        const warningTexture = this.createWarningPlateTexture();
+        const labelGeo = new THREE.PlaneGeometry(0.32, 0.08);
+        const labelMat = new THREE.MeshBasicMaterial({ map: warningTexture, transparent: false });
         const warningPlate = new THREE.Mesh(labelGeo, labelMat);
-        warningPlate.position.set(0, 0.16, 0.081);
+        warningPlate.position.set(0, 0.165, 0.081);
         this.roofJunctionGroup.add(warningPlate);
+
+        // Active Solar Generation Status LED (Glowing Emerald Green with Chrome Bezel)
+        const ledHousing = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.016, 0.016, 0.015, 16),
+          new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.95, roughness: 0.15 })
+        );
+        ledHousing.rotation.x = Math.PI / 2;
+        ledHousing.position.set(-0.13, 0.165, 0.082);
+        this.roofJunctionGroup.add(ledHousing);
+
+        this.roofStatusLedMat = new THREE.MeshStandardMaterial({
+          color: 0x22c55e,
+          emissive: 0x22c55e,
+          emissiveIntensity: 1.4,
+          roughness: 0.1
+        });
+        this.roofStatusLed = new THREE.Mesh(new THREE.SphereGeometry(0.011, 16, 16), this.roofStatusLedMat);
+        this.roofStatusLed.position.set(-0.13, 0.165, 0.092);
+        this.roofJunctionGroup.add(this.roofStatusLed);
+
+        const ledPointLight = new THREE.PointLight(0x22c55e, 0.7, 1.4);
+        ledPointLight.position.set(-0.13, 0.165, 0.12);
+        this.roofJunctionGroup.add(ledPointLight);
 
         // Canvas LCD Telemetry Display Screen
         this.roofLcdCanvas = document.createElement('canvas');
@@ -4077,15 +4366,15 @@
         this.roofLcdMesh.position.set(0, 0.03, 0.082);
         this.roofJunctionGroup.add(this.roofLcdMesh);
 
-        // Positive (+) High Voltage Test Terminal Lug
+        // Positive (+) High Voltage Test Terminal Lug (Crimson Red with Gold Lug)
         const termGeo = new THREE.BoxGeometry(0.04, 0.05, 0.04);
-        const redMat = new THREE.MeshStandardMaterial({ color: 0xdd1122, roughness: 0.3 });
+        const redMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 });
         this.roofPosTerminal = new THREE.Mesh(termGeo, redMat);
         this.roofPosTerminal.position.set(-0.06, -0.12, 0.085);
         this.roofPosTerminal.name = "roof_pos_terminal";
 
         const brassLugGeo = new THREE.CylinderGeometry(0.009, 0.009, 0.015, 16);
-        const brassLugMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 });
+        const brassLugMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.95, roughness: 0.15 });
         const pLug = new THREE.Mesh(brassLugGeo, brassLugMat);
         pLug.rotation.x = Math.PI / 2;
         pLug.position.set(0, 0, 0.022);
@@ -4093,8 +4382,8 @@
         this.roofJunctionGroup.add(this.roofPosTerminal);
         this.interactiveObjects.push(this.roofPosTerminal);
 
-        // Negative (-) High Voltage Test Terminal Lug
-        const blackMat = new THREE.MeshStandardMaterial({ color: 0x111620, roughness: 0.4 });
+        // Negative (-) High Voltage Test Terminal Lug (Matte Slate Black with Gold Lug)
+        const blackMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
         this.roofNegTerminal = new THREE.Mesh(termGeo, blackMat);
         this.roofNegTerminal.position.set(0.06, -0.12, 0.085);
         this.roofNegTerminal.name = "roof_neg_terminal";
@@ -4108,12 +4397,38 @@
 
         // Cable Glands on Bottom
         const glandGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.04, 16);
-        const glandMat = new THREE.MeshStandardMaterial({ color: 0x2d3748, metalness: 0.8 });
+        const glandMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
         const g1 = new THREE.Mesh(glandGeo, glandMat);
         g1.position.set(-0.08, -0.23, 0);
         const g2 = new THREE.Mesh(glandGeo, glandMat);
         g2.position.set(0.08, -0.23, 0);
         this.roofJunctionGroup.add(g1, g2);
+
+        // Color-Coded Flexible DC Wiring exiting glands
+        const dcRedMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.35, metalness: 0.2 });
+        const dcBlackMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.45, metalness: 0.3 });
+        const yellowCollarMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
+
+        // Left cable (+ DC Red) with Yellow Polarity Collar
+        const cRed = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.12, 16), dcRedMat);
+        cRed.position.set(-0.08, -0.29, 0);
+        const collarRed = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.025, 16), yellowCollarMat);
+        collarRed.position.set(-0.08, -0.26, 0);
+        this.roofJunctionGroup.add(cRed, collarRed);
+
+        // Right cable (- DC Black) with Yellow Polarity Collar
+        const cBlack = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.12, 16), dcBlackMat);
+        cBlack.position.set(0.08, -0.29, 0);
+        const collarBlack = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.025, 16), yellowCollarMat);
+        collarBlack.position.set(0.08, -0.26, 0);
+        this.roofJunctionGroup.add(cBlack, collarBlack);
+
+        // Equipment Grounding Conductor (Green Wire)
+        const groundWireMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.4 });
+        const gWire = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.22, 12), groundWireMat);
+        gWire.rotation.z = Math.PI / 4;
+        gWire.position.set(0.18, -0.24, 0);
+        this.roofJunctionGroup.add(gWire);
 
         this.roofJunctionGroup.name = "roof_junction_box";
         this.solarRoofGroup.add(this.roofJunctionGroup);
@@ -4124,16 +4439,18 @@
         this.conduitGroup = new THREE.Group();
 
         const pipeMat = new THREE.MeshStandardMaterial({
-          color: 0xdd7700, // High-voltage DC orange conduit
-          metalness: 0.65,
+          color: 0xf97316, // Vibrant High-visibility Safety DC Orange
+          metalness: 0.55,
           roughness: 0.35
         });
 
         const jointMat = new THREE.MeshStandardMaterial({
-          color: 0x718096,
-          metalness: 0.9,
-          roughness: 0.2
+          color: 0xe2e8f0, // Polished galvanized steel coupling sleeves
+          metalness: 0.95,
+          roughness: 0.15
         });
+
+        const bandMat = new THREE.MeshBasicMaterial({ color: 0x0f172a }); // Warning label band
 
         // 1. Pipe coming out of rooftop junction box bottom
         // From (2.0, 3.82, -0.6) down to roof level at (2.0, 3.65, -0.6)
@@ -4146,6 +4463,14 @@
         p2.rotation.z = Math.PI / 2;
         p2.position.set(1.0, 3.65, -0.65);
         this.conduitGroup.add(p2);
+
+        // Coupling sleeves on horizontal pipe
+        [1.5, 0.5].forEach(xP => {
+          const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.04, 16), jointMat);
+          sleeve.rotation.z = Math.PI / 2;
+          sleeve.position.set(xP, 3.65, -0.65);
+          this.conduitGroup.add(sleeve);
+        });
 
         // Elbow joint at (2.0, 3.65, -0.65)
         const elbow1 = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 16), jointMat);
@@ -4163,12 +4488,14 @@
         p3.position.set(0.0, 1.18 + verticalLength / 2, -0.65);
         this.conduitGroup.add(p3);
 
-        // Conduit Wall Clamps
+        // Conduit Warning Bands & Metal Wall Clamps
         const clampGeo = new THREE.BoxGeometry(0.06, 0.03, 0.05);
         [1.6, 2.3, 3.0].forEach(yPos => {
           const clamp = new THREE.Mesh(clampGeo, jointMat);
           clamp.position.set(0.0, yPos, -0.65);
-          this.conduitGroup.add(clamp);
+          const band = new THREE.Mesh(new THREE.CylinderGeometry(0.021, 0.021, 0.03, 16), bandMat);
+          band.position.set(0.0, yPos + 0.06, -0.65);
+          this.conduitGroup.add(clamp, band);
         });
 
         this.solarRoofGroup.add(this.conduitGroup);
@@ -4610,6 +4937,10 @@
       }
 
       updateAnimatedInstruments(time, delta) {
+        if (this.roofStatusLedMat) {
+          this.roofStatusLedMat.emissiveIntensity = 0.9 + Math.sin(time * 3.5) * 0.6;
+        }
+
         if (!this.oscCtx) return;
         const c = this.oscCtx;
         const w = this.oscCanvas.width;
@@ -5461,6 +5792,18 @@
         roofLight.position.set(2.0, 4.3, -0.5);
         this.scene.add(roofLight);
 
+        // Natural rooftop outdoor sunlight illuminating the 25-degree tilted PV modules
+        const roofSun = new THREE.DirectionalLight(0xfff7ed, 2.2);
+        roofSun.position.set(1.5, 9.0, 2.2);
+        roofSun.target.position.set(0, 4.0, -0.85);
+        this.scene.add(roofSun);
+        this.scene.add(roofSun.target);
+
+        // Sky ambient fill light over rooftop for crisp outdoor contrast
+        const roofSky = new THREE.HemisphereLight(0x38bdf8, 0x1e293b, 0.75);
+        roofSky.position.set(0, 9.0, 0);
+        this.scene.add(roofSky);
+
         // --- Suspended Dual-Tube Industrial Fluorescent Troffers ---
         const trofferMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.35, metalness: 0.8 });
         const tubeMat = new THREE.MeshStandardMaterial({
@@ -5790,8 +6133,8 @@
           if (label) label.textContent = this.language === 'hi' ? "वर्कबेंच दृश्य" : "WORKBENCH VIEW";
 
           this.animateCameraTo(
-            new THREE.Vector3(0, 4.4, 1.2),
-            new THREE.Vector3(0, 3.9, -0.8),
+            new THREE.Vector3(0.2, 4.62, 1.58),
+            new THREE.Vector3(0.2, 3.98, -0.65),
             900,
             () => {
               this.controls.minDistance = 0.5;
