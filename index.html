@@ -556,22 +556,40 @@
       box-shadow: 0 0 24px rgba(0, 229, 255, 0.75) !important;
     }
 
+    /* Training Report Card & Performance Audit Modal */
     .completion-modal {
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) scale(0.9);
+      transform: translate(-50%, -50%) scale(0.92);
       opacity: 0;
       pointer-events: none;
       transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      text-align: center;
-      max-width: 540px;
-      width: 90%;
-      padding: 32px;
-      background: rgba(8, 12, 18, 0.95);
-      border: 1.5px solid var(--green-safe);
-      border-radius: 12px;
-      box-shadow: 0 0 44px rgba(0, 255, 136, 0.28), inset 0 0 20px rgba(0, 255, 136, 0.12);
+      text-align: left;
+      max-width: 680px;
+      width: 94%;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 24px 28px;
+      background: rgba(9, 13, 21, 0.96);
+      border: 1.5px solid var(--cyan-glow);
+      border-radius: 14px;
+      box-shadow: 0 0 54px rgba(0, 229, 255, 0.22), inset 0 0 20px rgba(0, 229, 255, 0.08);
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .completion-modal::-webkit-scrollbar {
+      width: 6px;
+    }
+    .completion-modal::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 3px;
+    }
+    .completion-modal::-webkit-scrollbar-thumb {
+      background: rgba(0, 229, 255, 0.35);
+      border-radius: 3px;
     }
 
     .completion-modal.show {
@@ -580,25 +598,268 @@
       pointer-events: auto;
     }
 
-    .completion-badge {
-      font-size: 42px;
-      margin-bottom: 12px;
-      color: var(--green-safe);
+    .report-header {
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 14px;
     }
 
-    .completion-title {
-      font-size: 22px;
+    .report-brand-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .report-logo {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--cyan-glow);
+    }
+
+    .report-cert-tag {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .report-grade-banner {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 12px 16px;
+      background: rgba(0, 255, 136, 0.08);
+      border: 1px solid var(--green-safe);
+      border-radius: 10px;
+    }
+
+    .report-grade-banner.grade-warn {
+      background: rgba(255, 145, 0, 0.1);
+      border-color: var(--amber-warn);
+    }
+
+    .report-grade-banner.grade-danger {
+      background: rgba(255, 42, 68, 0.12);
+      border-color: var(--red-alert);
+    }
+
+    .grade-badge-circle {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: var(--green-safe);
+      color: #06111e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 900;
+      font-family: var(--font-mono);
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+      flex-shrink: 0;
+    }
+
+    .grade-warn .grade-badge-circle {
+      background: var(--amber-warn);
+      color: #06111e;
+      box-shadow: 0 0 20px var(--amber-dim);
+    }
+
+    .grade-danger .grade-badge-circle {
+      background: var(--red-alert);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(255, 42, 68, 0.6);
+    }
+
+    .grade-text-group {
+      flex: 1;
+    }
+
+    .report-stars {
+      color: #facc15;
+      font-size: 16px;
+      letter-spacing: 3px;
+      margin-bottom: 2px;
+    }
+
+    .report-grade-title {
+      font-size: 16px;
       font-weight: 800;
       color: #fff;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
+    }
+
+    .report-grade-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    .report-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 650px) {
+      .report-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .stat-sub {
+      font-size: 10px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .report-section {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       margin-bottom: 8px;
     }
 
-    .completion-desc {
+    .section-icon {
       font-size: 14px;
-      color: var(--text-dim);
-      margin-bottom: 22px;
-      line-height: 1.55;
+    }
+
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+
+    .section-badge {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: rgba(0, 255, 136, 0.15);
+      color: var(--green-safe);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+    }
+
+    .section-badge.badge-red {
+      background: rgba(255, 42, 68, 0.18);
+      color: #ff6b7d;
+      border-color: var(--red-alert);
+    }
+
+    .section-badge.badge-cyan {
+      background: var(--cyan-dim);
+      color: var(--cyan-glow);
+      border-color: rgba(0, 229, 255, 0.35);
+    }
+
+    .error-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 11.5px;
+      color: #fca5a5;
+      padding: 6px 8px;
+      background: rgba(239, 68, 68, 0.1);
+      border-left: 3px solid #ef4444;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+
+    .error-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .error-timestamp {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: #f87171;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .no-error-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: rgba(0, 255, 136, 0.08);
+      border-radius: 6px;
+      color: var(--green-safe);
+      font-size: 12px;
+    }
+
+    .improvement-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 11.5px;
+      color: var(--text-main);
+      padding: 6px 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 3px solid var(--cyan-glow);
+      border-radius: 4px;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+
+    .improvement-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .report-actions-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     @media (max-width: 880px) {
@@ -607,6 +868,77 @@
       .telemetry-card { gap: 10px; }
       #hud-overlay { padding: 12px; }
       .task-title { font-size: 15px; }
+    }
+
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #completion-modal, #completion-modal * {
+        visibility: visible !important;
+      }
+      #completion-modal {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        transform: none !important;
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border: 2px solid #0f172a !important;
+        box-shadow: none !important;
+        opacity: 1 !important;
+        padding: 24px !important;
+        overflow: visible !important;
+      }
+      .report-actions-row, .report-logo, .interactive-ui button {
+        display: none !important;
+      }
+      .report-header {
+        border-bottom: 2px solid #0f172a !important;
+      }
+      .report-grade-banner {
+        background: #f1f5f9 !important;
+        border: 1px solid #94a3b8 !important;
+      }
+      .grade-badge-circle {
+        background: #0284c7 !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
+      }
+      .report-grade-title {
+        color: #0f172a !important;
+      }
+      .report-grade-sub, .report-cert-tag, .stat-label, .stat-sub {
+        color: #475569 !important;
+      }
+      .stat-card, .report-section {
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      .stat-value, .section-title {
+        color: #0f172a !important;
+      }
+      .error-item {
+        background: #fee2e2 !important;
+        border-left-color: #dc2626 !important;
+        color: #991b1b !important;
+      }
+      .error-timestamp {
+        color: #b91c1c !important;
+      }
+      .improvement-item {
+        background: #f0fdf4 !important;
+        border-left-color: #16a34a !important;
+        color: #166534 !important;
+      }
+      .no-error-card {
+        background: #dcfce7 !important;
+        color: #15803d !important;
+      }
     }
   </style>
 
@@ -771,21 +1103,96 @@
           INTERACT STEP
         </button>
 
+        <!-- View Report Card Button (visible when module completed) -->
+        <button class="btn-hud" id="btn-view-report" style="display: none; border-color: var(--cyan-glow); color: var(--cyan-glow);" title="Open Training Report Card & Performance Audit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          REPORT CARD
+        </button>
+
         <button class="btn-hud" id="btn-reset-scene" title="Reset procedure">
           RESET
         </button>
       </div>
     </div>
 
-    <!-- Completion Modal -->
+    <!-- Completion Report Card & Performance Audit Modal -->
     <div class="completion-modal interactive-ui" id="completion-modal">
-      <div class="completion-badge">&#10004;</div>
-      <div class="completion-title">TRAINING COMPLETE</div>
-      <div class="completion-desc">
-        Substation entrance traversed, combiner circuit safely isolated and corrected, tool box accessed, and 48V Lithium Battery Pack successfully mounted and balanced under full OSHA &amp; NFPA 70E compliance.
+      <!-- Report Header -->
+      <div class="report-header">
+        <div class="report-brand-row">
+          <div class="report-logo">JARVIS // TRAINING AUDIT</div>
+          <div class="report-cert-tag">NFPA 70E / OSHA 1910.303 PERFORMANCE EVALUATION</div>
+        </div>
+        
+        <div class="report-grade-banner" id="report-grade-banner">
+          <div class="grade-badge-circle" id="report-grade-circle">S</div>
+          <div class="grade-text-group">
+            <div class="report-stars" id="report-stars">★★★★★</div>
+            <div class="report-grade-title" id="report-grade-title">MASTER ELECTRICIAN // FLAWLESS COMPLIANCE</div>
+            <div class="report-grade-sub" id="report-grade-sub">Substation entrance, safe LOTO isolation, circuit correction, and battery commissioning validated.</div>
+          </div>
+        </div>
       </div>
-      <div class="action-button-group" style="justify-content: center;">
-        <button class="btn-hud btn-primary" id="btn-modal-restart">PRACTICE AGAIN</button>
+
+      <!-- 4 Core Performance Metrics Cards -->
+      <div class="report-stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">OPERATIONAL ACCURACY</div>
+          <div class="stat-value" id="report-accuracy">100%</div>
+          <div class="stat-sub" id="report-accuracy-sub">6/6 Optimal Procedures</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">SAFETY SCORE</div>
+          <div class="stat-value" id="report-score" style="color: var(--green-safe);">100%</div>
+          <div class="stat-sub" id="report-score-sub">Zero Infraction Penalties</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">TIME TAKEN</div>
+          <div class="stat-value" id="report-time">01:45</div>
+          <div class="stat-sub" id="report-time-sub">Target: 02:15 (-30s)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">SAFETY RATING</div>
+          <div class="stat-value" id="report-rating" style="color: var(--cyan-glow);">CLASS 0 (1000V)</div>
+          <div class="stat-sub" id="report-rating-sub">Fully Certified &amp; Compliant</div>
+        </div>
+      </div>
+
+      <!-- Errors & Incidents Log Section -->
+      <div class="report-section">
+        <div class="section-title-row">
+          <span class="section-icon">⚠</span>
+          <span class="section-title">INCIDENTS &amp; ERRORS LOG</span>
+          <span class="section-badge" id="report-error-count-badge">0 ERRORS</span>
+        </div>
+        <div class="errors-log-container" id="report-errors-container">
+          <!-- Dynamically populated by generateReportCard() -->
+        </div>
+      </div>
+
+      <!-- Areas for Improvement Section -->
+      <div class="report-section">
+        <div class="section-title-row">
+          <span class="section-icon">💡</span>
+          <span class="section-title">RECOMMENDED IMPROVEMENTS</span>
+          <span class="section-badge badge-cyan">NFPA 70E GUIDELINES</span>
+        </div>
+        <div class="improvements-container" id="report-improvements-container">
+          <!-- Dynamically populated by generateReportCard() -->
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="report-actions-row">
+        <button class="btn-hud" id="btn-modal-print" title="Print/Save Report Card Certificate">PRINT REPORT</button>
+        <button class="btn-hud" id="btn-modal-close" title="Dismiss modal and explore 3D facility">EXPLORE 3D SCENE</button>
+        <button class="btn-hud btn-primary" id="btn-modal-restart" title="Reset and practice again">PRACTICE AGAIN</button>
       </div>
     </div>
   </div>
@@ -1485,8 +1892,21 @@
           return;
         }
 
+        // Performance Report Card / Evaluation
+        if (text.includes("report card") || text.includes("audit") || text.includes("evaluation") || text.includes("accuracy") || text.includes("grade") || text.includes("my score") || text.includes("how did i do")) {
+          if (this.app.fsm.currentState === STATES.COMPLETED) {
+            this.app.showReportCard();
+            this.app.jarvis.speak("Displaying your official training report card and performance audit.", true);
+          } else {
+            const totalPenalty = this.app.fsm.errors.reduce((sum, e) => sum + (e.penalty || 0), 0);
+            const currentAcc = Math.max(0, 100 - totalPenalty);
+            this.app.jarvis.speak(`Training in progress at step ${this.app.fsm.currentState} of 6. Current operational accuracy is ${currentAcc} percent with ${this.app.fsm.errors.length} infraction${this.app.fsm.errors.length === 1 ? '' : 's'}. Complete all steps to generate your certified final report.`);
+          }
+          return;
+        }
+
         // Utility: Status Report
-        if (text.includes("status") || text.includes("report") || text.includes("telemetry")) {
+        if (text.includes("status") || text.includes("telemetry") || (text.includes("report") && !text.includes("card"))) {
           const volt = this.app.fsm.circuitEnergized ? "480 volts energized" : "zero volts safe";
           const score = this.app.fsm.safetyScore;
           const step = this.app.fsm.currentState;
@@ -1549,6 +1969,9 @@
         this.safetyScore = 100;
         this.elapsedSeconds = 0;
         this.timerInterval = null;
+        this.errors = [];
+        this.lastErrorType = null;
+        this.lastErrorTimestamp = 0;
       }
 
       init() {
@@ -1566,6 +1989,41 @@
           document.getElementById('hud-timer').textContent = timerStr;
           if (this.app.diegeticHUD) this.app.diegeticHUD.updateTimer(timerStr);
         }, 1000);
+      }
+
+      recordError(type, title, desc, penalty = 15) {
+        const now = Date.now();
+        // Throttle identical error types within 1500ms to prevent accidental double-clicks
+        if (this.lastErrorType === type && (now - this.lastErrorTimestamp < 1500)) {
+          return null;
+        }
+        this.lastErrorType = type;
+        this.lastErrorTimestamp = now;
+
+        const mins = String(Math.floor(this.elapsedSeconds / 60)).padStart(2, '0');
+        const secs = String(this.elapsedSeconds % 60).padStart(2, '0');
+        const timestamp = `${mins}:${secs}`;
+
+        const errObj = {
+          type,
+          title,
+          desc,
+          penalty,
+          timestamp,
+          step: this.currentState
+        };
+        this.errors.push(errObj);
+
+        // Deduct score
+        this.safetyScore = Math.max(0, this.safetyScore - penalty);
+        const scoreElem = document.getElementById('hud-score');
+        if (scoreElem) scoreElem.textContent = `${this.safetyScore}%`;
+        if (this.app.diegeticHUD) this.app.diegeticHUD.updateScore(this.safetyScore);
+
+        this.flashScreen('amber');
+        this.app.sound.playElectricArcBuzz();
+
+        return errObj;
       }
 
       enterState(newState) {
@@ -1631,9 +2089,19 @@
             this.batteryOnline = true;
             document.getElementById('hud-battery-status').textContent = "ONLINE // 51.2V";
             document.getElementById('hud-battery-status').style.color = "#00ff88";
-            this.app.jarvis.speak(
-              "Battery module successfully seated and torqued. Circuit restored and fully balanced. Module complete. Excellent work, sir."
-            );
+
+            // Generate report card metrics and show modal
+            const report = this.generateReportCard();
+
+            // Reveal report card button in bottom action bar
+            const reportBtn = document.getElementById('btn-view-report');
+            if (reportBtn) reportBtn.style.display = 'inline-flex';
+
+            const mins = String(Math.floor(this.elapsedSeconds / 60)).padStart(2, '0');
+            const secs = String(this.elapsedSeconds % 60).padStart(2, '0');
+            const debrief = `Module complete. Final report generated: Accuracy ${report.accuracy} percent, Grade ${report.grade}, Safety score ${report.finalScore} percent. Time taken: ${mins} minutes and ${secs} seconds. ${this.errors.length === 0 ? "Flawless execution, sir. Zero safety infractions recorded." : `${this.errors.length} protocol ${this.errors.length === 1 ? 'infraction was' : 'infractions were'} detected. Review your training report card on screen.`}`;
+
+            this.app.jarvis.speak(debrief);
             this.app.ghostGuides.setStep(7);
             document.getElementById('completion-modal').classList.add('show');
             if (this.app.env.completionBadgeGroup) {
@@ -1644,16 +2112,240 @@
       }
 
       triggerArcFlashViolation() {
-        this.safetyScore = Math.max(0, this.safetyScore - 25);
-        document.getElementById('hud-score').textContent = `${this.safetyScore}%`;
-        if (this.app.diegeticHUD) this.app.diegeticHUD.updateScore(this.safetyScore);
-
-        this.app.sound.playElectricArcBuzz();
-        this.flashScreen('amber');
+        this.recordError(
+          'ARC_FLASH',
+          'ARC FLASH HAZARD // ENERGIZED PROBING',
+          'Multimeter test probes touched energized 480V DC terminals prior to lock-out / tag-out isolation.',
+          25
+        );
         this.app.jarvis.speak(
           "Warning: Circuit is still energized at 480 volts! Turn the isolation switch first to prevent an arc flash.",
           true
         );
+      }
+
+      generateReportCard() {
+        const totalPenalty = this.errors.reduce((sum, e) => sum + (e.penalty || 0), 0);
+        const accuracy = Math.max(0, 100 - totalPenalty);
+        const finalScore = this.safetyScore;
+
+        let grade = 'S';
+        let gradeTitle = 'MASTER ELECTRICIAN // FLAWLESS COMPLIANCE';
+        let gradeSub = 'Substation entrance, safe LOTO isolation, circuit correction, and battery commissioning validated.';
+        let stars = '★★★★★';
+        let bannerClass = '';
+        let ratingText = 'CLASS 0 (1000V)';
+        let ratingSub = 'Fully Certified & Compliant';
+
+        if (accuracy >= 95 && this.errors.length === 0) {
+          grade = 'S';
+          stars = '★★★★★';
+          gradeTitle = 'MASTER ELECTRICIAN // FLAWLESS';
+          gradeSub = 'Zero safety infractions. Textbook adherence to NFPA 70E and OSHA 1910.303 high-voltage standards.';
+          ratingText = 'CLASS 0 (1000V)';
+          ratingSub = 'Master Electrician // Zero Violations';
+          bannerClass = '';
+        } else if (accuracy >= 85) {
+          grade = 'A';
+          stars = '★★★★☆';
+          gradeTitle = 'SENIOR TECHNICIAN // PROFICIENT';
+          gradeSub = 'Compliant execution with minor protocol deviations. Authorized for high-voltage operational clearance.';
+          ratingText = 'CLASS 0 (1000V)';
+          ratingSub = 'Field Certified // Minor Lapses';
+          bannerClass = '';
+        } else if (accuracy >= 70) {
+          grade = 'B';
+          stars = '★★★☆☆';
+          gradeTitle = 'FIELD APPRENTICE // SATISFACTORY';
+          gradeSub = 'Task successfully accomplished. Non-critical sequence or safety lapses recorded during maintenance phase.';
+          ratingText = 'CLASS 1 (7500V)';
+          ratingSub = 'Supervised Authorization Only';
+          bannerClass = 'grade-warn';
+        } else if (accuracy >= 50) {
+          grade = 'C';
+          stars = '★★☆☆☆';
+          gradeTitle = 'JUNIOR OPERATOR // MARGINAL PASS';
+          gradeSub = 'High-voltage safety risk provoked. Recommended immediate review of Lockout/Tagout and live bus procedures.';
+          ratingText = 'CONDITIONAL';
+          ratingSub = 'Remedial Training Recommended';
+          bannerClass = 'grade-warn';
+        } else {
+          grade = 'D';
+          stars = '★☆☆☆☆';
+          gradeTitle = 'CRITICAL BREACH // HAZARDOUS';
+          gradeSub = 'Multiple severe electrical infractions recorded. Recertification in NFPA 70E safety mandatory.';
+          ratingText = 'UNQUALIFIED';
+          ratingSub = 'Immediate Retraining Required';
+          bannerClass = 'grade-danger';
+        }
+
+        const mins = String(Math.floor(this.elapsedSeconds / 60)).padStart(2, '0');
+        const secs = String(this.elapsedSeconds % 60).padStart(2, '0');
+        const timeFormatted = `${mins}:${secs}`;
+        const benchmarkSeconds = 135; // 02:15 target
+        let timeSub = '';
+        if (this.elapsedSeconds <= benchmarkSeconds) {
+          const delta = benchmarkSeconds - this.elapsedSeconds;
+          timeSub = `Target: 02:15 (-${delta}s Faster)`;
+        } else {
+          const delta = this.elapsedSeconds - benchmarkSeconds;
+          timeSub = `Target: 02:15 (+${delta}s Methodical)`;
+        }
+
+        const gradeBanner = document.getElementById('report-grade-banner');
+        if (gradeBanner) {
+          gradeBanner.className = 'report-grade-banner ' + bannerClass;
+        }
+        const gradeCircle = document.getElementById('report-grade-circle');
+        if (gradeCircle) gradeCircle.textContent = grade;
+        const starsElem = document.getElementById('report-stars');
+        if (starsElem) starsElem.textContent = stars;
+        const gradeTitleElem = document.getElementById('report-grade-title');
+        if (gradeTitleElem) gradeTitleElem.textContent = gradeTitle;
+        const gradeSubElem = document.getElementById('report-grade-sub');
+        if (gradeSubElem) gradeSubElem.textContent = gradeSub;
+
+        const accElem = document.getElementById('report-accuracy');
+        if (accElem) accElem.textContent = `${accuracy}%`;
+        const accSubElem = document.getElementById('report-accuracy-sub');
+        if (accSubElem) accSubElem.textContent = `${Math.max(0, 6 - this.errors.length)}/6 Optimal Steps`;
+
+        const scoreElem = document.getElementById('report-score');
+        if (scoreElem) {
+          scoreElem.textContent = `${finalScore}%`;
+          scoreElem.style.color = finalScore >= 80 ? 'var(--green-safe)' : (finalScore >= 50 ? 'var(--amber-warn)' : 'var(--red-alert)');
+        }
+        const scoreSubElem = document.getElementById('report-score-sub');
+        if (scoreSubElem) scoreSubElem.textContent = this.errors.length === 0 ? 'Zero Infraction Penalties' : `-${totalPenalty}% Deductions`;
+
+        const timeElem = document.getElementById('report-time');
+        if (timeElem) timeElem.textContent = timeFormatted;
+        const timeSubElem = document.getElementById('report-time-sub');
+        if (timeSubElem) timeSubElem.textContent = timeSub;
+
+        const ratingElem = document.getElementById('report-rating');
+        if (ratingElem) {
+          ratingElem.textContent = ratingText;
+          ratingElem.style.color = bannerClass === 'grade-danger' ? 'var(--red-alert)' : (bannerClass === 'grade-warn' ? 'var(--amber-warn)' : 'var(--cyan-glow)');
+        }
+        const ratingSubElem = document.getElementById('report-rating-sub');
+        if (ratingSubElem) ratingSubElem.textContent = ratingSub;
+
+        const errorBadge = document.getElementById('report-error-count-badge');
+        const errorsContainer = document.getElementById('report-errors-container');
+        if (errorsContainer) {
+          if (this.errors.length === 0) {
+            if (errorBadge) {
+              errorBadge.textContent = '0 ERRORS';
+              errorBadge.className = 'section-badge';
+            }
+            errorsContainer.innerHTML = `
+              <div class="no-error-card">
+                <span style="font-size: 16px; font-weight: bold;">✔</span>
+                <span><strong>PERFECT RUN:</strong> Zero safety violations or procedural errors detected under NFPA 70E standards.</span>
+              </div>
+            `;
+          } else {
+            if (errorBadge) {
+              errorBadge.textContent = `${this.errors.length} ERROR${this.errors.length > 1 ? 'S' : ''}`;
+              errorBadge.className = 'section-badge badge-red';
+            }
+            let errorHtml = '';
+            this.errors.forEach((err) => {
+              errorHtml += `
+                <div class="error-item">
+                  <span class="error-timestamp">[T+${err.timestamp}]</span>
+                  <div style="flex: 1;">
+                    <strong style="color: #fff;">${err.title}:</strong> ${err.desc}
+                    <span style="display: block; font-size: 10px; color: #f87171; margin-top: 2px;">Penalized: -${err.penalty}% accuracy (Step ${err.step})</span>
+                  </div>
+                </div>
+              `;
+            });
+            errorsContainer.innerHTML = errorHtml;
+          }
+        }
+
+        const improvementsContainer = document.getElementById('report-improvements-container');
+        if (improvementsContainer) {
+          const improvements = [];
+
+          if (this.errors.some(e => e.type === 'ARC_FLASH')) {
+            improvements.push({
+              icon: '⚡',
+              title: 'Always De-Energize Prior to Contact (LOTO First Principle)',
+              desc: 'Rotate the DC combiner isolation switch to 0V before bringing multimeter probes near terminals to eliminate arc flash explosions.'
+            });
+          }
+
+          if (this.errors.some(e => e.type === 'LIVE_MAINTENANCE')) {
+            improvements.push({
+              icon: '🧤',
+              title: 'Enforce De-Energized Work Environment (NFPA 70E)',
+              desc: 'Never attempt to pull or insert DIN rail fuses while the DC bus is energized at 480V. Always isolate and confirm zero voltage first.'
+            });
+          }
+
+          if (this.errors.some(e => e.type === 'UNVERIFIED_VOLTAGE')) {
+            improvements.push({
+              icon: '🔬',
+              title: 'Execute the Standard 3-Point Multimeter Verification',
+              desc: 'Verify 0.00V potential across positive and negative busbars with calibrated probes prior to physical component replacement.'
+            });
+          }
+
+          if (this.errors.some(e => e.type === 'SEQUENCE_BREACH')) {
+            improvements.push({
+              icon: '🧰',
+              title: 'Stage Tools & PPE from the Toolbox Early',
+              desc: 'Unlatch the industrial toolbox and inspect insulated torque tools prior to handling the 48V Lithium-ion storage battery module.'
+            });
+          }
+
+          if (this.errors.some(e => e.type === 'ACCESS_PERIMETER')) {
+            improvements.push({
+              icon: '🚪',
+              title: 'Respect Facility Safety Enclosure Boundaries',
+              desc: 'Authenticate through the blast doors first before interacting with high-voltage electrical equipment inside the room.'
+            });
+          }
+
+          if (this.elapsedSeconds > 180) {
+            improvements.push({
+              icon: '⏱',
+              title: 'Improve Pacing & Spatial Awareness',
+              desc: `Your completion time was ${timeFormatted}. Target benchmark is 02:15. Practice recognizing equipment positions to reduce transit lag.`
+            });
+          }
+
+          if (this.errors.length === 0) {
+            improvements.push({
+              icon: '⭐',
+              title: 'Maintain Dielectric Pre-Check Habits',
+              desc: 'Continue testing insulating rubber gloves (air-test for punctures) and verifying tool insulation before entering high-voltage enclosures.'
+            });
+            improvements.push({
+              icon: '📈',
+              title: 'Rooftop Solar Telemetry Monitoring',
+              desc: 'Incorporate routine open-circuit voltage string checks and benchtop oscilloscope ripple analysis during scheduled preventive maintenance.'
+            });
+          }
+
+          let impHtml = '';
+          improvements.forEach(imp => {
+            impHtml += `
+              <div class="improvement-item">
+                <span style="font-size: 14px;">${imp.icon}</span>
+                <div>
+                  <strong style="color: #fff;">${imp.title}:</strong> ${imp.desc}
+                </div>
+              </div>
+            `;
+          });
+          improvementsContainer.innerHTML = impHtml;
+        }
+
+        return { accuracy, finalScore, grade, timeFormatted };
       }
 
       flashScreen(color) {
@@ -1736,6 +2428,9 @@
         this.batteryOnline = false;
         this.safetyScore = 100;
         this.elapsedSeconds = 0;
+        this.errors = [];
+        this.lastErrorType = null;
+        this.lastErrorTimestamp = 0;
         document.getElementById('hud-score').textContent = "100%";
         document.getElementById('hud-battery-status').textContent = "OFFLINE";
         document.getElementById('hud-battery-status').style.color = "#ff9100";
@@ -1743,6 +2438,8 @@
         vElem.textContent = "480.0 V";
         vElem.classList.remove('safe');
         document.getElementById('completion-modal').classList.remove('show');
+        const reportBtn = document.getElementById('btn-view-report');
+        if (reportBtn) reportBtn.style.display = 'none';
         if (this.app.env.completionBadgeGroup) {
           this.app.env.completionBadgeGroup.visible = false;
         }
@@ -3941,6 +4638,7 @@
       createCompletionHologram() {
         this.completionBadgeGroup = new THREE.Group();
         this.completionBadgeGroup.position.set(0, 1.35, -0.65);
+        this.completionBadgeGroup.name = 'completion_badge';
 
         const badgeGeom = new THREE.RingGeometry(0.16, 0.175, 48);
         const badgeMat = new THREE.MeshBasicMaterial({
@@ -3951,10 +4649,26 @@
           blending: THREE.AdditiveBlending
         });
         const badgeRing = new THREE.Mesh(badgeGeom, badgeMat);
+        badgeRing.name = 'completion_badge';
+
         const innerRing = new THREE.Mesh(new THREE.RingGeometry(0.12, 0.125, 48), badgeMat);
-        this.completionBadgeGroup.add(badgeRing, innerRing);
+        innerRing.name = 'completion_badge';
+
+        const badgePlate = new THREE.Mesh(
+          new THREE.CircleGeometry(0.115, 32),
+          new THREE.MeshBasicMaterial({
+            color: 0x002211,
+            transparent: true,
+            opacity: 0.65,
+            side: THREE.DoubleSide
+          })
+        );
+        badgePlate.name = 'completion_badge';
+
+        this.completionBadgeGroup.add(badgeRing, innerRing, badgePlate);
         this.completionBadgeGroup.visible = false;
         this.scene.add(this.completionBadgeGroup);
+        this.interactiveObjects.push(badgeRing, innerRing, badgePlate, this.completionBadgeGroup);
       }
 
       updateLeadLines() {
@@ -4231,12 +4945,45 @@
       handleDirectInteraction(obj) {
         if (!obj) return;
 
+        // 3D Completion Badge Hologram click -> View Report Card
+        if (obj.name === 'completion_badge' || obj.parent?.name === 'completion_badge') {
+          this.showReportCard();
+          return;
+        }
+
+        // Gate Interaction
         if (obj.name === 'gate_keypad' || obj.name === 'gate_door_left' || obj.name === 'gate_door_right') {
           if (this.fsm.currentState === STATES.STEP1_GATE_ENTRY) {
             this.animateOpenGateAndEnter();
           }
+          return;
         }
-        else if (obj.name === 'combiner_lid' || obj.parent?.name === 'combiner_lid') {
+
+        // Access boundary check: If facility blast gate is still closed, prevent operating interior equipment
+        if (this.fsm.currentState === STATES.STEP1_GATE_ENTRY) {
+          const isInteriorObject = 
+            obj.name === 'combiner_lid' || obj.parent?.name === 'combiner_lid' ||
+            obj.name === 'rotary_isolator' || obj.parent?.name === 'rotary_isolator' ||
+            obj.name === 'probe_red' || obj.name === 'probe_black' ||
+            obj.name === 'pos_terminal' || obj.name === 'neg_terminal' ||
+            obj.name === 'fuse_cartridge' || obj.name === 'replacement_fuse' ||
+            obj.name === 'toolbox_lid' || obj.parent?.name === 'toolbox_lid' ||
+            obj.name === 'battery_module' || obj.parent?.name === 'battery_module';
+
+          if (isInteriorObject) {
+            this.fsm.recordError(
+              'ACCESS_PERIMETER',
+              'UNAUTHORIZED PERIMETER ACCESS',
+              'Attempted interior equipment operation prior to security keypad verification and blast gate clearance.',
+              10
+            );
+            this.jarvis.speak("Access denied. Please authenticate on the security keypad and enter through the blast gate first.", true);
+            return;
+          }
+        }
+
+        // Combiner Lid & Rotary Switch
+        if (obj.name === 'combiner_lid' || obj.parent?.name === 'combiner_lid') {
           if (this.fsm.currentState === STATES.STEP2_ISOLATOR_OFF) {
             this.animateOpenLid();
           }
@@ -4245,23 +4992,61 @@
             this.animateRotarySwitch();
           }
         }
+        // Multimeter Probes & Terminals
         else if (obj.name === 'probe_red' || obj.name === 'probe_black' ||
                  obj.name === 'pos_terminal' || obj.name === 'neg_terminal') {
           this.handleProbingInteraction();
         }
+        // Circuit Fuses (Blown / Replacement)
         else if (obj.name === 'fuse_cartridge' || obj.name === 'replacement_fuse') {
           if (this.fsm.currentState === STATES.STEP4_CORRECT_CIRCUIT) {
             this.animateCorrectCircuit();
+          } else if (this.fsm.circuitEnergized) {
+            this.fsm.recordError(
+              'LIVE_MAINTENANCE',
+              'ENERGIZED FUSE CONTACT // 480V HAZARD',
+              'Attempted physical fuse extraction while 480V DC potential remained active across the combiner bus.',
+              25
+            );
+            this.jarvis.speak("Danger! Severe shock hazard! Do not touch or extract fuses while the 480-volt bus is live! Rotate the isolation switch first!", true);
+          } else if (this.fsm.currentState < STATES.STEP4_CORRECT_CIRCUIT) {
+            this.fsm.recordError(
+              'UNVERIFIED_VOLTAGE',
+              'PREMATURE FUSE CONTACT // UNVERIFIED 0V',
+              'Attempted fuse servicing before confirming 0.00V potential using the multimeter probes.',
+              15
+            );
+            this.jarvis.speak("Protocol breach: You must verify zero voltage with the multimeter probes before touching internal components.", true);
           }
         }
+        // Industrial Tool Box
         else if (obj.name === 'toolbox_lid' || obj.parent?.name === 'toolbox_lid') {
           if (this.fsm.currentState === STATES.STEP5_OPEN_TOOLBOX) {
             this.animateOpenToolbox();
+          } else if (this.fsm.currentState < STATES.STEP5_OPEN_TOOLBOX) {
+            this.jarvis.speak("The tool box will be required after verifying and correcting the combiner circuit, sir.", true);
           }
         }
+        // Battery Module Installation
         else if (obj.name === 'battery_module' || obj.parent?.name === 'battery_module') {
           if (this.fsm.currentState === STATES.STEP6_INSTALL_BATTERY) {
             this.animateInstallBattery();
+          } else if (this.fsm.currentState === STATES.STEP5_OPEN_TOOLBOX) {
+            this.fsm.recordError(
+              'SEQUENCE_BREACH',
+              'OUT-OF-SEQUENCE BATTERY HANDLING',
+              'Attempted battery mounting before opening the toolbox to retrieve insulated torque tools.',
+              15
+            );
+            this.jarvis.speak("Sir, open the tool box first to retrieve the insulated torque driver and mounting brackets.", true);
+          } else if (this.fsm.currentState < STATES.STEP5_OPEN_TOOLBOX) {
+            this.fsm.recordError(
+              'SEQUENCE_BREACH',
+              'PREMATURE BATTERY MOUNTING',
+              'Attempted battery installation before upstream solar circuit isolation and fuse correction were verified.',
+              20
+            );
+            this.jarvis.speak("Safety lockout active. Upstream combiner circuit must be de-energized and repaired before installing battery modules.", true);
           }
         }
         else if (obj.name?.startsWith('roof_') || obj.name?.startsWith('pv_panel') ||
@@ -4749,6 +5534,25 @@
         document.getElementById('btn-modal-restart').addEventListener('click', () => {
           this.resetAll();
         });
+
+        // Report Card Actions
+        document.getElementById('btn-view-report')?.addEventListener('click', () => {
+          this.showReportCard();
+        });
+
+        document.getElementById('btn-modal-print')?.addEventListener('click', () => {
+          window.print();
+        });
+
+        document.getElementById('btn-modal-close')?.addEventListener('click', () => {
+          document.getElementById('completion-modal').classList.remove('show');
+        });
+      }
+
+      showReportCard() {
+        this.sound.ensureUnlocked();
+        this.fsm.generateReportCard();
+        document.getElementById('completion-modal').classList.add('show');
       }
 
       toggleTaskGuide() {
@@ -4862,6 +5666,9 @@
         this.camera.position.set(0, 1.4, 2.6);
         this.controls.target.set(0, 1.3, 1.8);
         this.fsm.reset();
+        const reportBtn = document.getElementById('btn-view-report');
+        if (reportBtn) reportBtn.style.display = 'none';
+        document.getElementById('completion-modal').classList.remove('show');
         this.micListener.setLiveTranscript("System reset. Say: 'Jarvis, open gate'");
       }
 

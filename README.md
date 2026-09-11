@@ -83,6 +83,54 @@ Click the **"TALK TO JARVIS"** button on the HUD or press **`M`** (or squeeze th
    - *Objective*: Mount the new 48V Lithium Battery Pack into the Energy Storage Rack bay.
    - *Validation*: Battery module glides and locks into the rack slot; electrical terminals mate.
    - *Completion*: Heavy docking clunk, rack indicator turns bright green, rotating holographic completion badge appears with fanfare: *"Module Completed: System Safely Isolated and Re-energized"*.
+   - *Automated Audit Trigger*: Automatically triggers the comprehensive **Training Performance Report Card & Audit** modal with spoken debrief by Jarvis.
+
+---
+
+## Training Performance Report Card & Audit System
+
+Upon completing the procedure (or anytime via the **"REPORT CARD"** HUD button, clicking the 3D rotating completion hologram, or saying *"Jarvis, show report card"*), an industrial-grade performance audit certificate is presented:
+
+### 1. Accuracy & Rating
+- **Operational Accuracy**: Dynamically calculated percentage score ($100\% - \sum \text{penalties}$, minimum $0\%$).
+- **Certification Letter Grade**:
+  - **Grade S ($95\text{--}100\%$ flawless)**: `MASTER ELECTRICIAN // FLAWLESS COMPLIANCE` (5 Stars ★★★★★).
+  - **Grade A ($85\text{--}94\%$)**: `SENIOR TECHNICIAN // PROFICIENT` (4.5 Stars ★★★★☆).
+  - **Grade B ($70\text{--}84\%$)**: `FIELD APPRENTICE // SATISFACTORY` (3 Stars ★★★☆☆).
+  - **Grade C ($50\text{--}69\%$)**: `JUNIOR OPERATOR // MARGINAL PASS` (2 Stars ★★☆☆☆).
+  - **Grade D ($<50\%$)**: `CRITICAL BREACH // HAZARDOUS` (1 Star ★☆☆☆☆).
+- **Safety Designation**: Class 0 ($1000\text{V}$) Certified, Class 1 ($7500\text{V}$) Supervised, or Unqualified.
+
+### 2. Incident & Error Log
+Detailed log tracking every safety infraction and sequence breach with exact timestamps and penalties:
+- **Arc Flash Hazard ($-25\%$)**: Multimeter probes touched energized $480\text{V DC}$ terminals prior to Lockout/Tagout isolation.
+- **Energized Fuse Extraction ($-25\%$)**: Attempted physical fuse cartridge manipulation while $480\text{V}$ bus potential was active.
+- **Unverified Voltage Contact ($-15\%$)**: Attempted fuse servicing prior to 3-point multimeter $0.00\text{V}$ verification.
+- **Premature Battery Mounting ($-15\text{--}20\%$)**: Attempted battery pack docking before upstream isolation or before retrieving insulated tools from the toolbox.
+- **Unauthorized Perimeter Access ($-10\%$)**: Attempted internal equipment operation prior to security keypad verification and blast gate clearance.
+- **Zero-Error Perfect Run**: Certified checkmark card: *"ZERO SAFETY INFRACTIONS LOGGED - PERFECT OSHA 1910.303 & NFPA 70E COMPLIANCE"*.
+
+### 3. Time Taken & Pacing Benchmark
+- **Elapsed Time Tracking**: Recorded in `MM:SS` format.
+- **Benchmark Evaluation**: Compares total duration against the NFPA 70E standard baseline ($02:15$ / $135\text{s}$).
+- **Pacing Differential**: Automatically computes and badges pace (e.g. `Target: 02:15 (-30s Faster)` or `Target: 02:15 (+15s Methodical)`).
+
+### 4. Context-Tailored Actionable Improvements
+The system dynamically analyzes the user's specific errors and injects customized recommendations:
+- **LOTO First Principle**: Highlights $480\text{V DC}$ switch isolation before probe placement.
+- **De-energized Work Standard**: Explains NFPA 70E live bus rules and contact shock hazards.
+- **3-Point Multimeter Verification**: Emphasizes testing known live source, test circuit, re-test known source.
+- **Tooling & PPE Staging**: Staging VDE-insulated $1000\text{V}$ torque drivers from the toolbox prior to heavy battery mounting.
+- **Spatial Pacing**: Suggestions to streamline workbench transit if elapsed time exceeds 3 minutes.
+- **Excellence Recommendations**: Dielectric glove air-testing and digital power analyzer harmonic telemetry monitoring for perfect runs.
+
+### 5. Interactive Controls & Print / PDF Export
+- **PRINT REPORT Button**: Formats the report card using custom `@media print` CSS for clean high-resolution printing or PDF export as an official training certificate.
+- **EXPLORE 3D SCENE Button**: Dismisses the modal to allow free-roam inspection of the facility and components in 3D / VR.
+- **PRACTICE AGAIN Button**: Fully resets the facility, timers, and telemetry for another training attempt.
+- **Persistent Bottom Deck Button ("REPORT CARD")**: Re-opens the report card audit at any time.
+- **Interactive 3D Hologram Badge**: Clicking the rotating green emblem in the center of the workbench re-opens the report.
+- **Spoken Audio Debrief**: Jarvis announces the full grade, accuracy, time taken, and error count over the synthesized audio channel.
 
 ---
 
