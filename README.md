@@ -34,6 +34,7 @@ Click the **"TALK TO JARVIS"** button on the HUD or press **`M`** (or squeeze th
 | **"Jarvis, open toolbox"** / *"open tool chest"* / *"get tools"* | Unlatches and opens the industrial tool box on the workbench. |
 | **"Jarvis, install battery"** / *"mount battery"* / *"dock battery"* | Mounts 48V Lithium Battery Pack into Energy Storage Rack bay. |
 | **"Jarvis, workbench view"** / *"return to lab"* / *"go back down"* | Smoothly glides camera back down from the roof to the workbench. |
+| **"Jarvis, hide guide"** / *"close guide"* / *"show guide"* | Hides or shows the floating task guide window to clear the execution line of sight. |
 | **"Jarvis, status report"** / *"telemetry"* | Jarvis speaks live status (current step, bus voltage, solar array Voc, safety score). |
 | **"Jarvis, repeat instructions"** | Jarvis speaks current step instructions aloud. |
 | **"Jarvis, reset"** / *"restart"* | Restores simulation to the beginning outside the main gate. |
@@ -78,6 +79,12 @@ Click the **"TALK TO JARVIS"** button on the HUD or press **`M`** (or squeeze th
 ## Controls
 
 ### Desktop Mode
+- **Movable Task Guide**:
+  - **Click & Drag** the title bar to move the guide window anywhere on screen so it never blocks the 3D execution point.
+  - **Double-Click** the title bar to snap it back to the top-right default location.
+  - **Minimize (`─`) Button**: Collapses the window into a sleek single-line header (`TASK GUIDE // STEP X/6`).
+  - **Close (`✕`) Button** or **`H` Key**: Hides or restores the task guide window completely.
+  - **"TASK GUIDE" Button**: Bottom deck button to toggle visibility.
 - **Microphone**: Click **"TALK TO JARVIS"** or press **`M`** to toggle speech recognition.
 - **Mouse Click & Drag**: Click or drag on the gate keypad/doors, box lid, rotary isolator switch, multimeter probes, fuse, tool box, or battery module.
 - **Right Click & Drag**: Orbit / rotate the camera.

@@ -264,36 +264,141 @@
       color: var(--green-safe);
     }
 
-    /* Central Task Guidance Banner */
+    /* Movable & Collapsible Task Guidance HUD Card */
     .task-banner-container {
-      align-self: center;
-      max-width: 680px;
-      width: 100%;
-      text-align: center;
+      position: absolute;
+      top: 92px;
+      right: 24px;
+      width: 390px;
+      max-width: calc(100vw - 36px);
+      z-index: 50;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.7), inset 0 0 12px var(--cyan-dim);
+      display: flex;
+      flex-direction: column;
+      pointer-events: auto;
+      user-select: none;
+      touch-action: none;
+      transition: box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+
+    .task-banner-container.dragging {
+      box-shadow: 0 16px 48px rgba(0, 229, 255, 0.4), 0 0 20px var(--cyan-glow);
+      opacity: 0.92;
+    }
+
+    .task-banner-container.minimized {
+      width: auto;
+      min-width: 250px;
+    }
+
+    .task-banner-container.minimized .guide-content-body {
+      display: none;
+    }
+
+    .task-banner-container.hidden {
+      display: none !important;
+    }
+
+    /* Drag Handle Header */
+    .guide-header-handle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px 6px 12px;
+      background: rgba(0, 229, 255, 0.08);
+      border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 7px 7px 0 0;
+      cursor: grab;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--cyan-glow);
+    }
+
+    .task-banner-container.minimized .guide-header-handle {
+      border-radius: 7px;
+      border-bottom: none;
+    }
+
+    .guide-header-handle:active {
+      cursor: grabbing;
+    }
+
+    .handle-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+    }
+
+    .grip-icon {
+      font-size: 13px;
+      opacity: 0.75;
+      letter-spacing: -1px;
+    }
+
+    .handle-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-guide-action {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-guide-action:hover {
+      background: var(--cyan-dim);
+      color: #fff;
+    }
+
+    /* Guide Content Body */
+    .guide-content-body {
+      padding: 10px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .task-banner {
-      padding: 14px 26px;
-      border-radius: 8px;
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      backdrop-filter: blur(14px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.65);
-      transition: all 0.3s ease;
+      padding: 4px 2px;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      text-align: left;
     }
 
     .task-step-tag {
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
       color: var(--cyan-glow);
       text-transform: uppercase;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .task-title {
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 700;
       color: #fff;
       letter-spacing: 0.5px;
@@ -301,7 +406,7 @@
     }
 
     .task-instruction {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-dim);
       line-height: 1.4;
     }
@@ -309,23 +414,23 @@
     /* Step Progression Badges (6 Steps) */
     .steps-progress-row {
       display: flex;
-      justify-content: center;
+      justify-content: flex-start;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
+      gap: 6px;
+      margin-top: 4px;
     }
 
     .step-pill {
       font-family: var(--font-mono);
-      font-size: 10px;
-      padding: 4px 10px;
+      font-size: 9px;
+      padding: 3px 8px;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.14);
       background: rgba(0, 0, 0, 0.45);
       color: var(--text-dim);
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       transition: all 0.3s ease;
     }
 
@@ -333,7 +438,7 @@
       border-color: var(--cyan-glow);
       color: #fff;
       background: var(--cyan-dim);
-      box-shadow: 0 0 12px var(--cyan-dim);
+      box-shadow: 0 0 10px var(--cyan-dim);
     }
 
     .step-pill.completed {
@@ -571,23 +676,38 @@
       </div>
     </div>
 
-    <!-- Central Task Guidance Banner -->
-    <div class="task-banner-container">
-      <div class="task-banner">
-        <div class="task-step-tag" id="task-step-tag">STEP 1 OF 6</div>
-        <div class="task-title" id="task-title">Open Facility Security Gate</div>
-        <div class="task-instruction" id="task-instruction">
-          Click the access keypad or say: "Jarvis, open the gate" to unlock entrance.
+    <!-- Movable & Collapsible Task Guidance HUD Card -->
+    <div class="task-banner-container interactive-ui" id="task-guide-widget">
+      <!-- Drag Handle Header -->
+      <div class="guide-header-handle" id="guide-drag-handle" title="Click & Drag to reposition anywhere on screen (Double-click to reset)">
+        <div class="handle-title">
+          <span class="grip-icon">⠿</span>
+          <span class="handle-text" id="guide-handle-text">TASK GUIDE // STEP 1/6</span>
+        </div>
+        <div class="handle-actions">
+          <button class="btn-guide-action" id="btn-minimize-guide" title="Minimize / Expand Window">─</button>
+          <button class="btn-guide-action" id="btn-close-guide" title="Hide Guide (Press 'H' or click GUIDE to reopen)">✕</button>
         </div>
       </div>
 
-      <div class="steps-progress-row">
-        <div class="step-pill active" id="step-pill-1">1. MAIN GATE</div>
-        <div class="step-pill" id="step-pill-2">2. SAFE ISOLATION</div>
-        <div class="step-pill" id="step-pill-3">3. PROBE VOLTAGE</div>
-        <div class="step-pill" id="step-pill-4">4. FIX CIRCUIT</div>
-        <div class="step-pill" id="step-pill-5">5. TOOL BOX</div>
-        <div class="step-pill" id="step-pill-6">6. NEW BATTERY</div>
+      <!-- Collapsible Body -->
+      <div class="guide-content-body" id="guide-content-body">
+        <div class="task-banner">
+          <div class="task-step-tag" id="task-step-tag">STEP 1 OF 6</div>
+          <div class="task-title" id="task-title">Open Facility Security Gate</div>
+          <div class="task-instruction" id="task-instruction">
+            Click the access keypad or say: "Jarvis, open the gate" to unlock entrance.
+          </div>
+        </div>
+
+        <div class="steps-progress-row">
+          <div class="step-pill active" id="step-pill-1">1. MAIN GATE</div>
+          <div class="step-pill" id="step-pill-2">2. SAFE ISOLATION</div>
+          <div class="step-pill" id="step-pill-3">3. PROBE VOLTAGE</div>
+          <div class="step-pill" id="step-pill-4">4. FIX CIRCUIT</div>
+          <div class="step-pill" id="step-pill-5">5. TOOL BOX</div>
+          <div class="step-pill" id="step-pill-6">6. NEW BATTERY</div>
+        </div>
       </div>
     </div>
 
@@ -595,10 +715,22 @@
     <div class="bottom-bar">
       <div class="glass-card controls-help-card interactive-ui">
         <div><span>Voice:</span> Press <span>M</span> or click Mic | Speak: <em>"Jarvis, open gate"</em>, <em>"check solar panels"</em>, <em>"isolate switch"</em></div>
-        <div><span>Controls:</span> Left-Click 3D Items | Press <span>T</span> for Roof PV Array | WASD to Walk | VR Laser</div>
+        <div><span>Guide HUD:</span> Drag title bar to move | <span>H</span> to Hide/Show | <span>T</span> for Roof PV | WASD to Walk</div>
       </div>
 
       <div class="action-button-group interactive-ui">
+        <!-- Toggle Task Guide Window Button -->
+        <button class="btn-hud" id="btn-toggle-guide" title="Show/Hide Movable Task Guide (Key: H)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span id="guide-btn-label">TASK GUIDE</span>
+        </button>
+
         <!-- Rooftop Solar Array View Toggle Button -->
         <button class="btn-hud" id="btn-rooftop-view" title="Toggle Rooftop Solar PV Array View (Key: T)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1317,6 +1449,29 @@
           return;
         }
 
+        // 9. Hide / Show Task Guide HUD
+        if (text.includes("hide guide") || text.includes("close guide") || text.includes("remove guide") || text.includes("dismiss guide")) {
+          const widget = document.getElementById('task-guide-widget');
+          if (widget && !widget.classList.contains('hidden')) {
+            this.app.toggleTaskGuide();
+            this.app.jarvis.speak("Task guide hidden, sir. Line of sight cleared. Press H or say 'show guide' to restore it.", true);
+          } else {
+            this.app.jarvis.speak("Task guide is already hidden, sir.");
+          }
+          return;
+        }
+
+        if (text.includes("show guide") || text.includes("open guide") || text.includes("display guide")) {
+          const widget = document.getElementById('task-guide-widget');
+          if (widget && widget.classList.contains('hidden')) {
+            this.app.toggleTaskGuide();
+            this.app.jarvis.speak("Task guide restored. You can click and drag its title bar anywhere on screen.", true);
+          } else {
+            this.app.jarvis.speak("Task guide is already visible, sir.");
+          }
+          return;
+        }
+
         // Utility: Reset
         if (text.includes("reset") || text.includes("restart") || text.includes("start over")) {
           this.app.jarvis.speak("Resetting simulation.", true);
@@ -1520,6 +1675,13 @@
         document.getElementById('task-step-tag').textContent = stepText;
         document.getElementById('task-title').textContent = titles[this.currentState];
         document.getElementById('task-instruction').textContent = instructions[this.currentState];
+
+        const handleText = document.getElementById('guide-handle-text');
+        if (handleText) {
+          handleText.textContent = this.currentState <= 6 
+            ? `TASK GUIDE // STEP ${this.currentState}/6: ${titles[this.currentState].substring(0, 18)}`
+            : `TASK GUIDE // COMPLETE`;
+        }
 
         if (this.app.diegeticHUD) {
           this.app.diegeticHUD.updateStep(
@@ -2876,6 +3038,7 @@
         this.setupWebXRControllers();
         this.setupWaveformVisualizer();
         this.bindDOMEvents();
+        this.setupMovableTaskGuide();
 
         window.addEventListener('resize', () => this.onWindowResize());
         this.fsm.init();
@@ -2971,6 +3134,9 @@
             case 't':
             case 'p':
               this.toggleRooftopView();
+              break;
+            case 'h':
+              this.toggleTaskGuide();
               break;
             case 'm':
             case 'v':
@@ -3468,6 +3634,102 @@
 
         document.getElementById('btn-modal-restart').addEventListener('click', () => {
           this.resetAll();
+        });
+      }
+
+      toggleTaskGuide() {
+        const widget = document.getElementById('task-guide-widget');
+        const btn = document.getElementById('btn-toggle-guide');
+        if (!widget) return;
+        const isHidden = widget.classList.toggle('hidden');
+        if (btn) btn.classList.toggle('btn-primary', !isHidden);
+      }
+
+      setupMovableTaskGuide() {
+        const widget = document.getElementById('task-guide-widget');
+        const handle = document.getElementById('guide-drag-handle');
+        const minBtn = document.getElementById('btn-minimize-guide');
+        const closeBtn = document.getElementById('btn-close-guide');
+        const toggleBtn = document.getElementById('btn-toggle-guide');
+
+        if (!widget || !handle) return;
+
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let initialLeft = 0;
+        let initialTop = 0;
+
+        handle.addEventListener('pointerdown', (e) => {
+          if (e.target.closest('.btn-guide-action')) return;
+          isDragging = true;
+          handle.setPointerCapture(e.pointerId);
+          widget.classList.add('dragging');
+
+          const rect = widget.getBoundingClientRect();
+          initialLeft = rect.left;
+          initialTop = rect.top;
+          startX = e.clientX;
+          startY = e.clientY;
+
+          widget.style.left = `${initialLeft}px`;
+          widget.style.top = `${initialTop}px`;
+          widget.style.right = 'auto';
+          widget.style.bottom = 'auto';
+        });
+
+        handle.addEventListener('pointermove', (e) => {
+          if (!isDragging) return;
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+
+          let newLeft = initialLeft + dx;
+          let newTop = initialTop + dy;
+
+          const pad = 12;
+          const maxLeft = window.innerWidth - widget.offsetWidth - pad;
+          const maxTop = window.innerHeight - widget.offsetHeight - pad;
+
+          newLeft = Math.max(pad, Math.min(newLeft, maxLeft));
+          newTop = Math.max(pad, Math.min(newTop, maxTop));
+
+          widget.style.left = `${newLeft}px`;
+          widget.style.top = `${newTop}px`;
+        });
+
+        const stopDrag = (e) => {
+          if (!isDragging) return;
+          isDragging = false;
+          try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+          widget.classList.remove('dragging');
+        };
+
+        handle.addEventListener('pointerup', stopDrag);
+        handle.addEventListener('pointercancel', stopDrag);
+
+        // Double-click handle to reset to top-right default
+        handle.addEventListener('dblclick', () => {
+          widget.style.top = '92px';
+          widget.style.right = '24px';
+          widget.style.left = 'auto';
+          widget.style.bottom = 'auto';
+        });
+
+        // Minimize / Expand
+        minBtn?.addEventListener('click', () => {
+          widget.classList.toggle('minimized');
+          minBtn.textContent = widget.classList.contains('minimized') ? '▢' : '─';
+        });
+
+        // Close / Hide
+        closeBtn?.addEventListener('click', () => {
+          widget.classList.add('hidden');
+          if (toggleBtn) toggleBtn.classList.remove('btn-primary');
+        });
+
+        // Toggle from bottom deck button
+        toggleBtn?.addEventListener('click', () => {
+          this.toggleTaskGuide();
         });
       }
 
