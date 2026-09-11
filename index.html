@@ -575,7 +575,7 @@
       border: 1.5px solid var(--cyan-glow);
       border-radius: 14px;
       box-shadow: 0 0 54px rgba(0, 229, 255, 0.22), inset 0 0 20px rgba(0, 229, 255, 0.08);
-      z-index: 100;
+      z-index: 20000;
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
     }
@@ -596,6 +596,10 @@
       transform: translate(-50%, -50%) scale(1);
       opacity: 1;
       pointer-events: auto;
+    }
+
+    #VRButton {
+      z-index: 50 !important;
     }
 
     .report-header {
@@ -1120,8 +1124,9 @@
         </button>
       </div>
     </div>
+  </div>
 
-    <!-- Completion Report Card & Performance Audit Modal -->
+  <!-- Completion Report Card & Performance Audit Modal -->
     <div class="completion-modal interactive-ui" id="completion-modal">
       <!-- Report Header -->
       <div class="report-header">
@@ -1195,7 +1200,6 @@
         <button class="btn-hud btn-primary" id="btn-modal-restart" title="Reset and practice again">PRACTICE AGAIN</button>
       </div>
     </div>
-  </div>
 
   <!-- Application Logic -->
   <script type="module">
@@ -4244,6 +4248,7 @@
         this.posTerminal.position.set(-0.026, 0, 0);
         this.posTerminal.name = "pos_terminal";
 
+        const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
         const contactScrewGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.008, 16);
         const posScrew = new THREE.Mesh(contactScrewGeo, brassMat);
         posScrew.position.set(0, 0.027, 0);
