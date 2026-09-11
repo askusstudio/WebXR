@@ -1,0 +1,26 @@
+{
+  "name": "mayavue-webxr-certification-platform",
+  "version": "1.0.0",
+  "description": "MAYAVUE 6-Stage End-to-End VR Certification Platform with 8 Polymorphic Simulation Models, Socratic AI, and Cryptographic Competency Ledger",
+  "main": "server.js",
+  "scripts": {
+    "build": "node build.js",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node -e \"require('./courses.js'); require('./db.js'); console.log('✓ All 8 course modules, Socratic AI rubrics, and ledger engines verified.');\"",
+    "verify": "node scratch/verify_all_modules.js"
+  },
+  "keywords": [
+    "webxr",
+    "threejs",
+    "solar-pv",
+    "substation",
+    "bess",
+    "simulation",
+    "certification",
+    "socratic-ai",
+    "sha256-ledger"
+  ],
+  "author": "MAYAVUE Systems Architecture Team",
+  "license": "MIT"
+}

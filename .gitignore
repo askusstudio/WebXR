@@ -4,3 +4,4 @@ Thumbs.db
 *.log
 data/*.db*
 scratch_sim_html.txt
+dist/
