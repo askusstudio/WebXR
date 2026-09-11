@@ -159,6 +159,10 @@
       font-family: var(--font-mono);
     }
 
+    .title-short {
+      display: none;
+    }
+
     .center-jarvis-card {
       display: flex;
       flex-direction: column;
@@ -504,6 +508,10 @@
       transform: translateY(0);
     }
 
+    .btn-text-short {
+      display: none;
+    }
+
     .btn-hud.btn-primary {
       background: rgba(0, 229, 255, 0.16);
       border-color: var(--cyan-glow);
@@ -533,6 +541,8 @@
     @keyframes mic-pulse {
       0% { box-shadow: 0 0 10px var(--amber-dim); }
       100% { box-shadow: 0 0 24px rgba(255, 145, 0, 0.6); }
+    }
+
     .btn-lang-toggle {
       display: inline-flex;
       align-items: center;
@@ -910,12 +920,317 @@
       border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
+    /* Mobile & Small Screen Responsive Overhaul */
     @media (max-width: 880px) {
-      .center-jarvis-card { display: none; }
-      .controls-help-card { display: none; }
-      .telemetry-card { gap: 10px; }
-      #hud-overlay { padding: 12px; }
-      .task-title { font-size: 15px; }
+      .center-jarvis-card { display: none !important; }
+      .controls-help-card { display: none !important; }
+      .telemetry-card { gap: 8px; }
+      #hud-overlay { padding: 10px; }
+    }
+
+    @media (max-width: 768px) {
+      #hud-overlay {
+        padding: 8px;
+        pointer-events: none;
+        overflow: hidden;
+      }
+
+      /* Ultra-Slim Top Bar */
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        gap: 6px;
+      }
+
+      .header-card {
+        padding: 4px 8px;
+        gap: 6px;
+        border-radius: 6px;
+        flex-shrink: 0;
+      }
+
+      .logo-badge {
+        width: 26px;
+        height: 26px;
+        font-size: 9px;
+        border-width: 1px;
+      }
+
+      .title-full {
+        display: none !important;
+      }
+
+      .title-short {
+        display: inline-block !important;
+        font-size: 11.5px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        color: #fff;
+      }
+
+      .title-group .sub {
+        display: none !important;
+      }
+
+      .header-card .btn-lang-toggle {
+        padding: 2px 6px;
+        font-size: 9px;
+      }
+
+      /* Compact Telemetry Chip (Hide secondary items on mobile) */
+      .telemetry-card {
+        padding: 4px 8px;
+        gap: 8px;
+        border-radius: 6px;
+        flex-shrink: 0;
+      }
+
+      .telemetry-card .secondary-telemetry {
+        display: none !important;
+      }
+
+      .telemetry-label {
+        font-size: 7.5px;
+        letter-spacing: 0.5px;
+      }
+
+      .telemetry-value {
+        font-size: 11px;
+      }
+
+      /* VR Button minimal / tucked away on mobile */
+      #VRButton {
+        display: none !important;
+      }
+
+      /* Compact, Non-Intrusive Task Banner Pill */
+      .task-banner-container {
+        position: fixed !important;
+        top: 46px !important;
+        left: 8px !important;
+        right: 8px !important;
+        width: auto !important;
+        max-width: 480px !important;
+        margin: 0 auto !important;
+        transform: none !important;
+        z-index: 100 !important;
+        border-radius: 8px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.75), inset 0 0 10px var(--cyan-dim);
+      }
+
+      .task-banner-container.minimized {
+        min-width: auto;
+        width: auto;
+        border-radius: 20px;
+        background: rgba(10, 15, 24, 0.94);
+      }
+
+      .guide-header-handle {
+        padding: 6px 10px;
+        font-size: 10px;
+        border-radius: 7px 7px 0 0;
+      }
+
+      .task-banner-container.minimized .guide-header-handle {
+        border-radius: 20px;
+        padding: 5px 12px;
+        border-bottom: none;
+      }
+
+      .grip-icon {
+        display: none;
+      }
+
+      .handle-title {
+        font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: calc(100vw - 90px);
+      }
+
+      .guide-content-body {
+        padding: 8px 12px 10px;
+        gap: 5px;
+        max-height: 48vh;
+        overflow-y: auto;
+      }
+
+      .task-step-tag {
+        font-size: 9px;
+        margin-bottom: 1px;
+      }
+
+      .task-title {
+        font-size: 13px;
+        margin-bottom: 2px;
+      }
+
+      .task-instruction {
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .steps-progress-row {
+        gap: 4px;
+        margin-top: 3px;
+      }
+
+      .step-pill {
+        font-size: 8px;
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+
+      /* Clean Horizontal Bottom Action Dock */
+      .bottom-bar {
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        padding-bottom: 4px;
+      }
+
+      .controls-help-card {
+        display: none !important;
+      }
+
+      .action-button-group {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap !important;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: rgba(8, 12, 20, 0.94);
+        border: 1px solid var(--panel-border);
+        border-radius: 28px;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), inset 0 0 10px var(--cyan-dim);
+        max-width: 96vw;
+        overflow-x: auto;
+      }
+
+      .action-button-group::-webkit-scrollbar {
+        display: none;
+      }
+
+      .action-button-group .btn-hud {
+        padding: 6px 8px;
+        font-size: 10px;
+        min-width: 36px;
+        height: 36px;
+        border-radius: 18px;
+        flex-shrink: 0;
+        gap: 4px;
+      }
+
+      /* In mobile dock, collapse secondary button texts to keep horizontal dock clean */
+      .action-button-group #btn-toggle-guide span,
+      .action-button-group #btn-rooftop-view span,
+      .action-button-group #btn-replay-voice span,
+      .action-button-group #btn-reset-scene span {
+        display: none !important;
+      }
+
+      .action-button-group #btn-lang-bottom {
+        display: none !important;
+      }
+
+      .btn-text-full {
+        display: none !important;
+      }
+
+      .btn-text-short {
+        display: inline !important;
+      }
+
+      .action-button-group .btn-mic {
+        padding: 6px 12px;
+        border-radius: 18px;
+        background: rgba(0, 229, 255, 0.16);
+        border-color: var(--cyan-glow);
+        color: var(--cyan-glow);
+      }
+
+      .action-button-group #btn-action-help {
+        padding: 6px 12px;
+        border-radius: 18px;
+      }
+
+      .action-button-group #btn-view-report {
+        padding: 6px 10px;
+        border-radius: 18px;
+      }
+
+      /* Completion Modal on Mobile */
+      .completion-modal {
+        width: 95%;
+        max-height: 88dvh;
+        padding: 14px 16px;
+        border-radius: 10px;
+      }
+
+      .report-grade-banner {
+        gap: 12px;
+        padding: 8px 10px;
+      }
+
+      .grade-badge-circle {
+        width: 44px;
+        height: 44px;
+        font-size: 24px;
+      }
+
+      .report-stars {
+        font-size: 13px;
+        letter-spacing: 1.5px;
+      }
+
+      .report-grade-title {
+        font-size: 13px;
+      }
+
+      .report-grade-sub {
+        font-size: 10.5px;
+      }
+
+      .report-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .stat-card {
+        padding: 8px;
+      }
+
+      .stat-value {
+        font-size: 15px;
+      }
+
+      .report-section {
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+
+      .report-actions-row {
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+      }
+
+      .report-actions-row .btn-hud {
+        flex: 1 1 45%;
+        text-align: center;
+        justify-content: center;
+        font-size: 11px;
+        padding: 8px 10px;
+      }
     }
 
     @media print {
@@ -1011,9 +1326,16 @@
       <div class="glass-card header-card interactive-ui">
         <div class="logo-badge">JARV</div>
         <div class="title-group">
-          <h1>Mark VII // Isolation &amp; Battery Lab</h1>
+          <h1 class="title-full">Mark VII // Isolation &amp; Battery Lab</h1>
+          <h1 class="title-short">MARK VII</h1>
           <div class="sub">NFPA 70E / OSHA SUBSTATION SIMULATOR</div>
         </div>
+        <!-- Language Toggle (EN / HI) - Always visible in Header -->
+        <button class="btn-lang-toggle" id="btn-language-toggle" title="Switch Language / भाषा बदलें (English / हिंदी)">
+          <span class="lang-code active" id="lang-code-en">EN</span>
+          <span class="lang-divider">|</span>
+          <span class="lang-code" id="lang-code-hi">हिंदी</span>
+        </button>
       </div>
 
       <div class="glass-card center-jarvis-card interactive-ui">
@@ -1022,12 +1344,6 @@
             <div class="jarvis-dot" id="jarvis-dot"></div>
             <span id="jarvis-status-text">JARVIS ACTIVE // MONITORING</span>
           </div>
-          <!-- Language Toggle (EN / HI) -->
-          <button class="btn-lang-toggle" id="btn-language-toggle" title="Switch Language / भाषा बदलें (English / हिंदी)">
-            <span class="lang-code active" id="lang-code-en">EN</span>
-            <span class="lang-divider">|</span>
-            <span class="lang-code" id="lang-code-hi">हिंदी</span>
-          </button>
         </div>
         <canvas id="speech-waveform-canvas" width="280" height="32"></canvas>
         <div class="live-speech-row" id="live-speech-row">
@@ -1041,11 +1357,11 @@
           <span class="telemetry-label">Elapsed</span>
           <span class="telemetry-value" id="hud-timer">00:00</span>
         </div>
-        <div class="telemetry-item">
+        <div class="telemetry-item secondary-telemetry">
           <span class="telemetry-label">Roof PV (Voc)</span>
           <span class="telemetry-value" id="hud-solar-voltage" style="color:#00e5ff;">480.0 V</span>
         </div>
-        <div class="telemetry-item">
+        <div class="telemetry-item secondary-telemetry">
           <span class="telemetry-label">Irradiance</span>
           <span class="telemetry-value" id="hud-irradiance" style="color:#ffaa00;">880 W/m²</span>
         </div>
@@ -1053,7 +1369,7 @@
           <span class="telemetry-label">Bus Voltage</span>
           <span class="telemetry-value voltage" id="hud-voltage">480.0 V</span>
         </div>
-        <div class="telemetry-item">
+        <div class="telemetry-item secondary-telemetry">
           <span class="telemetry-label">Battery Bay</span>
           <span class="telemetry-value" id="hud-battery-status" style="color:#ff9100;">OFFLINE</span>
         </div>
@@ -1143,7 +1459,7 @@
             <line x1="12" y1="19" x2="12" y2="23"></line>
             <line x1="8" y1="23" x2="16" y2="23"></line>
           </svg>
-          <span id="mic-btn-label">TALK TO JARVIS</span>
+          <span id="mic-btn-label"><span class="btn-text-full">TALK TO JARVIS</span><span class="btn-text-short">TALK</span></span>
         </button>
 
         <button class="btn-hud" id="btn-replay-voice" title="Replay Jarvis Voice Instructions">
@@ -1162,7 +1478,10 @@
         </button>
 
         <button class="btn-hud btn-primary" id="btn-action-help" title="Perform active step directly">
-          <span id="action-step-btn-label">INTERACT STEP</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span id="action-step-btn-label"><span class="btn-text-full">INTERACT STEP</span><span class="btn-text-short">ACTION</span></span>
         </button>
 
         <!-- View Report Card Button (visible when module completed) -->
@@ -1178,6 +1497,10 @@
         </button>
 
         <button class="btn-hud" id="btn-reset-scene" title="Reset procedure">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
           <span id="reset-btn-label">RESET</span>
         </button>
       </div>
@@ -1848,17 +2171,26 @@
         const label = document.getElementById('mic-btn-label');
         const dot = document.getElementById('jarvis-dot');
         const statusText = document.getElementById('jarvis-status-text');
+        const isHi = this.language === 'hi';
 
         if (this.isListening) {
           btn?.classList.add('listening');
-          if (label) label.textContent = "LISTENING (MIC ON)";
+          if (label) {
+            label.innerHTML = isHi 
+              ? '<span class="btn-text-full">सुन रहा हूँ...</span><span class="btn-text-short">सक्रिय</span>'
+              : '<span class="btn-text-full">LISTENING...</span><span class="btn-text-short">ON</span>';
+          }
           dot?.classList.add('listening');
-          if (statusText) statusText.textContent = "JARVIS LISTENING // VOICE COMMAND ACTIVE";
+          if (statusText) statusText.textContent = isHi ? "जार्विस सुन रहा है // माइक्रोफोन चालू" : "JARVIS LISTENING // VOICE COMMAND ACTIVE";
         } else {
           btn?.classList.remove('listening');
-          if (label) label.textContent = "TALK TO JARVIS";
+          if (label) {
+            label.innerHTML = isHi
+              ? '<span class="btn-text-full">जार्विस से बोलें</span><span class="btn-text-short">बोलें</span>'
+              : '<span class="btn-text-full">TALK TO JARVIS</span><span class="btn-text-short">TALK</span>';
+          }
           dot?.classList.remove('listening');
-          if (statusText) statusText.textContent = "JARVIS ACTIVE // MONITORING";
+          if (statusText) statusText.textContent = isHi ? "जार्विस सक्रिय // निगरानी जारी" : "JARVIS ACTIVE // MONITORING";
         }
       }
 
@@ -5176,9 +5508,26 @@
         this.mouse = new THREE.Vector2();
 
         const dom = this.renderer.domElement;
+        let pDownX = 0;
+        let pDownY = 0;
+        let pDownTime = 0;
 
         dom.addEventListener('pointerdown', (e) => {
           if (e.button !== 0) return;
+          this.sound.ensureUnlocked();
+          pDownX = e.clientX;
+          pDownY = e.clientY;
+          pDownTime = performance.now();
+        });
+
+        dom.addEventListener('pointerup', (e) => {
+          if (e.button !== 0) return;
+          const dist = Math.hypot(e.clientX - pDownX, e.clientY - pDownY);
+          const dur = performance.now() - pDownTime;
+
+          // If moved > 8px or held > 450ms, user was orbiting camera or dragging, not tapping
+          if (dist > 8 || dur > 450) return;
+
           this.sound.ensureUnlocked();
 
           this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -5928,7 +6277,9 @@
         // Bottom deck action button labels
         const micBtnLabel = document.getElementById('mic-btn-label');
         if (micBtnLabel && !this.micListener.isListening) {
-          micBtnLabel.textContent = isHi ? "जार्विस से बोलें" : "TALK TO JARVIS";
+          micBtnLabel.innerHTML = isHi
+            ? '<span class="btn-text-full">जार्विस से बोलें</span><span class="btn-text-short">बोलें</span>'
+            : '<span class="btn-text-full">TALK TO JARVIS</span><span class="btn-text-short">TALK</span>';
         }
 
         const rooftopLabel = document.getElementById('rooftop-btn-label');
@@ -5952,7 +6303,9 @@
 
         const actionStepLabel = document.getElementById('action-step-btn-label');
         if (actionStepLabel) {
-          actionStepLabel.textContent = isHi ? "चरण निष्पादित करें" : "INTERACT STEP";
+          actionStepLabel.innerHTML = isHi
+            ? '<span class="btn-text-full">चरण निष्पादित करें</span><span class="btn-text-short">कार्य</span>'
+            : '<span class="btn-text-full">INTERACT STEP</span><span class="btn-text-short">ACTION</span>';
         }
 
         const reportBtnLabel = document.getElementById('report-btn-label');
@@ -6068,10 +6421,24 @@
           widget.style.bottom = 'auto';
         });
 
+        // Auto-minimize on mobile by default to keep screen clear
+        if (window.innerWidth <= 768) {
+          widget.classList.add('minimized');
+          if (minBtn) minBtn.textContent = 'ℹ';
+        }
+
+        // Tap handle on mobile to toggle minimize / expand
+        handle.addEventListener('click', (e) => {
+          if (window.innerWidth <= 768 && !e.target.closest('.btn-guide-action')) {
+            widget.classList.toggle('minimized');
+            if (minBtn) minBtn.textContent = widget.classList.contains('minimized') ? 'ℹ' : '─';
+          }
+        });
+
         // Minimize / Expand
         minBtn?.addEventListener('click', () => {
           widget.classList.toggle('minimized');
-          minBtn.textContent = widget.classList.contains('minimized') ? '▢' : '─';
+          minBtn.textContent = widget.classList.contains('minimized') ? (window.innerWidth <= 768 ? 'ℹ' : '▢') : '─';
         });
 
         // Close / Hide

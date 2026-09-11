@@ -176,6 +176,14 @@ The system dynamically analyzes the user's specific errors and injects customize
 - **"INTERACT STEP" Button**: On-screen helper button to automatically perform the active step.
 - **"RESET" Button**: Restores the gate closed, camera back to entrance, tool box closed, battery in box, and combiner box back to initial state.
 
+### Mobile (Phone & Touchscreen) Mode
+- **85%+ Clear 3D Viewport**: Clutter-free design specifically engineered for mobile screens ($360\text{px}\text{--}430\text{px}$).
+- **Ultra-Slim Top Bar**: Mini brand badge (`JARV MARK VII`), active language toggle (`[EN | हिंदी]`), and high-priority telemetry (`ELAPSED`, `BUS VOLTAGE`, `SAFETY SCORE`).
+- **Collapsible Smart Task Pill**: Defaults to a compact 32px top pill (`TASK GUIDE // STEP 1/6: ... ℹ ✕`). Tap the pill or `ℹ` icon to expand detailed instructions; tap again or `✕` to collapse.
+- **Single-Row Bottom Action Dock**: Glassmorphic floating dock with touch-optimized buttons (`[📋 Guide]`, `[☀️ Roof]`, `[🎤 TALK]`, `[🔊 Repeat]`, `[⚡ ACTION]`, `[🔄 Reset]`).
+- **Tap vs. Drag Discrimination**: Intelligent pointer delta detection ensures 1-finger camera orbiting never triggers electrical equipment or arc flash violations accidentally.
+- **Hidden Keyboard Legends**: Automatically removes desktop-specific instructions ("Press M", "WASD to Walk") on mobile touch devices.
+
 ### WebXR (VR Headset) Mode
 - **Enter VR**: Click the glowing cyan **"ENTER VR"** button at the bottom of the screen.
 - **Laser Raycaster**: Each controller projects a cyan targeting beam.
