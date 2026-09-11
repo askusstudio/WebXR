@@ -1494,8 +1494,35 @@
           return;
         }
 
+        // Environmental Equipment Voice Inquiries
+        if (text.includes("extinguisher") || text.includes("fire")) {
+          this.app.jarvis.speak("Class C carbon dioxide fire extinguisher inspected. Pressure gauge in normal operating green zone, rated for energized electrical fires up to 1000 Volts.", true);
+          return;
+        }
+
+        if (text.includes("eyewash") || text.includes("eye wash")) {
+          this.app.jarvis.speak("Emergency eyewash station operational. Dual aerated spray heads tested and ready at zero-point-four gallons per minute.", true);
+          return;
+        }
+
+        if (text.includes("ppe") || text.includes("gloves") || text.includes("hard hat") || text.includes("helmet")) {
+          this.app.jarvis.speak("NFPA 70E Class 0 electrical insulating gloves rated for 1000 Volts AC with leather outer protectors and dielectric safety helmet on standby at the PPE station.", true);
+          return;
+        }
+
+        if (text.includes("tool") || text.includes("pliers") || text.includes("screwdriver") || text.includes("pegboard")) {
+          this.app.jarvis.speak("VDE certified 1000-Volt insulated hand tool set organized on the pegboard. Pliers, screwdrivers, and non-contact voltage detector available.", true);
+          return;
+        }
+
+        if (text.includes("oscilloscope") || text.includes("analyzer") || text.includes("waveform")) {
+          const v = this.app.fsm.circuitEnergized ? "480 Volts energized with steady-state ripple under 0.2%" : "zero Volts safe";
+          this.app.jarvis.speak(`Digital power analyzer online: Bus waveform currently reading ${v}.`, true);
+          return;
+        }
+
         // Unrecognized phrase hint
-        this.app.jarvis.speak(`Command received: "${text}". You can say "open gate", "isolate switch", "verify voltage", "replace fuse", "open toolbox", or "install battery".`);
+        this.app.jarvis.speak(`Command received: "${text}". You can say "open gate", "isolate switch", "verify voltage", "replace fuse", "open toolbox", "install battery", or check "fire extinguisher", "eyewash", "PPE", or "oscilloscope".`);
       }
     }
 
@@ -2014,11 +2041,16 @@
       constructor(scene) {
         this.scene = scene;
         this.interactiveObjects = [];
+        this.animatedInstruments = [];
 
+        this.initTextures();
         this.createRoomAndFloor();
+        this.createSafetyPPEStation();
         this.createRooftopSolarArray();
         this.createMainSecurityGate();
         this.createWorkbench();
+        this.createWorkbenchPegboardAndTools();
+        this.createOverheadShelfAndInstruments();
         this.createSolarCombinerBox();
         this.createMultimeterAndProbes();
         this.createIndustrialToolBox();
@@ -2026,32 +2058,483 @@
         this.createCompletionHologram();
       }
 
+      initTextures() {
+        this.hazardStripeTexture = this.createHazardStripeTexture();
+        this.oshaDangerTexture = this.createOSHAWarningTexture("DANGER", "HIGH VOLTAGE 480V DC", "ARC FLASH HAZARD // QUALIFIED ONLY", "#dc2626", "#ffffff");
+        this.oshaCautionTexture = this.createOSHAWarningTexture("CAUTION", "PPE REQUIRED IN THIS AREA", "1000V INSULATED GLOVES & EYE PROTECTION", "#eab308", "#111827");
+        this.pegboardTexture = this.createPegboardTexture();
+        this.ventMeshTexture = this.createVentMeshTexture();
+        this.batteryNameplateTexture = this.createNameplateTexture("LiFePO4 ESS MODULE 48V", "NOMINAL: 51.2V // 100Ah", "ENERGY: 5.12 kWh // 1C", "UL 1973 / CE / IEC 62619");
+        this.dmmCalDecalTexture = this.createNameplateTexture("CALIBRATION CERTIFIED", "MODEL: FLK-87V-IND", "TRACEABLE: NIST-2026-Q3", "STATUS: PASS // 1000V CAT III");
+      }
+
+      createHazardStripeTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillStyle = '#18181b';
+        const stripeWidth = 32;
+        for (let x = -256; x < 512; x += stripeWidth * 2) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x + stripeWidth, 0);
+          ctx.lineTo(x + stripeWidth + 256, 256);
+          ctx.lineTo(x + 256, 256);
+          ctx.closePath();
+          ctx.fill();
+        }
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        return texture;
+      }
+
+      createOSHAWarningTexture(headerText, line1, line2, headerBg = '#dc2626', headerFg = '#ffffff') {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(0, 0, 512, 256);
+        ctx.lineWidth = 10;
+        ctx.strokeStyle = '#18181b';
+        ctx.strokeRect(5, 5, 502, 246);
+        // Header block
+        ctx.fillStyle = headerBg;
+        ctx.fillRect(16, 16, 480, 72);
+        ctx.fillStyle = headerFg;
+        ctx.font = 'bold 42px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(headerText, 256, 52);
+        // Warning lines
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText(line1, 256, 138);
+        ctx.font = 'bold 20px "SF Mono", Consolas, monospace';
+        ctx.fillStyle = '#475569';
+        ctx.fillText(line2, 256, 192);
+        const texture = new THREE.CanvasTexture(canvas);
+        return texture;
+      }
+
+      createPegboardTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(0, 0, 128, 128);
+        ctx.fillStyle = '#1e293b';
+        const step = 16;
+        for (let x = 8; x < 128; x += step) {
+          for (let y = 8; y < 128; y += step) {
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(8, 4);
+        return texture;
+      }
+
+      createVentMeshTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 0, 64, 64);
+        ctx.fillStyle = '#0a0f16';
+        for (let y = 4; y < 64; y += 8) {
+          for (let x = 4; x < 64; x += 12) {
+            ctx.fillRect(x + ((y % 16 === 4) ? 0 : 6), y, 8, 3);
+          }
+        }
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(4, 12);
+        return texture;
+      }
+
+      createNameplateTexture(title, spec1, spec2, cert) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, 256, 128);
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(3, 3, 250, 122);
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 15px "SF Mono", Consolas, monospace';
+        ctx.fillText(title, 14, 28);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '12px "SF Mono", Consolas, monospace';
+        ctx.fillText(spec1, 14, 56);
+        ctx.fillText(spec2, 14, 82);
+        ctx.fillStyle = '#4ade80';
+        ctx.font = '10px "SF Mono", Consolas, monospace';
+        ctx.fillText(cert, 14, 108);
+        const texture = new THREE.CanvasTexture(canvas);
+        return texture;
+      }
+
       createRoomAndFloor() {
+        // High-grade industrial semi-gloss epoxy floor
         const floorGeo = new THREE.PlaneGeometry(16, 16);
         const floorMat = new THREE.MeshStandardMaterial({
-          color: 0x080b12,
-          roughness: 0.4,
-          metalness: 0.8
+          color: 0x2e3846,
+          roughness: 0.22,
+          metalness: 0.12
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         this.scene.add(floor);
 
-        const grid = new THREE.GridHelper(16, 32, 0x00e5ff, 0x112233);
+        // Architectural floor joint grid lines
+        const grid = new THREE.GridHelper(16, 32, 0x475569, 0x242d38);
         grid.position.y = 0.001;
         this.scene.add(grid);
 
-        const wallGeo = new THREE.PlaneGeometry(16, 5);
-        const wallMat = new THREE.MeshStandardMaterial({
-          color: 0x0c111a,
-          roughness: 0.6,
-          metalness: 0.3
+        // --- OSHA 45-Degree Yellow/Black Safety Hazard Perimeter Border ---
+        // Marks the 480V DC high-voltage test zone around the workbench and battery rack
+        const stripeMat = new THREE.MeshStandardMaterial({
+          map: this.hazardStripeTexture,
+          roughness: 0.35
         });
-        const backWall = new THREE.Mesh(wallGeo, wallMat);
+
+        // Front border strip (X: -1.5 to 1.5, Z: 0.38)
+        const frontStripeTex = this.createHazardStripeTexture();
+        frontStripeTex.repeat.set(16, 1);
+        const frontBorder = new THREE.Mesh(
+          new THREE.PlaneGeometry(3.08, 0.09),
+          new THREE.MeshStandardMaterial({ map: frontStripeTex, roughness: 0.4 })
+        );
+        frontBorder.rotation.x = -Math.PI / 2;
+        frontBorder.position.set(0, 0.002, 0.38);
+        this.scene.add(frontBorder);
+
+        // Rear border strip (X: -1.5 to 1.5, Z: -1.35)
+        const rearStripeTex = this.createHazardStripeTexture();
+        rearStripeTex.repeat.set(16, 1);
+        const rearBorder = new THREE.Mesh(
+          new THREE.PlaneGeometry(3.08, 0.09),
+          new THREE.MeshStandardMaterial({ map: rearStripeTex, roughness: 0.4 })
+        );
+        rearBorder.rotation.x = -Math.PI / 2;
+        rearBorder.position.set(0, 0.002, -1.35);
+        this.scene.add(rearBorder);
+
+        // Left border strip (Z: -1.35 to 0.38, X: -1.5)
+        const leftStripeTex = this.createHazardStripeTexture();
+        leftStripeTex.repeat.set(9, 1);
+        const leftBorder = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.09, 1.73),
+          new THREE.MeshStandardMaterial({ map: leftStripeTex, roughness: 0.4 })
+        );
+        leftBorder.rotation.x = -Math.PI / 2;
+        leftBorder.position.set(-1.5, 0.002, -0.485);
+        this.scene.add(leftBorder);
+
+        // Right border strip (Z: -1.35 to 0.38, X: 1.5)
+        const rightStripeTex = this.createHazardStripeTexture();
+        rightStripeTex.repeat.set(9, 1);
+        const rightBorder = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.09, 1.73),
+          new THREE.MeshStandardMaterial({ map: rightStripeTex, roughness: 0.4 })
+        );
+        rightBorder.rotation.x = -Math.PI / 2;
+        rightBorder.position.set(1.5, 0.002, -0.485);
+        this.scene.add(rightBorder);
+
+        // Floor Zone Stencil Warning Text
+        const canvasZone = document.createElement('canvas');
+        canvasZone.width = 512;
+        canvasZone.height = 64;
+        const ctxZ = canvasZone.getContext('2d');
+        ctxZ.fillStyle = 'rgba(0,0,0,0)';
+        ctxZ.fillRect(0, 0, 512, 64);
+        ctxZ.font = 'bold 24px "SF Mono", Consolas, monospace';
+        ctxZ.fillStyle = '#f59e0b';
+        ctxZ.textAlign = 'center';
+        ctxZ.fillText("⚠ 480V DC HIGH VOLTAGE TEST ZONE ⚠", 256, 40);
+        const zoneTex = new THREE.CanvasTexture(canvasZone);
+        const zoneMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.9, 0.24),
+          new THREE.MeshBasicMaterial({ map: zoneTex, transparent: true })
+        );
+        zoneMesh.rotation.x = -Math.PI / 2;
+        zoneMesh.position.set(0, 0.0025, 0.26);
+        this.scene.add(zoneMesh);
+
+        // --- Concrete Wall Panels & Baseboards ---
+        const wallMat = new THREE.MeshStandardMaterial({
+          color: 0x1f2631,
+          roughness: 0.85,
+          metalness: 0.1
+        });
+
+        // Back Wall
+        const backWall = new THREE.Mesh(new THREE.PlaneGeometry(16, 5), wallMat);
         backWall.position.set(0, 2.5, -3.5);
         backWall.receiveShadow = true;
         this.scene.add(backWall);
+
+        // Left Wall
+        const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(16, 5), wallMat);
+        leftWall.rotation.y = Math.PI / 2;
+        leftWall.position.set(-4.5, 2.5, 0);
+        leftWall.receiveShadow = true;
+        this.scene.add(leftWall);
+
+        // Right Wall
+        const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(16, 5), wallMat);
+        rightWall.rotation.y = -Math.PI / 2;
+        rightWall.position.set(4.5, 2.5, 0);
+        rightWall.receiveShadow = true;
+        this.scene.add(rightWall);
+
+        // Baseboard kickplates along walls
+        const baseboardMat = new THREE.MeshStandardMaterial({ color: 0x0f141c, roughness: 0.6 });
+        const bbBack = new THREE.Mesh(new THREE.BoxGeometry(16, 0.14, 0.04), baseboardMat);
+        bbBack.position.set(0, 0.07, -3.48);
+        const bbLeft = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.14, 16), baseboardMat);
+        bbLeft.position.set(-4.48, 0.07, 0);
+        const bbRight = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.14, 16), baseboardMat);
+        bbRight.position.set(4.48, 0.07, 0);
+        this.scene.add(bbBack, bbLeft, bbRight);
+
+        // OSHA High Voltage Arc Flash Hazard Placard on Back Wall
+        const placardMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.68, 0.34),
+          new THREE.MeshBasicMaterial({ map: this.oshaDangerTexture })
+        );
+        placardMesh.position.set(0.95, 2.05, -3.48);
+        this.scene.add(placardMesh);
+
+        const cautionMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.68, 0.34),
+          new THREE.MeshBasicMaterial({ map: this.oshaCautionTexture })
+        );
+        cautionMesh.position.set(-0.95, 2.05, -3.48);
+        this.scene.add(cautionMesh);
+      }
+
+      createSafetyPPEStation() {
+        this.safetyStationGroup = new THREE.Group();
+        // Mounted on the right wall facing inward
+        this.safetyStationGroup.position.set(4.42, 1.35, 0.35);
+        this.safetyStationGroup.rotation.y = -Math.PI / 2;
+
+        // Station Backboard / Signboard
+        const boardGeo = new THREE.BoxGeometry(1.85, 1.25, 0.02);
+        const boardMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+        const board = new THREE.Mesh(boardGeo, boardMat);
+        this.safetyStationGroup.add(board);
+
+        // Station Header Sign Banner
+        const bannerCanvas = document.createElement('canvas');
+        bannerCanvas.width = 512;
+        bannerCanvas.height = 96;
+        const bCtx = bannerCanvas.getContext('2d');
+        bCtx.fillStyle = '#0f172a';
+        bCtx.fillRect(0, 0, 512, 96);
+        bCtx.fillStyle = '#16a34a';
+        bCtx.fillRect(0, 0, 512, 16);
+        bCtx.fillStyle = '#ffffff';
+        bCtx.font = 'bold 30px -apple-system, sans-serif';
+        bCtx.textAlign = 'center';
+        bCtx.fillText("EMERGENCY SAFETY & ELECTRICAL PPE", 256, 58);
+        const bannerTex = new THREE.CanvasTexture(bannerCanvas);
+        const bannerMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.75, 0.28), new THREE.MeshBasicMaterial({ map: bannerTex }));
+        bannerMesh.position.set(0, 0.44, 0.015);
+        this.safetyStationGroup.add(bannerMesh);
+
+        // --- 1. Class C / CO2 Fire Extinguisher ---
+        const extinguisherGroup = new THREE.Group();
+        extinguisherGroup.position.set(-0.55, -0.15, 0.12);
+        extinguisherGroup.name = "fire_extinguisher";
+
+        // Red Pressurized Cylinder
+        const cylMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.25, metalness: 0.2 });
+        const cylBody = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.42, 24), cylMat);
+        const cylTop = new THREE.Mesh(new THREE.SphereGeometry(0.07, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), cylMat);
+        cylTop.position.y = 0.21;
+        const cylBot = new THREE.Mesh(new THREE.SphereGeometry(0.07, 24, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), cylMat);
+        cylBot.position.y = -0.21;
+        extinguisherGroup.add(cylBody, cylTop, cylBot);
+
+        // Label on Cylinder
+        const feLabelCanvas = document.createElement('canvas');
+        feLabelCanvas.width = 128;
+        feLabelCanvas.height = 256;
+        const feCtx = feLabelCanvas.getContext('2d');
+        feCtx.fillStyle = '#ffffff';
+        feCtx.fillRect(0, 0, 128, 256);
+        feCtx.fillStyle = '#dc2626';
+        feCtx.fillRect(8, 8, 112, 40);
+        feCtx.fillStyle = '#ffffff';
+        feCtx.font = 'bold 18px sans-serif';
+        feCtx.textAlign = 'center';
+        feCtx.fillText("CO₂ CLASS C", 64, 35);
+        feCtx.fillStyle = '#0f172a';
+        feCtx.font = 'bold 14px sans-serif';
+        feCtx.fillText("ELECTRICAL", 64, 80);
+        feCtx.fillText("FIRES", 64, 100);
+        feCtx.font = '11px monospace';
+        feCtx.fillText("UP TO 1000V", 64, 135);
+        feCtx.fillStyle = '#16a34a';
+        feCtx.fillRect(16, 175, 96, 24);
+        feCtx.fillStyle = '#ffffff';
+        feCtx.fillText("CERTIFIED", 64, 192);
+        const feLabelTex = new THREE.CanvasTexture(feLabelCanvas);
+        const feLabelMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.24), new THREE.MeshBasicMaterial({ map: feLabelTex }));
+        feLabelMesh.position.set(0, 0, 0.072);
+        extinguisherGroup.add(feLabelMesh);
+
+        // Brass Valve & Chrome Lever Assembly
+        const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
+        const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 });
+        const valveNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.022, 0.06, 16), brassMat);
+        valveNeck.position.y = 0.29;
+        const leverHandle = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.012, 0.14), chromeMat);
+        leverHandle.position.set(0, 0.33, 0.03);
+        const carryHandle = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.012, 0.12), chromeMat);
+        carryHandle.position.set(0, 0.30, 0.02);
+        extinguisherGroup.add(valveNeck, leverHandle, carryHandle);
+
+        // Pressure Gauge (Green Zone)
+        const gaugeGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.008, 16);
+        const gaugeMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.3 });
+        const gauge = new THREE.Mesh(gaugeGeo, gaugeMat);
+        gauge.rotation.x = Math.PI / 2;
+        gauge.position.set(0.026, 0.30, 0.01);
+        extinguisherGroup.add(gauge);
+
+        // Black Rubber Discharge Hose & Horn
+        const blackRubberMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.8 });
+        const hoseCurve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(0, 0.29, 0),
+          new THREE.Vector3(0.08, 0.24, 0.05),
+          new THREE.Vector3(0.09, 0.05, 0.05),
+          new THREE.Vector3(0.07, -0.12, 0.06)
+        ]);
+        const hoseMesh = new THREE.Mesh(new THREE.TubeGeometry(hoseCurve, 16, 0.008, 8, false), blackRubberMat);
+        const hornGeo = new THREE.ConeGeometry(0.032, 0.14, 16);
+        const hornMesh = new THREE.Mesh(hornGeo, blackRubberMat);
+        hornMesh.position.set(0.07, -0.16, 0.06);
+        hornMesh.rotation.x = Math.PI;
+        extinguisherGroup.add(hoseMesh, hornMesh);
+
+        // Wall Bracket
+        const bracketGeo = new THREE.BoxGeometry(0.16, 0.03, 0.12);
+        const bracketMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
+        const bracket = new THREE.Mesh(bracketGeo, bracketMat);
+        bracket.position.set(0, 0.02, -0.05);
+        extinguisherGroup.add(bracket);
+
+        this.safetyStationGroup.add(extinguisherGroup);
+        this.interactiveObjects.push(extinguisherGroup);
+
+        // --- 2. Emergency Eyewash Station ---
+        const eyewashGroup = new THREE.Group();
+        eyewashGroup.position.set(0.0, -0.10, 0.12);
+        eyewashGroup.name = "eyewash_station";
+
+        // Green/Yellow Wall Station Body
+        const stationMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.35 });
+        const stBody = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.36, 0.06), stationMat);
+        eyewashGroup.add(stBody);
+
+        // Stainless Steel Catchment Bowl
+        const bowlGeo = new THREE.CylinderGeometry(0.14, 0.08, 0.09, 24, 1, true);
+        const steelMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.95, roughness: 0.15 });
+        const bowl = new THREE.Mesh(bowlGeo, steelMat);
+        bowl.position.set(0, -0.05, 0.12);
+        eyewashGroup.add(bowl);
+
+        // Dual Aerated Spray Heads with Yellow Flip Caps
+        const yellowCapMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.3 });
+        [-0.04, 0.04].forEach(xOff => {
+          const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.04, 12), steelMat);
+          stem.position.set(xOff, 0.01, 0.12);
+          const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.012, 16), yellowCapMat);
+          cap.position.set(xOff, 0.032, 0.12);
+          eyewashGroup.add(stem, cap);
+        });
+
+        // "PUSH" Activation Flag Paddle
+        const paddleGeo = new THREE.BoxGeometry(0.08, 0.11, 0.01);
+        const paddle = new THREE.Mesh(paddleGeo, yellowCapMat);
+        paddle.position.set(0.16, -0.02, 0.12);
+        paddle.rotation.y = 0.3;
+        eyewashGroup.add(paddle);
+
+        this.safetyStationGroup.add(eyewashGroup);
+        this.interactiveObjects.push(eyewashGroup);
+
+        // --- 3. Electrician PPE Hook Rack (1000V Gloves & Hard Hat) ---
+        const ppeGroup = new THREE.Group();
+        ppeGroup.position.set(0.55, -0.05, 0.06);
+        ppeGroup.name = "ppe_station";
+
+        // Steel Hanging Bar
+        const barGeo = new THREE.BoxGeometry(0.48, 0.04, 0.03);
+        const barMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 });
+        const ppeBar = new THREE.Mesh(barGeo, barMat);
+        ppeGroup.add(ppeBar);
+
+        // Dual Heavy Hooks
+        [-0.14, 0.14].forEach(x => {
+          const hook = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.07, 12), barMat);
+          hook.position.set(x, -0.03, 0.04);
+          hook.rotation.x = Math.PI / 4;
+          ppeGroup.add(hook);
+        });
+
+        // Hook 1: Class 0 (1000V) Electrical Insulating Rubber Gloves
+        const gloveMat = new THREE.MeshStandardMaterial({ color: 0xe05615, roughness: 0.45 });
+        const gloveCuffMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.7 });
+        [-0.16, -0.11].forEach(xG => {
+          const gHand = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.14, 0.02), gloveMat);
+          gHand.position.set(xG, -0.16, 0.06);
+          const gCuff = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.025, 0.08, 16), gloveCuffMat);
+          gCuff.position.set(xG, -0.09, 0.06);
+          ppeGroup.add(gHand, gCuff);
+        });
+
+        // Hook 2: Industrial Dielectric Electrician Hard Hat
+        const hatMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.05 });
+        const hatDome = new THREE.Mesh(new THREE.SphereGeometry(0.09, 20, 16, 0, Math.PI * 2, 0, Math.PI / 2), hatMat);
+        hatDome.position.set(0.14, -0.14, 0.08);
+        hatDome.scale.set(1.0, 0.8, 1.25);
+        hatDome.rotation.x = Math.PI * 0.4;
+        const brimGeo = new THREE.CylinderGeometry(0.105, 0.105, 0.008, 20);
+        const hatBrim = new THREE.Mesh(brimGeo, hatMat);
+        hatBrim.position.set(0.14, -0.14, 0.08);
+        hatBrim.scale.set(1.0, 1.0, 1.3);
+        hatBrim.rotation.x = Math.PI * 0.4;
+        // High-vis reflective stripe on helmet
+        const stripeHat = new THREE.Mesh(new THREE.CylinderGeometry(0.092, 0.092, 0.018, 20), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+        stripeHat.position.set(0.14, -0.13, 0.08);
+        stripeHat.rotation.x = Math.PI * 0.4;
+        stripeHat.scale.set(1.0, 1.0, 1.25);
+        ppeGroup.add(hatDome, hatBrim, stripeHat);
+
+        this.safetyStationGroup.add(ppeGroup);
+        this.interactiveObjects.push(ppeGroup);
+
+        this.scene.add(this.safetyStationGroup);
       }
 
       createRooftopSolarArray() {
@@ -2422,53 +2905,119 @@
         this.gateGroup = new THREE.Group();
         this.gateGroup.position.set(0, 0, 1.8);
 
-        const postGeo = new THREE.BoxGeometry(0.18, 2.8, 0.18);
-        const frameMat = new THREE.MeshStandardMaterial({ color: 0x1f2733, metalness: 0.8, roughness: 0.3 });
-        const leftPost = new THREE.Mesh(postGeo, frameMat);
-        leftPost.position.set(-1.1, 1.4, 0);
-        const rightPost = new THREE.Mesh(postGeo, frameMat);
-        rightPost.position.set(1.1, 1.4, 0);
+        // Frame posts clad in OSHA safety hazard chevron stripes
+        const postGeo = new THREE.BoxGeometry(0.20, 2.8, 0.20);
+        const postStripeTex = this.createHazardStripeTexture();
+        postStripeTex.repeat.set(1, 6);
+        const postMat = new THREE.MeshStandardMaterial({
+          map: postStripeTex,
+          metalness: 0.5,
+          roughness: 0.35
+        });
 
-        const topBeamGeo = new THREE.BoxGeometry(2.38, 0.22, 0.22);
-        const topBeam = new THREE.Mesh(topBeamGeo, frameMat);
+        const leftPost = new THREE.Mesh(postGeo, postMat);
+        leftPost.position.set(-1.12, 1.4, 0);
+        leftPost.castShadow = true;
+
+        const rightPost = new THREE.Mesh(postGeo, postMat);
+        rightPost.position.set(1.12, 1.4, 0);
+        rightPost.castShadow = true;
+
+        // Heavy steel base plates
+        const basePlateGeo = new THREE.BoxGeometry(0.32, 0.04, 0.32);
+        const steelPlateMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.85, roughness: 0.3 });
+        const bpLeft = new THREE.Mesh(basePlateGeo, steelPlateMat);
+        bpLeft.position.set(-1.12, 0.02, 0);
+        const bpRight = new THREE.Mesh(basePlateGeo, steelPlateMat);
+        bpRight.position.set(1.12, 0.02, 0);
+
+        // Top structural lintel beam
+        const topBeamGeo = new THREE.BoxGeometry(2.44, 0.24, 0.22);
+        const topBeam = new THREE.Mesh(topBeamGeo, steelPlateMat);
         topBeam.position.set(0, 2.7, 0);
-        this.gateGroup.add(leftPost, rightPost, topBeam);
+        this.gateGroup.add(leftPost, rightPost, bpLeft, bpRight, topBeam);
 
-        const keypadBodyGeo = new THREE.BoxGeometry(0.14, 0.22, 0.04);
-        const keypadMat = new THREE.MeshStandardMaterial({ color: 0x111620, roughness: 0.5 });
+        // Overhead Hydraulic Actuator Cylinders
+        const cylMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+        const rodMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.1 });
+        [-0.55, 0.55].forEach(xP => {
+          const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.45, 16), cylMat);
+          cylinder.rotation.z = Math.PI / 2;
+          cylinder.position.set(xP, 2.52, 0.08);
+          const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.30, 16), rodMat);
+          rod.rotation.z = Math.PI / 2;
+          rod.position.set(xP + (xP > 0 ? 0.16 : -0.16), 2.52, 0.08);
+          this.gateGroup.add(cylinder, rod);
+        });
+
+        // Industrial Access Badge & Keypad Terminal
+        const keypadBodyGeo = new THREE.BoxGeometry(0.15, 0.24, 0.045);
+        const keypadMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.4, metalness: 0.3 });
         this.keypadMesh = new THREE.Mesh(keypadBodyGeo, keypadMat);
-        this.keypadMesh.position.set(0.65, 1.25, 0.06);
+        this.keypadMesh.position.set(0.68, 1.25, 0.06);
         this.keypadMesh.name = "gate_keypad";
 
-        const lensGeo = new THREE.PlaneGeometry(0.09, 0.12);
+        // Brushed Stainless Bezel
+        const bezel = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.25, 0.01), steelPlateMat);
+        bezel.position.set(0, 0, -0.01);
+        this.keypadMesh.add(bezel);
+
+        // Keypad Numeric Buttons (Matrix Grid)
+        const btnGeo = new THREE.BoxGeometry(0.018, 0.018, 0.008);
+        const btnMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5 });
+        for (let r = 0; r < 4; r++) {
+          for (let c = 0; c < 3; c++) {
+            const kBtn = new THREE.Mesh(btnGeo, btnMat);
+            kBtn.position.set((c - 1) * 0.028, 0.04 - r * 0.03, 0.023);
+            this.keypadMesh.add(kBtn);
+          }
+        }
+
+        // Proximity RFID Scanner & Status Lens
+        const lensGeo = new THREE.PlaneGeometry(0.10, 0.05);
         this.keypadLensMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
         const lens = new THREE.Mesh(lensGeo, this.keypadLensMat);
-        lens.position.set(0, 0, 0.021);
+        lens.position.set(0, 0.085, 0.024);
         this.keypadMesh.add(lens);
+
         this.gateGroup.add(this.keypadMesh);
         this.interactiveObjects.push(this.keypadMesh);
 
-        const doorGeo = new THREE.BoxGeometry(1.0, 2.4, 0.06);
+        // Heavy Industrial Galvanized Steel Blast Doors
+        const doorGeo = new THREE.BoxGeometry(1.02, 2.4, 0.06);
         const doorMat = new THREE.MeshStandardMaterial({
-          color: 0x222c3a,
-          roughness: 0.35,
-          metalness: 0.75
+          color: 0x334155,
+          roughness: 0.38,
+          metalness: 0.72
         });
+
         this.doorLeft = new THREE.Mesh(doorGeo, doorMat);
-        this.doorLeft.position.set(-0.5, 1.2, 0);
+        this.doorLeft.position.set(-0.51, 1.2, 0);
         this.doorLeft.name = "gate_door_left";
 
         this.doorRight = new THREE.Mesh(doorGeo, doorMat);
-        this.doorRight.position.set(0.5, 1.2, 0);
+        this.doorRight.position.set(0.51, 1.2, 0);
         this.doorRight.name = "gate_door_right";
 
-        const stripeGeo = new THREE.PlaneGeometry(0.15, 2.0);
-        const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffa000 });
-        const stripeL = new THREE.Mesh(stripeGeo, stripeMat);
-        stripeL.position.set(0.42, 0, 0.031);
+        // Door Inset Louver / Window Panels
+        const windowGeo = new THREE.BoxGeometry(0.65, 1.2, 0.04);
+        const windowMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+        const wLeft = new THREE.Mesh(windowGeo, windowMat);
+        wLeft.position.set(-0.08, 0.2, 0.015);
+        this.doorLeft.add(wLeft);
+        const wRight = new THREE.Mesh(windowGeo, windowMat);
+        wRight.position.set(0.08, 0.2, 0.015);
+        this.doorRight.add(wRight);
+
+        // High-vis Warning Hazard Stripes on door inner edge
+        const dStripeTex = this.createHazardStripeTexture();
+        dStripeTex.repeat.set(1, 8);
+        const dStripeMat = new THREE.MeshStandardMaterial({ map: dStripeTex, roughness: 0.4 });
+        const stripeL = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 2.1), dStripeMat);
+        stripeL.position.set(0.42, 0, 0.032);
         this.doorLeft.add(stripeL);
-        const stripeR = new THREE.Mesh(stripeGeo, stripeMat);
-        stripeR.position.set(-0.42, 0, 0.031);
+        const stripeR = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 2.1), dStripeMat);
+        stripeR.position.set(-0.42, 0, 0.032);
         this.doorRight.add(stripeR);
 
         this.gateGroup.add(this.doorLeft, this.doorRight);
@@ -2478,77 +3027,390 @@
       }
 
       createWorkbench() {
-        const tableGroup = new THREE.Group();
-        const topGeo = new THREE.BoxGeometry(1.7, 0.06, 0.95);
+        this.workbenchGroup = new THREE.Group();
+
+        // 1. Heavy Industrial Steel Workbench Top
+        const topGeo = new THREE.BoxGeometry(1.75, 0.065, 0.96);
         const topMat = new THREE.MeshStandardMaterial({
           color: 0x1e2632,
-          roughness: 0.3,
-          metalness: 0.7
+          roughness: 0.35,
+          metalness: 0.65
         });
         const tabletop = new THREE.Mesh(topGeo, topMat);
         tabletop.position.set(0, 0.72, -0.6);
         tabletop.castShadow = true;
         tabletop.receiveShadow = true;
-        tableGroup.add(tabletop);
+        this.workbenchGroup.add(tabletop);
 
-        const matGeo = new THREE.BoxGeometry(1.5, 0.006, 0.8);
+        // 2. Dissipative Anti-Static ESD Bench Mat in authentic industrial slate blue
+        const matGeo = new THREE.BoxGeometry(1.55, 0.008, 0.82);
         const matMat = new THREE.MeshStandardMaterial({
-          color: 0x14202e,
-          roughness: 0.7,
-          metalness: 0.1
+          color: 0x1d3d63, // Real-world ESD workbench blue
+          roughness: 0.65,
+          metalness: 0.08
         });
         const esdMat = new THREE.Mesh(matGeo, matMat);
-        esdMat.position.set(0, 0.753, -0.6);
+        esdMat.position.set(0, 0.756, -0.6);
         esdMat.receiveShadow = true;
-        tableGroup.add(esdMat);
+        this.workbenchGroup.add(esdMat);
 
-        const legGeo = new THREE.BoxGeometry(0.06, 0.72, 0.06);
-        const legMat = new THREE.MeshStandardMaterial({ color: 0x303b4b, roughness: 0.4, metalness: 0.8 });
+        // Mat Grounding Snap Terminal & Coiled Wire
+        const snapGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.006, 16);
+        const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
+        const snap = new THREE.Mesh(snapGeo, brassMat);
+        snap.position.set(-0.72, 0.762, -0.25);
+        this.workbenchGroup.add(snap);
+
+        // Coiled Green/Yellow Earth Ground Wire
+        const groundWireMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.5 });
+        const wireGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.76, 8);
+        const groundWire = new THREE.Mesh(wireGeo, groundWireMat);
+        groundWire.position.set(-0.74, 0.38, -0.25);
+        this.workbenchGroup.add(groundWire);
+
+        // 3. Sturdy Welded Box-Section Steel Legs with Leveling Feet
+        const legGeo = new THREE.BoxGeometry(0.065, 0.72, 0.065);
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.45, metalness: 0.8 });
+        const footGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.02, 16);
+        const footMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.2 });
+
         const legPositions = [
-          [-0.75, 0.36, -0.22],
-          [0.75, 0.36, -0.22],
-          [-0.75, 0.36, -0.98],
-          [0.75, 0.36, -0.98]
+          [-0.78, 0.36, -0.22],
+          [0.78, 0.36, -0.22],
+          [-0.78, 0.36, -0.98],
+          [0.78, 0.36, -0.98]
         ];
+
         legPositions.forEach(pos => {
           const leg = new THREE.Mesh(legGeo, legMat);
           leg.position.set(...pos);
           leg.castShadow = true;
-          tableGroup.add(leg);
+          const foot = new THREE.Mesh(footGeo, footMat);
+          foot.position.set(pos[0], 0.01, pos[2]);
+          this.workbenchGroup.add(leg, foot);
         });
 
-        const standGeo = new THREE.BoxGeometry(0.44, 0.6, 0.04);
-        const standMat = new THREE.MeshStandardMaterial({ color: 0x151c24, metalness: 0.8, roughness: 0.3 });
+        // Lower heavy equipment shelf
+        const botShelfGeo = new THREE.BoxGeometry(1.60, 0.03, 0.76);
+        const botShelf = new THREE.Mesh(botShelfGeo, legMat);
+        botShelf.position.set(0, 0.22, -0.6);
+        botShelf.receiveShadow = true;
+        this.workbenchGroup.add(botShelf);
+
+        // 4. Vertical Structural Unistrut Posts supporting Pegboard & Overhead Shelf
+        const strutGeo = new THREE.BoxGeometry(0.04, 1.35, 0.04);
+        const strutMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
+        const leftStrut = new THREE.Mesh(strutGeo, strutMat);
+        leftStrut.position.set(-0.74, 1.40, -0.92);
+        const rightStrut = new THREE.Mesh(strutGeo, strutMat);
+        rightStrut.position.set(0.74, 1.40, -0.92);
+        this.workbenchGroup.add(leftStrut, rightStrut);
+
+        // Combiner Box Wall Mount Backing Plate
+        const standGeo = new THREE.BoxGeometry(0.44, 0.60, 0.03);
+        const standMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.3 });
         const stand = new THREE.Mesh(standGeo, standMat);
         stand.position.set(0, 0.98, -0.74);
-        tableGroup.add(stand);
+        this.workbenchGroup.add(stand);
 
-        this.scene.add(tableGroup);
+        this.scene.add(this.workbenchGroup);
+      }
+
+      createWorkbenchPegboardAndTools() {
+        this.pegboardGroup = new THREE.Group();
+        this.pegboardGroup.position.set(0, 1.35, -0.90);
+
+        // Perforated Steel Pegboard Panel
+        const boardGeo = new THREE.BoxGeometry(1.42, 0.62, 0.015);
+        const boardMat = new THREE.MeshStandardMaterial({
+          map: this.pegboardTexture,
+          roughness: 0.5,
+          metalness: 0.6
+        });
+        const boardMesh = new THREE.Mesh(boardGeo, boardMat);
+        this.pegboardGroup.add(boardMesh);
+
+        // Perforated Board Border Trim
+        const trimMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.85, roughness: 0.25 });
+        const trimTop = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.02, 0.025), trimMat);
+        trimTop.position.set(0, 0.31, 0);
+        const trimBot = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.02, 0.025), trimMat);
+        trimBot.position.set(0, -0.31, 0);
+        this.pegboardGroup.add(trimTop, trimBot);
+
+        // --- 1. VDE Certified 1000V Insulated Lineman / Pliers ---
+        const pliersGroup = new THREE.Group();
+        pliersGroup.position.set(-0.48, 0.05, 0.03);
+        pliersGroup.name = "tool_pliers";
+
+        // Steel Head
+        const steelMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.95, roughness: 0.15 });
+        const jawHead = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.07, 0.018), steelMat);
+        jawHead.position.y = 0.08;
+        pliersGroup.add(jawHead);
+
+        // VDE Dual-Component Red/Yellow Insulated Handles
+        const vdeRed = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35 });
+        const vdeYellow = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.35 });
+
+        [-0.018, 0.018].forEach((xH, idx) => {
+          const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.007, 0.14, 16), vdeRed);
+          handle.position.set(xH * 1.5, -0.02, 0);
+          handle.rotation.z = (idx === 0 ? 0.12 : -0.12);
+          const gripCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.011, 0.025, 16), vdeYellow);
+          gripCollar.position.set(xH * 1.5, 0.04, 0);
+          pliersGroup.add(handle, gripCollar);
+        });
+
+        this.pegboardGroup.add(pliersGroup);
+        this.interactiveObjects.push(pliersGroup);
+
+        // --- 2. 1000V Insulated Screwdriver Set (Slot & Phillips) ---
+        const screwdriversGroup = new THREE.Group();
+        screwdriversGroup.position.set(-0.30, 0.05, 0.03);
+        screwdriversGroup.name = "tool_screwdrivers";
+
+        // Metal hanging bracket
+        const holderRack = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.02, 0.04), trimMat);
+        screwdriversGroup.add(holderRack);
+
+        [-0.04, 0.04].forEach(xS => {
+          // Yellow insulated shaft
+          const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.12, 12), vdeYellow);
+          shaft.position.set(xS, -0.06, 0.01);
+          // Hardened magnetic tip
+          const tip = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.015, 0.002), steelMat);
+          tip.position.set(xS, -0.125, 0.01);
+          // Ergonomic red/yellow handle
+          const sHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.011, 0.09, 16), vdeRed);
+          sHandle.position.set(xS, 0.04, 0.01);
+          const cap = new THREE.Mesh(new THREE.SphereGeometry(0.014, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), vdeYellow);
+          cap.position.set(xS, 0.085, 0.01);
+          screwdriversGroup.add(shaft, tip, sHandle, cap);
+        });
+
+        this.pegboardGroup.add(screwdriversGroup);
+        this.interactiveObjects.push(screwdriversGroup);
+
+        // --- 3. Non-Contact AC/DC Voltage Detector Pen ---
+        const penGroup = new THREE.Group();
+        penGroup.position.set(-0.14, 0.06, 0.03);
+        penGroup.name = "tool_voltage_pen";
+
+        const penBody = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.15, 0.016), vdeYellow);
+        const penClip = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.06, 0.012), new THREE.MeshStandardMaterial({ color: 0x18181b }));
+        penClip.position.set(0, 0.03, 0.012);
+        // Clear probe tip with red LED
+        const penTip = new THREE.Mesh(
+          new THREE.ConeGeometry(0.008, 0.03, 12),
+          new THREE.MeshStandardMaterial({ color: 0xff2233, emissive: 0xff0022, emissiveIntensity: 1.2, transparent: true, opacity: 0.85 })
+        );
+        penTip.position.y = -0.09;
+        penTip.rotation.x = Math.PI;
+        penGroup.add(penBody, penClip, penTip);
+
+        this.pegboardGroup.add(penGroup);
+        this.interactiveObjects.push(penGroup);
+
+        this.scene.add(this.pegboardGroup);
+      }
+
+      createOverheadShelfAndInstruments() {
+        this.overheadGroup = new THREE.Group();
+        this.overheadGroup.position.set(0, 1.76, -0.80);
+
+        // Heavy-duty steel shelf plate
+        const shelfGeo = new THREE.BoxGeometry(1.42, 0.025, 0.32);
+        const shelfMat = new THREE.MeshStandardMaterial({ color: 0x243042, metalness: 0.85, roughness: 0.25 });
+        const shelf = new THREE.Mesh(shelfGeo, shelfMat);
+        shelf.castShadow = true;
+        this.overheadGroup.add(shelf);
+
+        // Shelf retaining rim
+        const rimGeo = new THREE.BoxGeometry(1.44, 0.035, 0.015);
+        const rim = new THREE.Mesh(rimGeo, shelfMat);
+        rim.position.set(0, 0.02, 0.16);
+        this.overheadGroup.add(rim);
+
+        // --- Benchtop Digital Power Analyzer / Storage Oscilloscope ---
+        this.oscGroup = new THREE.Group();
+        this.oscGroup.position.set(-0.24, 0.10, 0.02);
+        this.oscGroup.name = "bench_oscilloscope";
+
+        // Main instrument chassis (width 0.36m, height 0.18m, depth 0.22m)
+        const oscBodyGeo = new THREE.BoxGeometry(0.36, 0.18, 0.22);
+        const oscBodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.45, metalness: 0.3 });
+        const oscBody = new THREE.Mesh(oscBodyGeo, oscBodyMat);
+        this.oscGroup.add(oscBody);
+
+        // Front Bezel in darker slate
+        const bezelGeo = new THREE.BoxGeometry(0.35, 0.17, 0.015);
+        const bezelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 });
+        const fBezel = new THREE.Mesh(bezelGeo, bezelMat);
+        fBezel.position.set(0, 0, 0.115);
+        this.oscGroup.add(fBezel);
+
+        // Dynamic Oscilloscope Display Canvas
+        this.oscCanvas = document.createElement('canvas');
+        this.oscCanvas.width = 256;
+        this.oscCanvas.height = 160;
+        this.oscCtx = this.oscCanvas.getContext('2d');
+        this.oscTexture = new THREE.CanvasTexture(this.oscCanvas);
+
+        const screenGeo = new THREE.PlaneGeometry(0.20, 0.13);
+        const screenMat = new THREE.MeshBasicMaterial({ map: this.oscTexture });
+        this.oscScreenMesh = new THREE.Mesh(screenGeo, screenMat);
+        this.oscScreenMesh.position.set(-0.055, 0, 0.124);
+        this.oscGroup.add(this.oscScreenMesh);
+
+        // Controls Area: Dual BNC connectors & Rotary dials
+        const bncMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.95, roughness: 0.15 });
+        const dialMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 });
+
+        // Rotary Control Dials
+        [0.04, -0.02].forEach(yD => {
+          const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.015, 24), dialMat);
+          dial.rotation.x = Math.PI / 2;
+          dial.position.set(0.10, yD, 0.125);
+          this.oscGroup.add(dial);
+        });
+
+        // BNC Terminals
+        [0.08, 0.13].forEach(xB => {
+          const bnc = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.018, 16), bncMat);
+          bnc.rotation.x = Math.PI / 2;
+          bnc.position.set(xB, -0.05, 0.125);
+          this.oscGroup.add(bnc);
+        });
+
+        // Illuminated Power Button
+        const pwrBtn = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.007, 0.007, 0.008, 16),
+          new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 1.5 })
+        );
+        pwrBtn.rotation.x = Math.PI / 2;
+        pwrBtn.position.set(0.14, 0.06, 0.124);
+        this.oscGroup.add(pwrBtn);
+
+        this.overheadGroup.add(this.oscGroup);
+        this.interactiveObjects.push(this.oscGroup);
+        this.animatedInstruments.push(this);
+
+        this.scene.add(this.overheadGroup);
+      }
+
+      updateAnimatedInstruments(time, delta) {
+        if (!this.oscCtx) return;
+        const c = this.oscCtx;
+        const w = this.oscCanvas.width;
+        const h = this.oscCanvas.height;
+
+        // Dark navy/blue oscilloscope display background
+        c.fillStyle = '#06111e';
+        c.fillRect(0, 0, w, h);
+
+        // Reticle Grid Lines
+        c.strokeStyle = 'rgba(0, 229, 255, 0.18)';
+        c.lineWidth = 1;
+        const step = 20;
+        for (let x = 0; x <= w; x += step) {
+          c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke();
+        }
+        for (let y = 0; y <= h; y += step) {
+          c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke();
+        }
+
+        // Center crosshair axes
+        c.strokeStyle = 'rgba(0, 229, 255, 0.38)';
+        c.beginPath();
+        c.moveTo(0, h / 2); c.lineTo(w, h / 2);
+        c.moveTo(w / 2, 0); c.lineTo(w / 2, h);
+        c.stroke();
+
+        // Waveform Trace
+        const isEnergized = !window.app || window.app.fsm.circuitEnergized;
+        c.lineWidth = 2;
+        c.strokeStyle = isEnergized ? '#22c55e' : '#64748b';
+        c.beginPath();
+
+        const midY = h / 2;
+        for (let x = 0; x < w; x++) {
+          let y = midY;
+          if (isEnergized) {
+            // High voltage DC potential with 50Hz switching ripple harmonics
+            const ripple = Math.sin(x * 0.12 + time * 14) * 14 + Math.sin(x * 0.35 + time * 28) * 3;
+            y = midY - 24 + ripple;
+          } else {
+            // Flat zero-voltage verified ground trace
+            y = midY + 30;
+          }
+          if (x === 0) c.moveTo(x, y);
+          else c.lineTo(x, y);
+        }
+        c.stroke();
+
+        // Screen Telemetry Header & Metrics
+        c.fillStyle = '#38bdf8';
+        c.font = 'bold 12px "SF Mono", Consolas, monospace';
+        c.fillText("DC BUS ANALYZER // RIGOL 5000", 8, 16);
+
+        if (isEnergized) {
+          c.fillStyle = '#ff3344';
+          c.fillText("CH1: 480.0V DC // 4.80kW", 8, h - 10);
+        } else {
+          c.fillStyle = '#00ff88';
+          c.fillText("CH1: 0.00V DC // ZERO POTENTIAL", 8, h - 10);
+        }
+
+        this.oscTexture.needsUpdate = true;
       }
 
       createSolarCombinerBox() {
         this.combinerBox = new THREE.Group();
         this.combinerBox.position.set(0, 0.95, -0.65);
 
+        // Powder-coated RAL 7035 Industrial Light Grey Enclosure
         const bodyGeo = new THREE.BoxGeometry(0.38, 0.46, 0.14);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x242d38, roughness: 0.5, metalness: 0.2 });
+        const bodyMat = new THREE.MeshStandardMaterial({
+          color: 0xd1d5db, // RAL 7035 light grey
+          roughness: 0.38,
+          metalness: 0.18
+        });
         const boxBase = new THREE.Mesh(bodyGeo, bodyMat);
         boxBase.castShadow = true;
         this.combinerBox.add(boxBase);
 
+        // Internal Cavity with dark insulation liner
         const cavityGeo = new THREE.BoxGeometry(0.34, 0.42, 0.1);
-        const cavityMat = new THREE.MeshStandardMaterial({ color: 0x121820, roughness: 0.8 });
+        const cavityMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.7 });
         const cavity = new THREE.Mesh(cavityGeo, cavityMat);
         cavity.position.set(0, 0, 0.025);
         this.combinerBox.add(cavity);
 
+        // Standard 35mm Cold-Rolled Slotted Steel DIN Rail
         const railGeo = new THREE.BoxGeometry(0.30, 0.035, 0.012);
-        const railMat = new THREE.MeshStandardMaterial({ color: 0xc0c8d0, roughness: 0.2, metalness: 0.9 });
+        const railMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.25, metalness: 0.92 });
         const dinRail = new THREE.Mesh(railGeo, railMat);
         dinRail.position.set(0, 0.02, 0.03);
         this.combinerBox.add(dinRail);
 
-        // Hinged Transparent Polycarbonate Lid
+        // Internal High-Voltage Wiring Harness (Red DC+, Black DC-, Green/Yellow Ground)
+        const wireMatRed = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 });
+        const wireMatBlack = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.5 });
+        const wireMatGround = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.4 });
+
+        // Positive wire entering top gland to isolator
+        const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.14, 8), wireMatRed);
+        w1.position.set(-0.06, 0.14, 0.03);
+        // Negative wire entering top gland to terminals
+        const w2 = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.22, 8), wireMatBlack);
+        w2.position.set(0.06, 0.10, 0.03);
+        // Earth ground wire with brass grounding terminal block
+        const w3 = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.18, 8), wireMatGround);
+        w3.position.set(0.12, -0.05, 0.03);
+        this.combinerBox.add(w1, w2, w3);
+
+        // Hinged Transparent Polycarbonate Protective Cover
         this.lidPivot = new THREE.Group();
         this.lidPivot.position.set(-0.19, 0, 0.07);
 
@@ -2567,34 +3429,53 @@
         this.lidMesh.position.set(0.19, 0, 0);
         this.lidMesh.name = "combiner_lid";
 
+        // Stainless Steel Quick-Release Draw Latches
         const latchGeo = new THREE.BoxGeometry(0.02, 0.06, 0.03);
-        const latchMat = new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.8 });
-        const latch = new THREE.Mesh(latchGeo, latchMat);
-        latch.position.set(0.38, 0, 0.015);
-        this.lidMesh.add(latch);
+        const latchMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.15 });
+        const latch1 = new THREE.Mesh(latchGeo, latchMat);
+        latch1.position.set(0.38, 0.12, 0.015);
+        const latch2 = new THREE.Mesh(latchGeo, latchMat);
+        latch2.position.set(0.38, -0.12, 0.015);
+        this.lidMesh.add(latch1, latch2);
+
+        // OSHA Arc Flash Danger Warning Decal on Lid
+        const lidDecalMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.24, 0.11),
+          new THREE.MeshBasicMaterial({ map: this.oshaDangerTexture })
+        );
+        lidDecalMesh.position.set(0.19, 0.14, 0.014);
+        this.lidMesh.add(lidDecalMesh);
 
         this.lidPivot.add(this.lidMesh);
         this.combinerBox.add(this.lidPivot);
         this.interactiveObjects.push(this.lidMesh);
 
-        // DC Isolator Rotary Switch
+        // Heavy-Duty DC Isolator Rotary Switch (Lockout/Tagout Compliant)
         this.switchGroup = new THREE.Group();
         this.switchGroup.position.set(-0.07, 0.05, 0.04);
 
-        const switchPlateGeo = new THREE.CylinderGeometry(0.042, 0.042, 0.015, 32);
-        const switchPlateMat = new THREE.MeshStandardMaterial({ color: 0xe6b800, roughness: 0.4 });
+        // Yellow Switch Faceplate with ON/OFF Legends
+        const switchPlateGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.015, 32);
+        const switchPlateMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.35 });
         const switchPlate = new THREE.Mesh(switchPlateGeo, switchPlateMat);
         switchPlate.rotation.x = Math.PI / 2;
         this.switchGroup.add(switchPlate);
 
+        // Padlock Lockout/Tagout Hasp Hole
+        const haspGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.02, 12);
+        const hasp = new THREE.Mesh(haspGeo, latchMat);
+        hasp.position.set(0.024, 0, 0.01);
+        this.switchGroup.add(hasp);
+
+        // Bright Red Ergonomic Switch Knob
         this.rotaryKnob = new THREE.Group();
-        const knobBaseGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.02, 32);
-        const knobHandleGeo = new THREE.BoxGeometry(0.018, 0.065, 0.03);
-        const knobMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: 0.3 });
+        const knobBaseGeo = new THREE.CylinderGeometry(0.026, 0.026, 0.02, 32);
+        const knobHandleGeo = new THREE.BoxGeometry(0.018, 0.068, 0.032);
+        const knobMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 });
         const knobBase = new THREE.Mesh(knobBaseGeo, knobMat);
         knobBase.rotation.x = Math.PI / 2;
         const knobHandle = new THREE.Mesh(knobHandleGeo, knobMat);
-        knobHandle.position.set(0, 0, 0.015);
+        knobHandle.position.set(0, 0, 0.016);
         this.rotaryKnob.add(knobBase, knobHandle);
         this.rotaryKnob.name = "rotary_isolator";
         this.rotaryKnob.position.set(0, 0, 0.01);
@@ -2602,45 +3483,51 @@
         this.combinerBox.add(this.switchGroup);
         this.interactiveObjects.push(this.rotaryKnob);
 
-        // Status LED Indicator
-        const ledGeo = new THREE.SphereGeometry(0.012, 16, 16);
+        // High-Intensity Status LED Indicator with Chrome Bezel
+        const ledBezelGeo = new THREE.CylinderGeometry(0.016, 0.016, 0.008, 16);
+        const ledBezel = new THREE.Mesh(ledBezelGeo, latchMat);
+        ledBezel.rotation.x = Math.PI / 2;
+        ledBezel.position.set(-0.07, 0.13, 0.045);
+        this.combinerBox.add(ledBezel);
+
+        const ledGeo = new THREE.SphereGeometry(0.011, 16, 16);
         this.ledMat = new THREE.MeshStandardMaterial({
           color: 0xff0022,
           emissive: 0xff0022,
-          emissiveIntensity: 2.2,
+          emissiveIntensity: 2.4,
           roughness: 0.2
         });
         this.statusLed = new THREE.Mesh(ledGeo, this.ledMat);
-        this.statusLed.position.set(-0.07, 0.13, 0.05);
+        this.statusLed.position.set(-0.07, 0.13, 0.052);
         this.combinerBox.add(this.statusLed);
 
-        this.ledLight = new THREE.PointLight(0xff0022, 0.4, 0.4);
-        this.ledLight.position.set(-0.07, 0.13, 0.07);
+        this.ledLight = new THREE.PointLight(0xff0022, 0.45, 0.5);
+        this.ledLight.position.set(-0.07, 0.13, 0.08);
         this.combinerBox.add(this.ledLight);
 
-        // Cartridge Fuse Holder
+        // High Rupture Capacity (HRC) Cartridge Fuse Block
         this.fuseHolder = new THREE.Group();
         this.fuseHolder.position.set(-0.07, -0.06, 0.04);
-        const holderGeo = new THREE.BoxGeometry(0.035, 0.09, 0.04);
-        const holderMat = new THREE.MeshStandardMaterial({ color: 0x3a4454, roughness: 0.5 });
+        const holderGeo = new THREE.BoxGeometry(0.038, 0.095, 0.042);
+        const holderMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
         const holderMesh = new THREE.Mesh(holderGeo, holderMat);
         this.fuseHolder.add(holderMesh);
 
-        // Blown Fuse Cartridge
+        // Blown Fuse Cartridge with thermal scorch mark
         this.fuseMesh = new THREE.Group();
         const fuseBodyGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.045, 16);
-        const fuseBodyMat = new THREE.MeshStandardMaterial({ color: 0xdedede, roughness: 0.4 });
+        const fuseBodyMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 });
         const fuseBody = new THREE.Mesh(fuseBodyGeo, fuseBodyMat);
 
-        const capGeo = new THREE.CylinderGeometry(0.0075, 0.0075, 0.01, 16);
-        const capMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.9, roughness: 0.2 });
-        const capTop = new THREE.Mesh(capGeo, capMat);
+        const capGeo = new THREE.CylinderGeometry(0.0076, 0.0076, 0.01, 16);
+        const goldCapMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 });
+        const capTop = new THREE.Mesh(capGeo, goldCapMat);
         capTop.position.y = 0.018;
-        const capBottom = new THREE.Mesh(capGeo, capMat);
+        const capBottom = new THREE.Mesh(capGeo, goldCapMat);
         capBottom.position.y = -0.018;
 
-        const burnGeo = new THREE.CylinderGeometry(0.0072, 0.0072, 0.012, 16);
-        const burnMat = new THREE.MeshBasicMaterial({ color: 0x221a10 });
+        const burnGeo = new THREE.CylinderGeometry(0.0072, 0.0072, 0.014, 16);
+        const burnMat = new THREE.MeshBasicMaterial({ color: 0x1c1917 });
         const burnMark = new THREE.Mesh(burnGeo, burnMat);
 
         this.fuseMesh.add(fuseBody, capTop, capBottom, burnMark);
@@ -2650,30 +3537,29 @@
         this.combinerBox.add(this.fuseHolder);
         this.interactiveObjects.push(this.fuseMesh);
 
-        // Terminals
+        // Touch-Safe Test Terminals (Red Positive, Black Negative)
         this.terminalsGroup = new THREE.Group();
         this.terminalsGroup.position.set(0.07, -0.08, 0.04);
 
-        const posGeo = new THREE.BoxGeometry(0.03, 0.05, 0.035);
-        const posMat = new THREE.MeshStandardMaterial({ color: 0xd92626 });
+        const posGeo = new THREE.BoxGeometry(0.032, 0.052, 0.036);
+        const posMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 });
         this.posTerminal = new THREE.Mesh(posGeo, posMat);
-        this.posTerminal.position.set(-0.025, 0, 0);
+        this.posTerminal.position.set(-0.026, 0, 0);
         this.posTerminal.name = "pos_terminal";
 
         const contactScrewGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.008, 16);
-        const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
         const posScrew = new THREE.Mesh(contactScrewGeo, brassMat);
-        posScrew.position.set(0, 0.026, 0);
+        posScrew.position.set(0, 0.027, 0);
         this.posTerminal.add(posScrew);
 
-        const negGeo = new THREE.BoxGeometry(0.03, 0.05, 0.035);
-        const negMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.6 });
+        const negGeo = new THREE.BoxGeometry(0.032, 0.052, 0.036);
+        const negMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.5 });
         this.negTerminal = new THREE.Mesh(negGeo, negMat);
-        this.negTerminal.position.set(0.025, 0, 0);
+        this.negTerminal.position.set(0.026, 0, 0);
         this.negTerminal.name = "neg_terminal";
 
         const negScrew = new THREE.Mesh(contactScrewGeo, brassMat);
-        negScrew.position.set(0, 0.026, 0);
+        negScrew.position.set(0, 0.027, 0);
         this.negTerminal.add(negScrew);
 
         this.terminalsGroup.add(this.posTerminal, this.negTerminal);
@@ -2688,11 +3574,23 @@
         this.dmmGroup.position.set(0.24, 0.78, -0.60);
         this.dmmGroup.rotation.x = -0.15;
 
-        const dmmBodyGeo = new THREE.BoxGeometry(0.09, 0.16, 0.038);
-        const dmmBodyMat = new THREE.MeshStandardMaterial({ color: 0xf5a623, roughness: 0.4 });
-        const dmmBody = new THREE.Mesh(dmmBodyGeo, dmmBodyMat);
-        this.dmmGroup.add(dmmBody);
+        // Authentic Fluke-Style Safety Yellow Rubber Impact Holster
+        const holsterGeo = new THREE.BoxGeometry(0.098, 0.174, 0.042);
+        const holsterMat = new THREE.MeshStandardMaterial({
+          color: 0xf59e0b, // Fluke yellow
+          roughness: 0.55,
+          metalness: 0.05
+        });
+        const holster = new THREE.Mesh(holsterGeo, holsterMat);
+        this.dmmGroup.add(holster);
 
+        // Dark Anthracite Inner Casing
+        const innerGeo = new THREE.BoxGeometry(0.088, 0.164, 0.044);
+        const innerMat = new THREE.MeshStandardMaterial({ color: 0x181c24, roughness: 0.4 });
+        const innerBody = new THREE.Mesh(innerGeo, innerMat);
+        this.dmmGroup.add(innerBody);
+
+        // Recessed Backlit LCD Digital Display
         this.dmmCanvas = document.createElement('canvas');
         this.dmmCanvas.width = 256;
         this.dmmCanvas.height = 128;
@@ -2700,64 +3598,111 @@
         this.dmmTexture = new THREE.CanvasTexture(this.dmmCanvas);
         this.updateDMMDisplay("--- V", "STANDBY");
 
-        const lcdGeo = new THREE.PlaneGeometry(0.065, 0.035);
+        const lcdGeo = new THREE.PlaneGeometry(0.068, 0.038);
         const lcdMat = new THREE.MeshBasicMaterial({ map: this.dmmTexture });
         const lcdMesh = new THREE.Mesh(lcdGeo, lcdMat);
-        lcdMesh.position.set(0, 0.045, 0.02);
+        lcdMesh.position.set(0, 0.046, 0.023);
         this.dmmGroup.add(lcdMesh);
 
-        const dialGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.01, 32);
-        const dialMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 });
+        // Rotary Function Selector Dial with Tactile Pointer Detent
+        const dialGeo = new THREE.CylinderGeometry(0.019, 0.019, 0.012, 32);
+        const dialMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.45 });
         const dial = new THREE.Mesh(dialGeo, dialMat);
         dial.rotation.x = Math.PI / 2;
-        dial.position.set(0, -0.015, 0.02);
+        dial.position.set(0, -0.012, 0.024);
+
+        // White pointer notch on dial
+        const notchGeo = new THREE.BoxGeometry(0.003, 0.010, 0.003);
+        const notchMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const notch = new THREE.Mesh(notchGeo, notchMat);
+        notch.position.set(0, 0.012, 0.006);
+        dial.add(notch);
         this.dmmGroup.add(dial);
+
+        // Push Buttons (HOLD / RANGE / MIN-MAX)
+        const btnGeo = new THREE.BoxGeometry(0.014, 0.008, 0.006);
+        const yelBtnMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b });
+        const bluBtnMat = new THREE.MeshStandardMaterial({ color: 0x0284c7 });
+        [-0.024, 0, 0.024].forEach((xB, idx) => {
+          const btn = new THREE.Mesh(btnGeo, idx === 0 ? yelBtnMat : bluBtnMat);
+          btn.position.set(xB, 0.015, 0.023);
+          this.dmmGroup.add(btn);
+        });
+
+        // Recessed Shrouded Safety Banana Jacks (Red V/Ω & Black COM)
+        const jackGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.008, 16);
+        const redJack = new THREE.Mesh(jackGeo, new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
+        redJack.rotation.x = Math.PI / 2;
+        redJack.position.set(0.02, -0.055, 0.023);
+        const blkJack = new THREE.Mesh(jackGeo, new THREE.MeshStandardMaterial({ color: 0x18181b }));
+        blkJack.rotation.x = Math.PI / 2;
+        blkJack.position.set(-0.02, -0.055, 0.023);
+        this.dmmGroup.add(redJack, blkJack);
+
+        // NIST-Traceable Calibration Decal on side of Holster
+        const calMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.038, 0.019),
+          new THREE.MeshBasicMaterial({ map: this.dmmCalDecalTexture })
+        );
+        calMesh.position.set(0.050, 0.02, 0);
+        calMesh.rotation.y = Math.PI / 2;
+        this.dmmGroup.add(calMesh);
+
         this.scene.add(this.dmmGroup);
 
+        // Ergonomic Double-Molded Test Probes
         this.probesGroup = new THREE.Group();
 
-        // Red Probe
+        // Red Voltage Probe
         this.redProbe = new THREE.Group();
-        const probeHandleGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.11, 16);
-        const redHandleMat = new THREE.MeshStandardMaterial({ color: 0xe02020 });
-        const redHandle = new THREE.Mesh(probeHandleGeo, redHandleMat);
-        const needleGeo = new THREE.CylinderGeometry(0.0015, 0.0015, 0.035, 16);
-        const needleMat = new THREE.MeshStandardMaterial({ color: 0xdde5ed, metalness: 0.95, roughness: 0.1 });
+        const handleGeo = new THREE.CylinderGeometry(0.007, 0.006, 0.12, 16);
+        const redHandleMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35 });
+        const redHandle = new THREE.Mesh(handleGeo, redHandleMat);
+        // Finger safety barrier guard
+        const guardGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.006, 16);
+        const redGuard = new THREE.Mesh(guardGeo, redHandleMat);
+        redGuard.position.y = 0.045;
+        // Hardened Needle Tip
+        const needleGeo = new THREE.CylinderGeometry(0.0014, 0.0014, 0.038, 16);
+        const needleMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.1 });
         const redNeedle = new THREE.Mesh(needleGeo, needleMat);
-        redNeedle.position.set(0, 0.065, 0);
-        this.redProbe.add(redHandle, redNeedle);
+        redNeedle.position.set(0, 0.075, 0);
+        this.redProbe.add(redHandle, redGuard, redNeedle);
         this.redProbe.name = "probe_red";
         this.redProbe.position.set(0.20, 0.78, -0.46);
         this.redProbe.rotation.x = Math.PI / 2;
         this.probesGroup.add(this.redProbe);
         this.interactiveObjects.push(this.redProbe);
 
-        // Black Probe
+        // Black Common (COM) Probe
         this.blackProbe = new THREE.Group();
-        const blackHandleMat = new THREE.MeshStandardMaterial({ color: 0x1f242c });
-        const blackHandle = new THREE.Mesh(probeHandleGeo, blackHandleMat);
+        const blackHandleMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.45 });
+        const blackHandle = new THREE.Mesh(handleGeo, blackHandleMat);
+        const blackGuard = new THREE.Mesh(guardGeo, blackHandleMat);
+        blackGuard.position.y = 0.045;
         const blackNeedle = new THREE.Mesh(needleGeo, needleMat);
-        blackNeedle.position.set(0, 0.065, 0);
-        this.blackProbe.add(blackHandle, blackNeedle);
+        blackNeedle.position.set(0, 0.075, 0);
+        this.blackProbe.add(blackHandle, blackGuard, blackNeedle);
         this.blackProbe.name = "probe_black";
         this.blackProbe.position.set(0.28, 0.78, -0.46);
         this.blackProbe.rotation.x = Math.PI / 2;
         this.probesGroup.add(this.blackProbe);
         this.interactiveObjects.push(this.blackProbe);
 
+        // Flexible Silicone Test Lead Lines
         this.redLeadGeo = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(0.22, 0.76, -0.66),
+          new THREE.Vector3(0.26, 0.76, -0.66),
           this.redProbe.position
         ]);
-        this.redLeadMat = new THREE.LineBasicMaterial({ color: 0xe02020, linewidth: 2 });
+        this.redLeadMat = new THREE.LineBasicMaterial({ color: 0xdc2626, linewidth: 3 });
         this.redLeadLine = new THREE.Line(this.redLeadGeo, this.redLeadMat);
         this.probesGroup.add(this.redLeadLine);
 
         this.blackLeadGeo = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(0.26, 0.76, -0.66),
+          new THREE.Vector3(0.22, 0.76, -0.66),
           this.blackProbe.position
         ]);
-        this.blackLeadMat = new THREE.LineBasicMaterial({ color: 0x222222, linewidth: 2 });
+        this.blackLeadMat = new THREE.LineBasicMaterial({ color: 0x18181b, linewidth: 3 });
         this.blackLeadLine = new THREE.Line(this.blackLeadGeo, this.blackLeadMat);
         this.probesGroup.add(this.blackLeadLine);
 
@@ -2768,63 +3713,97 @@
         this.toolboxGroup = new THREE.Group();
         this.toolboxGroup.position.set(0.52, 0.76, -0.55);
 
-        const boxGeo = new THREE.BoxGeometry(0.30, 0.12, 0.20);
-        const boxMat = new THREE.MeshStandardMaterial({ color: 0xb52424, roughness: 0.4, metalness: 0.6 });
+        // Milwaukee-Style Heavy-Duty Crimson Red Finish
+        const boxGeo = new THREE.BoxGeometry(0.32, 0.13, 0.22);
+        const boxMat = new THREE.MeshStandardMaterial({
+          color: 0xb91c1c, // High-visibility industrial crimson
+          roughness: 0.32,
+          metalness: 0.25
+        });
         const tbBase = new THREE.Mesh(boxGeo, boxMat);
-        tbBase.position.y = 0.06;
+        tbBase.position.y = 0.065;
         tbBase.castShadow = true;
         this.toolboxGroup.add(tbBase);
 
-        this.toolboxLidPivot = new THREE.Group();
-        this.toolboxLidPivot.position.set(0, 0.12, -0.10);
+        // Matte Black Rubber Impact Corner Bumpers (All 4 bottom corners)
+        const bumperGeo = new THREE.BoxGeometry(0.04, 0.08, 0.04);
+        const bumperMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.7 });
+        [[-0.14, -0.09], [0.14, -0.09], [-0.14, 0.09], [0.14, 0.09]].forEach(([bx, bz]) => {
+          const bp = new THREE.Mesh(bumperGeo, bumperMat);
+          bp.position.set(bx, 0.05, bz);
+          this.toolboxGroup.add(bp);
+        });
 
-        const lidGeo = new THREE.BoxGeometry(0.30, 0.03, 0.20);
+        // Hinged Crimson Red Lid
+        this.toolboxLidPivot = new THREE.Group();
+        this.toolboxLidPivot.position.set(0, 0.13, -0.11);
+
+        const lidGeo = new THREE.BoxGeometry(0.32, 0.035, 0.22);
         this.toolboxLidMesh = new THREE.Mesh(lidGeo, boxMat);
-        this.toolboxLidMesh.position.set(0, 0.015, 0.10);
+        this.toolboxLidMesh.position.set(0, 0.018, 0.11);
         this.toolboxLidMesh.name = "toolbox_lid";
 
-        const handleGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.14, 16);
-        const chromeMat = new THREE.MeshStandardMaterial({ color: 0xdedede, metalness: 0.95, roughness: 0.15 });
+        // Chrome Carry Handle on Lid
+        const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 });
+        const handleGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.15, 16);
         const handle = new THREE.Mesh(handleGeo, chromeMat);
         handle.rotation.z = Math.PI / 2;
-        handle.position.set(0, 0.035, 0.10);
+        handle.position.set(0, 0.04, 0.11);
         this.toolboxLidMesh.add(handle);
+
+        // Dual Chrome Draw-Latches on Front
+        const tbLatchGeo = new THREE.BoxGeometry(0.024, 0.04, 0.015);
+        const tl1 = new THREE.Mesh(tbLatchGeo, chromeMat);
+        tl1.position.set(-0.08, -0.01, 0.22);
+        const tl2 = new THREE.Mesh(tbLatchGeo, chromeMat);
+        tl2.position.set(0.08, -0.01, 0.22);
+        this.toolboxLidMesh.add(tl1, tl2);
 
         this.toolboxLidPivot.add(this.toolboxLidMesh);
         this.toolboxGroup.add(this.toolboxLidPivot);
         this.interactiveObjects.push(this.toolboxLidMesh);
 
-        const foamGeo = new THREE.BoxGeometry(0.28, 0.02, 0.18);
-        const foamMat = new THREE.MeshStandardMaterial({ color: 0x181e26, roughness: 0.9 });
+        // Custom Molded Black EVA Foam Tool Organizer Tray
+        const foamGeo = new THREE.BoxGeometry(0.29, 0.025, 0.19);
+        const foamMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 });
         const foam = new THREE.Mesh(foamGeo, foamMat);
-        foam.position.set(0, 0.11, 0);
+        foam.position.set(0, 0.115, 0);
         this.toolboxGroup.add(foam);
 
-        // Fresh Replacement Fuse
+        // Pristine Replacement High-Voltage Ceramic Fuse
         this.replacementFuse = new THREE.Group();
         const repFuseGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.045, 16);
-        const repFuseMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+        const repFuseMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25 });
         const repFuseBody = new THREE.Mesh(repFuseGeo, repFuseMat);
-        const capGeo = new THREE.CylinderGeometry(0.0075, 0.0075, 0.01, 16);
-        const capMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.1 });
-        const c1 = new THREE.Mesh(capGeo, capMat);
+
+        const capGeo = new THREE.CylinderGeometry(0.0076, 0.0076, 0.01, 16);
+        const goldCapMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.12 });
+        const c1 = new THREE.Mesh(capGeo, goldCapMat);
         c1.position.y = 0.018;
-        const c2 = new THREE.Mesh(capGeo, capMat);
+        const c2 = new THREE.Mesh(capGeo, goldCapMat);
         c2.position.y = -0.018;
         this.replacementFuse.add(repFuseBody, c1, c2);
-        this.replacementFuse.position.set(-0.08, 0.13, 0.02);
+        this.replacementFuse.position.set(-0.08, 0.135, 0.02);
         this.replacementFuse.rotation.z = Math.PI / 2;
         this.replacementFuse.name = "replacement_fuse";
         this.toolboxGroup.add(this.replacementFuse);
         this.interactiveObjects.push(this.replacementFuse);
 
-        // Insulated Tool
-        const toolGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.14, 16);
-        const toolMat = new THREE.MeshStandardMaterial({ color: 0xf39c12, roughness: 0.3 });
-        const wrench = new THREE.Mesh(toolGeo, toolMat);
-        wrench.rotation.z = Math.PI / 2;
-        wrench.position.set(0.05, 0.13, 0.05);
-        this.toolboxGroup.add(wrench);
+        // 1000V Insulated Digital Torque Wrench in Foam Slot
+        const wrenchGroup = new THREE.Group();
+        const toolGeo = new THREE.CylinderGeometry(0.009, 0.009, 0.15, 16);
+        const toolMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.35 });
+        const wrenchShaft = new THREE.Mesh(toolGeo, toolMat);
+        wrenchShaft.rotation.z = Math.PI / 2;
+        // Ratchet drive head & hex socket
+        const rHead = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.02, 16), chromeMat);
+        rHead.position.set(0.08, 0, 0);
+        const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.025, 16), chromeMat);
+        socket.rotation.x = Math.PI / 2;
+        socket.position.set(0.08, 0, 0.015);
+        wrenchGroup.add(wrenchShaft, rHead, socket);
+        wrenchGroup.position.set(0.05, 0.135, 0.04);
+        this.toolboxGroup.add(wrenchGroup);
 
         this.scene.add(this.toolboxGroup);
       }
@@ -2833,67 +3812,126 @@
         this.batteryRack = new THREE.Group();
         this.batteryRack.position.set(-0.85, 0, -0.60);
 
-        const rackCabinetGeo = new THREE.BoxGeometry(0.48, 1.4, 0.40);
-        const rackMat = new THREE.MeshStandardMaterial({ color: 0x18202b, metalness: 0.7, roughness: 0.4 });
+        // Server-Grade Matte Dark Steel Rack Cabinet
+        const rackCabinetGeo = new THREE.BoxGeometry(0.50, 1.45, 0.42);
+        const rackMat = new THREE.MeshStandardMaterial({
+          color: 0x18202b,
+          metalness: 0.65,
+          roughness: 0.45
+        });
         const cabinet = new THREE.Mesh(rackCabinetGeo, rackMat);
-        cabinet.position.y = 0.7;
+        cabinet.position.y = 0.725;
+        cabinet.castShadow = true;
         this.batteryRack.add(cabinet);
 
-        const bayGeo = new THREE.BoxGeometry(0.36, 0.18, 0.32);
-        const bayMat = new THREE.MeshStandardMaterial({ color: 0x0a0f16, roughness: 0.8 });
+        // Hexagonal Perforated Ventilation Side Panels
+        const ventMeshMat = new THREE.MeshStandardMaterial({
+          map: this.ventMeshTexture,
+          roughness: 0.6,
+          metalness: 0.5
+        });
+        const ventL = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 1.25), ventMeshMat);
+        ventL.rotation.y = -Math.PI / 2;
+        ventL.position.set(-0.252, 0.725, 0);
+        const ventR = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 1.25), ventMeshMat);
+        ventR.rotation.y = Math.PI / 2;
+        ventR.position.set(0.252, 0.725, 0);
+        this.batteryRack.add(ventL, ventR);
+
+        // 19-inch Vertical EIA Equipment Mounting Rails with Unit Markings
+        const railMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.2 });
+        [-0.22, 0.22].forEach(xR => {
+          const rail = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.30, 0.02), railMat);
+          rail.position.set(xR, 0.725, 0.20);
+          this.batteryRack.add(rail);
+        });
+
+        // Modular Battery Bay Slot (3U Height)
+        const bayGeo = new THREE.BoxGeometry(0.38, 0.19, 0.34);
+        const bayMat = new THREE.MeshStandardMaterial({ color: 0x090d14, roughness: 0.8 });
         const bay = new THREE.Mesh(bayGeo, bayMat);
         bay.position.set(0, 0.76, 0.04);
         this.batteryRack.add(bay);
 
+        // Bay Status Indicator Lamp
         const bayLedGeo = new THREE.SphereGeometry(0.015, 16, 16);
         this.bayLedMat = new THREE.MeshStandardMaterial({
           color: 0xff8800,
           emissive: 0xff8800,
-          emissiveIntensity: 1.5
+          emissiveIntensity: 1.6
         });
         this.bayLed = new THREE.Mesh(bayLedGeo, this.bayLedMat);
-        this.bayLed.position.set(0.18, 0.90, 0.21);
+        this.bayLed.position.set(0.19, 0.90, 0.215);
         this.batteryRack.add(this.bayLed);
 
         this.scene.add(this.batteryRack);
 
-        // New 48V Battery Module
+        // --- LiFePO4 48V 100Ah Energy Storage Module ---
         this.batteryPack = new THREE.Group();
-        const batBodyGeo = new THREE.BoxGeometry(0.32, 0.14, 0.26);
+
+        // Anodized Black Steel Enclosure Body
+        const batBodyGeo = new THREE.BoxGeometry(0.34, 0.15, 0.28);
         const batBodyMat = new THREE.MeshStandardMaterial({
-          color: 0x283342,
-          roughness: 0.3,
-          metalness: 0.7
+          color: 0x1e293b,
+          roughness: 0.35,
+          metalness: 0.65
         });
         const batBody = new THREE.Mesh(batBodyGeo, batBodyMat);
         this.batteryPack.add(batBody);
 
-        const faceGeo = new THREE.PlaneGeometry(0.30, 0.12);
-        const faceMat = new THREE.MeshStandardMaterial({ color: 0x111620, roughness: 0.6 });
+        // Brushed Anodized Aluminum Front Faceplate
+        const faceGeo = new THREE.PlaneGeometry(0.32, 0.135);
+        const faceMat = new THREE.MeshStandardMaterial({
+          color: 0x94a3b8, // Brushed aluminum
+          roughness: 0.25,
+          metalness: 0.85
+        });
         const face = new THREE.Mesh(faceGeo, faceMat);
-        face.position.set(0, 0, 0.131);
+        face.position.set(0, 0, 0.141);
         this.batteryPack.add(face);
 
-        const termGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.02, 16);
-        const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95 });
-        const tPos = new THREE.Mesh(termGeo, goldMat);
-        tPos.position.set(-0.10, 0.03, 0.135);
-        tPos.rotation.x = Math.PI / 2;
-        const tNeg = new THREE.Mesh(termGeo, goldMat);
-        tNeg.position.set(0.10, 0.03, 0.135);
-        tNeg.rotation.x = Math.PI / 2;
-        this.batteryPack.add(tPos, tNeg);
+        // Detailed Industrial Specification Nameplate Badge
+        const nameplateMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.15, 0.075),
+          new THREE.MeshBasicMaterial({ map: this.batteryNameplateTexture })
+        );
+        nameplateMesh.position.set(0, 0.015, 0.143);
+        this.batteryPack.add(nameplateMesh);
 
-        const bHandleGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.08, 16);
-        const bHandleMat = new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.8 });
-        const bhL = new THREE.Mesh(bHandleGeo, bHandleMat);
-        bhL.position.set(-0.165, 0, 0);
+        // Heavy-Duty Gold-Plated M8 Test Studs with Insulating Rubber Boots
+        const termStudGeo = new THREE.CylinderGeometry(0.009, 0.009, 0.024, 16);
+        const goldStudMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.12 });
+        const bootGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.012, 16);
+
+        // Positive Terminal (Red Boot)
+        const tPos = new THREE.Mesh(termStudGeo, goldStudMat);
+        tPos.rotation.x = Math.PI / 2;
+        tPos.position.set(-0.11, -0.025, 0.145);
+        const bootPos = new THREE.Mesh(bootGeo, new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
+        bootPos.rotation.x = Math.PI / 2;
+        bootPos.position.set(-0.11, -0.025, 0.138);
+        this.batteryPack.add(tPos, bootPos);
+
+        // Negative Terminal (Black Boot)
+        const tNeg = new THREE.Mesh(termStudGeo, goldStudMat);
+        tNeg.rotation.x = Math.PI / 2;
+        tNeg.position.set(0.11, -0.025, 0.145);
+        const bootNeg = new THREE.Mesh(bootGeo, new THREE.MeshStandardMaterial({ color: 0x18181b }));
+        bootNeg.rotation.x = Math.PI / 2;
+        bootNeg.position.set(0.11, -0.025, 0.138);
+        this.batteryPack.add(tNeg, bootNeg);
+
+        // Heavy-Duty Cast Aluminum Rack Extraction Grab Handles
+        const handleMat = new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.85, roughness: 0.2 });
+        const bhL = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.09, 16), handleMat);
+        bhL.position.set(-0.175, 0, 0.01);
         bhL.rotation.x = Math.PI / 2;
-        const bhR = new THREE.Mesh(bHandleGeo, bHandleMat);
-        bhR.position.set(0.165, 0, 0);
+        const bhR = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.09, 16), handleMat);
+        bhR.position.set(0.175, 0, 0.01);
         bhR.rotation.x = Math.PI / 2;
         this.batteryPack.add(bhL, bhR);
 
+        // Initial position on workbench awaiting installation
         this.batteryPack.position.set(0.52, 0.84, -0.55);
         this.batteryPack.name = "battery_module";
         this.scene.add(this.batteryPack);
@@ -3084,6 +4122,47 @@
         const roofLight = new THREE.PointLight(0x00e5ff, 0.8, 6);
         roofLight.position.set(2.0, 4.3, -0.5);
         this.scene.add(roofLight);
+
+        // --- Suspended Dual-Tube Industrial Fluorescent Troffers ---
+        const trofferMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.35, metalness: 0.8 });
+        const tubeMat = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          emissive: 0xf1f5f9,
+          emissiveIntensity: 1.8,
+          roughness: 0.2
+        });
+        const cableMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 });
+
+        [-0.45, 1.25].forEach(zT => {
+          const trofferGroup = new THREE.Group();
+          trofferGroup.position.set(0, 3.35, zT);
+
+          // White enamel reflector housing
+          const housing = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.07, 0.24), trofferMat);
+          trofferGroup.add(housing);
+
+          // Dual glowing fluorescent tube lamps
+          [-0.05, 0.05].forEach(zL => {
+            const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 1.50, 16), tubeMat);
+            tube.rotation.z = Math.PI / 2;
+            tube.position.set(0, -0.04, zL);
+            trofferGroup.add(tube);
+          });
+
+          // Suspension aircraft cables from ceiling at Y = 3.6m down to Y = 3.35m
+          [-0.65, 0.65].forEach(xC => {
+            const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.002, 0.25, 8), cableMat);
+            cable.position.set(xC, 0.14, 0);
+            trofferGroup.add(cable);
+          });
+
+          // Soft balanced downlight
+          const trofferLight = new THREE.PointLight(0xf1f5f9, 0.85, 4.5);
+          trofferLight.position.set(0, -0.06, 0);
+          trofferGroup.add(trofferLight);
+
+          this.scene.add(trofferGroup);
+        });
       }
 
       setupInteractions() {
@@ -3188,6 +4267,41 @@
         else if (obj.name?.startsWith('roof_') || obj.name?.startsWith('pv_panel') ||
                  obj.parent?.name?.startsWith('roof_') || obj.parent?.name?.startsWith('pv_panel')) {
           this.handleRooftopSolarInteraction();
+        }
+        else if (obj.name === 'fire_extinguisher' || obj.parent?.name === 'fire_extinguisher') {
+          this.sound.playProbeBeep();
+          this.jarvis.speak(
+            "Class C carbon dioxide fire extinguisher inspected. Pressure gauge in normal operating green zone, certified for energized electrical fires up to 1000 Volts.",
+            true
+          );
+        }
+        else if (obj.name === 'eyewash_station' || obj.parent?.name === 'eyewash_station') {
+          this.sound.playProbeBeep();
+          this.jarvis.speak(
+            "Emergency eyewash station operational. Dual aerated spray heads tested and ready at zero-point-four gallons per minute with hands-free activation paddle.",
+            true
+          );
+        }
+        else if (obj.name === 'ppe_station' || obj.parent?.name === 'ppe_station') {
+          this.sound.playProbeBeep();
+          this.jarvis.speak(
+            "NFPA 70E Class 0 electrical insulating rubber gloves rated for 1000 Volts AC with leather outer protectors, and dielectric safety helmet on standby.",
+            true
+          );
+        }
+        else if (obj.name?.startsWith('tool_') || obj.parent?.name?.startsWith('tool_')) {
+          this.sound.playProbeBeep();
+          this.jarvis.speak(
+            "VDE certified 1000-Volt insulated hand tool set. Dual-component safety grips rated for live electrical isolation and maintenance under IEC 60900.",
+            true
+          );
+        }
+        else if (obj.name === 'bench_oscilloscope' || obj.parent?.name === 'bench_oscilloscope') {
+          this.sound.playProbeBeep();
+          const stateStr = this.fsm.circuitEnergized
+            ? "DC bus potential active at 480 Volts with steady state ripple under zero-point-two percent."
+            : "DC bus de-energized. Potential verified zero Volts across all phases.";
+          this.jarvis.speak(`Digital power analyzer telemetry: ${stateStr}`, true);
         }
       }
 
@@ -3783,6 +4897,10 @@
 
         if (Math.floor(time * 20) % 2 === 0) {
           this.diegeticHUD.renderCanvas(this.jarvis.isSpeaking || this.micListener.isListening, time);
+        }
+
+        if (this.env && this.env.updateAnimatedInstruments && Math.floor(time * 15) % 2 === 0) {
+          this.env.updateAnimatedInstruments(time, delta);
         }
 
         if (this.env.completionBadgeGroup.visible) {

@@ -10,8 +10,13 @@ The prototype runs seamlessly on desktop browsers (via OrbitControls, mouse drag
 
 | Module / Layer | Implementation | Prototype Role |
 | :--- | :--- | :--- |
-| **Rooftop Solar PV Array** | 6 Monocrystalline PV Modules + Weatherproof Junction Box + Orange High-Voltage Conduits | Procedural tilted solar panels (25°) above a glass skylight ceiling; provides open-circuit voltage ($V_{oc} = 480.0\text{V DC}$) under $880\text{ W/m}^2$ solar irradiance into the combiner box. |
-| **Voice & Mic Engine** | Web Speech API (`SpeechRecognition`) + `getUserMedia` | Real-time hands-free speech recognition; mic audio stream drives holographic waveforms dynamically. |
+| **Real-Life PBR & Textures** | Three.js PBR Shaders + Canvas Procedural Decals | Authentic industrial finishes: Fluke-style safety yellow DMM with NIST cert decals, Milwaukee crimson toolbox with rubber armor, RAL 7035 powder-coated combiner box, server rack with ventilation hex mesh, and 45° yellow/black OSHA hazard floor perimeter. |
+| **Safety & PPE Station** | Procedural 3D Wall Station (`#fire_extinguisher`, `#eyewash_station`, `#ppe_station`) | Wall-mounted Class C CO2 fire extinguisher with pressure gauge and certification tag, emergency aerated eyewash station, and electrician PPE hooks with 1000V insulating rubber gloves and hard hat. Interactive with Jarvis voice inspection. |
+| **Workbench Pegboard & Tools** | Perforated steel board + VDE 1000V insulated hand tools | Perforated pegboard mounted behind workbench with VDE certified dual-color red/yellow lineman pliers, insulated screwdrivers, and non-contact voltage detector pen. |
+| **Overhead Instruments & Shelf** | Unistrut overhead shelf + Benchtop Power Analyzer | Suspended instrument rack with digital storage oscilloscope showing real-time animated voltage waveforms, harmonics, and bus telemetry. |
+| **Industrial Troffer Lighting** | Suspended dual-tube fluorescent troffers | Overhead fixtures with glowing diffusers providing realistic cool-white (4500K) illumination alongside natural sunlight streaming through the skylight. |
+| **Rooftop Solar PV Array** | 6 Monocrystalline PV Modules + Weatherproof Junction Box + Orange Conduits | Procedural tilted solar panels (25°) above a glass skylight ceiling; provides open-circuit voltage ($V_{oc} = 480.0\text{V DC}$) under $880\text{ W/m}^2$ solar irradiance into the combiner box. |
+| **Voice & Mic Engine** | Web Speech API (`SpeechRecognition`) + `getUserMedia` | Real-time hands-free speech recognition; mic audio stream drives holographic waveforms dynamically. Includes voice inquiries for safety gear and equipment diagnostics. |
 | **Render Engine** | Three.js (r168) + WebXR Device API | Instant execution via standard URL without heavyweight game engine binaries. |
 | **Diegetic 3D HUD** | Canvas-backed 3D texture (`THREE.CanvasTexture`) | In-world floating HUD (1.25m high) with live telemetry, voice transcripts, and animated audio waveform. |
 | **Logic & State Engine** | JavaScript FSM (State Pattern) | Enforces strict 6-step OSHA LOTO & equipment service procedure. |
@@ -35,6 +40,11 @@ Click the **"TALK TO JARVIS"** button on the HUD or press **`M`** (or squeeze th
 | **"Jarvis, install battery"** / *"mount battery"* / *"dock battery"* | Mounts 48V Lithium Battery Pack into Energy Storage Rack bay. |
 | **"Jarvis, workbench view"** / *"return to lab"* / *"go back down"* | Smoothly glides camera back down from the roof to the workbench. |
 | **"Jarvis, hide guide"** / *"close guide"* / *"show guide"* | Hides or shows the floating task guide window to clear the execution line of sight. |
+| **"Jarvis, check fire extinguisher"** / *"extinguisher"* | Jarvis inspects the Class C CO2 extinguisher, pressure gauge, and annual certification tag. |
+| **"Jarvis, check eyewash"** / *"eye wash"* | Jarvis verifies the emergency eyewash station nozzles and stay-open valve. |
+| **"Jarvis, check PPE"** / *"safety gloves"* / *"hard hat"* | Jarvis reports readiness of Class 0 1000V insulating rubber gloves and dielectric helmet. |
+| **"Jarvis, check tools"** / *"pegboard"* / *"pliers"* | Jarvis audits the 1000V VDE insulated hand tool set on the pegboard. |
+| **"Jarvis, check oscilloscope"** / *"power analyzer"* | Jarvis reports digital power analyzer telemetry and 480V DC bus waveform ripple. |
 | **"Jarvis, status report"** / *"telemetry"* | Jarvis speaks live status (current step, bus voltage, solar array Voc, safety score). |
 | **"Jarvis, repeat instructions"** | Jarvis speaks current step instructions aloud. |
 | **"Jarvis, reset"** / *"restart"* | Restores simulation to the beginning outside the main gate. |
