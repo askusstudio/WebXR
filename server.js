@@ -144,14 +144,27 @@ async function handleRequest(req, res) {
     return;
   }
 
-  // Normalize request URL for local server or Vercel serverless functions
-  let reqUrl = req.headers['x-matched-path'] || req.url || '/';
-  if (reqUrl.startsWith('/api/index.js')) {
-    reqUrl = reqUrl.replace('/api/index.js', '/api');
-    if (reqUrl === '/api') reqUrl = '/api/';
-  }
-  const parsedUrl = new URL(reqUrl, `http://${req.headers.host || 'localhost'}`);
-  const pathname = parsedUrl.pathname;
+  try {
+    // Normalize request URL for local server or Vercel serverless functions
+    let reqUrl = req.headers['x-matched-path'] || req.url || '/';
+    if (reqUrl.startsWith('/api/index.js')) {
+      reqUrl = reqUrl.replace('/api/index.js', '/api');
+      if (reqUrl === '/api') reqUrl = '/api/';
+    }
+    const parsedUrl = new URL(reqUrl, `http://${req.headers.host || 'localhost'}`);
+    let pathname = parsedUrl.pathname;
+
+    // Normalize API pathname if rewritten without /api prefix
+    if (!pathname.startsWith('/api') && (
+      pathname.startsWith('/courses') || pathname.startsWith('/candidates') ||
+      pathname.startsWith('/auth') || pathname.startsWith('/candidate') ||
+      pathname.startsWith('/simulation') || pathname.startsWith('/telemetry') ||
+      pathname.startsWith('/leaderboard') || pathname.startsWith('/recruiter') ||
+      pathname.startsWith('/admin') || pathname.startsWith('/certificate') ||
+      pathname.startsWith('/verify') || pathname.startsWith('/ledger')
+    )) {
+      pathname = '/api' + pathname;
+    }
 
   // ==========================================
   // STAGE 1: ONBOARDING & AUTH REST APIS
@@ -369,6 +382,11 @@ async function handleRequest(req, res) {
     });
   }
 
+  // Unmatched API route returns 404 JSON (never fallback to HTML for API calls)
+  if (pathname.startsWith('/api/')) {
+    return sendJson(res, 404, { error: 'API endpoint not found', path: pathname });
+  }
+
   // ==========================================
   // STATIC FILE SERVING & SPA FALLBACK ROUTER
   // ==========================================
@@ -397,6 +415,10 @@ async function handleRequest(req, res) {
 
   res.writeHead(404, { 'Content-Type': 'text/plain' });
   res.end('404 Not Found');
+  } catch (globalErr) {
+    console.error('[server.js] Unhandled request error:', globalErr);
+    return sendJson(res, 500, { error: globalErr.message });
+  }
 }
 
 const server = http.createServer(handleRequest);

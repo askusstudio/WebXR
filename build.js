@@ -71,9 +71,6 @@ const distFiles = [
   'app.js',
   'equipment_models.js',
   'courses.js',
-  'server.js',
-  'db.js',
-  'package.json',
   'README.md'
 ];
 
@@ -100,17 +97,6 @@ distFiles.forEach(file => {
     console.log(`  + dist/${file} (${content.length} bytes)`);
   }
 });
-
-// Copy data directory if exists
-const dataDir = path.join(ROOT, 'data');
-if (fs.existsSync(dataDir)) {
-  const distDataDir = path.join(DIST, 'data');
-  fs.mkdirSync(distDataDir, { recursive: true });
-  fs.readdirSync(dataDir).forEach(f => {
-    fs.copyFileSync(path.join(dataDir, f), path.join(distDataDir, f));
-  });
-  console.log('  + dist/data/ (Database persistence preserved)');
-}
 
 fs.writeFileSync(path.join(DIST, 'build-manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
 console.log('  + dist/build-manifest.json generated');
