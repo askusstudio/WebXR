@@ -11,11 +11,24 @@ const courses = require('./courses.js');
 
 
 const PORT = process.env.PORT || 8080;
-const DIR = fs.existsSync(path.join(__dirname, 'dist', 'index.html'))
-  ? path.join(__dirname, 'dist')
-  : fs.existsSync(path.join(__dirname, 'index.html'))
-    ? __dirname
-    : path.join(__dirname, '..');
+const possibleDirs = [
+  path.join(__dirname, 'dist'),
+  __dirname,
+  path.join(process.cwd(), 'dist'),
+  process.cwd(),
+  path.join(__dirname, '..', 'dist'),
+  path.join(__dirname, '..')
+];
+
+let DIR = __dirname;
+for (const d of possibleDirs) {
+  try {
+    if (fs.existsSync(path.join(d, 'index.html'))) {
+      DIR = d;
+      break;
+    }
+  } catch (_) {}
+}
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=UTF-8',
@@ -397,19 +410,26 @@ async function handleRequest(req, res) {
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    const content = fs.readFileSync(filePath);
     res.writeHead(200, {
       'Content-Type': contentType,
+      'Content-Length': content.length,
       'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600'
     });
-    fs.createReadStream(filePath).pipe(res);
+    res.end(content);
     return;
   }
 
   // SPA Route Fallback: serve index.html for client-side routing
   const indexPath = path.join(DIR, 'index.html');
   if (fs.existsSync(indexPath)) {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
-    fs.createReadStream(indexPath).pipe(res);
+    const html = fs.readFileSync(indexPath);
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=UTF-8',
+      'Content-Length': html.length,
+      'Cache-Control': 'no-cache'
+    });
+    res.end(html);
     return;
   }
 
