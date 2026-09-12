@@ -461,6 +461,24 @@ const ExecutionLoopEngine = {
       remedialFocus: null,
       badgeAwarded
     };
+  },
+
+  // 3. Process Full Simulation Completion
+  processSimulationCompletion(result) {
+    return module.exports.commitSimulationSession({
+      userId: result.userId || DEFAULT_CANDIDATE_ID,
+      moduleCode: result.moduleCode || 'SOLAR-BOX-01',
+      durationMinutes: (result.durationSeconds || 180) / 60,
+      troubleshootPct: result.troubleshootingScore != null ? result.troubleshootingScore : 95.0,
+      safetyPct: result.safetyComplianceScore != null ? result.safetyComplianceScore : 100.0,
+      toolUsePct: result.toolAccuracyScore != null ? result.toolAccuracyScore : 95.0,
+      safetyAlerts: (result.violations || []).length,
+      telemetryLog: {
+        violations: result.violations || [],
+        sessionId: result.sessionId,
+        processedBy: 'ExecutionLoopEngine'
+      }
+    });
   }
 };
 

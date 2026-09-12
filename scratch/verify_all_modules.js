@@ -350,6 +350,22 @@ async function runApiTests() {
   }
   console.log(`  ✓ Benchmark Pass Routing: Safety 100% & Troubleshoot 95% correctly triggers CERTIFICATE_GENERATED (badge: ${passLoop.badgeAwarded})`);
 
+  // 3B. Direct ExecutionLoopEngine.processSimulationCompletion invocation
+  const loopProcessResult = db.ExecutionLoopEngine.processSimulationCompletion({
+    sessionId: 'test-loop-' + Date.now(),
+    userId: db.DEFAULT_CANDIDATE_ID,
+    moduleCode: 'SOLAR-BOX-01',
+    durationSeconds: 180,
+    troubleshootingScore: 95.0,
+    safetyComplianceScore: 100.0,
+    toolAccuracyScore: 92.0,
+    violations: []
+  });
+  if (!loopProcessResult || !loopProcessResult.sessionId || !loopProcessResult.tamperHash) {
+    throw new Error(`ExecutionLoopEngine.processSimulationCompletion failed: ${JSON.stringify(loopProcessResult)}`);
+  }
+  console.log(`  ✓ ExecutionLoopEngine.processSimulationCompletion executed successfully (SHA-256: ${loopProcessResult.tamperHash.substring(0, 16)}...)`);
+
   // 4. Live Telemetry Packet API (10 Hz ingest fallback)
   const telemetryRes = await makeRequest('/api/telemetry/packet', 'POST', {
     type: 'UNINSULATED_CONTACT',
