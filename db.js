@@ -1,24 +1,192 @@
 // db.js - Unified Database & Cryptographic Audit Ledger Layer
 // MAYAVUE 6-Stage End-to-End VR Certification Platform
 
-const { DatabaseSync } = require('node:sqlite');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
-const DB_DIR = path.join(__dirname, 'data');
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
+let DatabaseSync = null;
+try {
+  DatabaseSync = require('node:sqlite').DatabaseSync;
+} catch (_) {
+  DatabaseSync = null;
 }
 
-const DB_PATH = path.join(DB_DIR, 'solar_platform.db');
-const db = new DatabaseSync(DB_PATH);
+class InMemorySQLiteAdapter {
+  constructor() {
+    this.userProfiles = [];
+    this.simulationSessions = [];
+    this.users = [];
+    this.auditLedger = [];
+    this.ledgerBlocks = [];
+  }
 
-// Enable WAL mode & foreign keys
-db.exec(`
-  PRAGMA journal_mode = WAL;
-  PRAGMA foreign_keys = ON;
-`);
+  exec(sql) {
+    return this;
+  }
+
+  prepare(sql) {
+    const s = sql.trim().replace(/\s+/g, ' ');
+    const adapter = this;
+
+    return {
+      get(...params) {
+        if (s.includes('FROM user_profiles') && s.includes('WHERE id = ? OR verification_id = ?')) {
+          const [id, verId] = params;
+          return adapter.userProfiles.find(u => u.id === id || u.verification_id === verId) || null;
+        }
+        if (s.includes('FROM user_profiles') && s.includes('WHERE verification_id = ?')) {
+          const [verId] = params;
+          const u = adapter.userProfiles.find(u => u.verification_id === verId);
+          return u ? { id: u.id } : null;
+        }
+        if (s.includes('FROM user_profiles') && s.includes('WHERE email = ?')) {
+          const [email] = params;
+          return adapter.userProfiles.find(u => u.email === email) || null;
+        }
+        if (s.includes('SELECT COUNT(*) as count FROM user_profiles')) {
+          return { count: adapter.userProfiles.length };
+        }
+        if (s.includes('FROM simulation_sessions') && s.includes('WHERE user_id = ?') && s.includes('ORDER BY')) {
+          const [userId] = params;
+          const userSessions = adapter.simulationSessions.filter(sess => sess.user_id === userId);
+          return userSessions[userSessions.length - 1] ? { tamper_hash: userSessions[userSessions.length - 1].tamper_hash } : null;
+        }
+        if (s.includes('FROM simulation_sessions WHERE id = ?')) {
+          const [id] = params;
+          return adapter.simulationSessions.find(sess => sess.id === id) || null;
+        }
+        if (s.includes('SELECT COUNT(*) as count FROM simulation_sessions')) {
+          const [userId] = params;
+          const matches = adapter.simulationSessions.filter(sess => sess.user_id === userId && sess.safety_pct >= 90 && sess.troubleshoot_pct >= 80);
+          return { count: matches.length };
+        }
+        if (s.includes('FROM users WHERE email = ?')) {
+          const [email] = params;
+          return adapter.users.find(u => u.email === email) || null;
+        }
+        return null;
+      },
+
+      all(...params) {
+        if (s.includes('FROM user_profiles ORDER BY verification_id ASC')) {
+          return [...adapter.userProfiles].sort((a, b) => (a.verification_id || '').localeCompare(b.verification_id || ''));
+        }
+        if (s.includes('FROM user_profiles ORDER BY accuracy_rate DESC')) {
+          return [...adapter.userProfiles].sort((a, b) => (b.accuracy_rate || 0) - (a.accuracy_rate || 0) || (b.practice_hours || 0) - (a.practice_hours || 0));
+        }
+        if (s.includes('FROM simulation_sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT ?')) {
+          const [userId, limit] = params;
+          return adapter.simulationSessions
+            .filter(sess => sess.user_id === userId)
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(0, limit);
+        }
+        return [];
+      },
+
+      run(...params) {
+        if (s.startsWith('INSERT INTO user_profiles')) {
+          const [id, verification_id, full_name, email, role, practice_hours, solved_faults, safety_rating, profile_tag, avatar_url, skill_matrix, created_at, updated_at] = params;
+          const newProf = {
+            id, verification_id, full_name, email, role: role || 'LEARNER',
+            practice_hours: Number(practice_hours || 0),
+            solved_faults: Number(solved_faults || 0),
+            safety_rating: Number(safety_rating || 5.0),
+            accuracy_rate: 100.0,
+            total_sessions: 0,
+            remedial_required: 0,
+            remedial_focus: null,
+            profile_tag: profile_tag || 'Certified PV Installer - Level 1',
+            avatar_url,
+            skill_matrix,
+            created_at: created_at || new Date().toISOString(),
+            updated_at: updated_at || new Date().toISOString()
+          };
+          adapter.userProfiles.push(newProf);
+          return { changes: 1 };
+        }
+        if (s.startsWith('UPDATE user_profiles')) {
+          const [practice_hours, solved_faults, safety_rating, accuracy_rate, total_sessions, remedial_required, remedial_focus, id] = params;
+          const target = adapter.userProfiles.find(u => u.id === id);
+          if (target) {
+            target.practice_hours = Number(practice_hours);
+            target.solved_faults = Number(solved_faults);
+            target.safety_rating = Number(safety_rating);
+            target.accuracy_rate = Number(accuracy_rate);
+            target.total_sessions = Number(total_sessions);
+            target.remedial_required = Number(remedial_required);
+            target.remedial_focus = remedial_focus;
+            target.updated_at = new Date().toISOString();
+          }
+          return { changes: target ? 1 : 0 };
+        }
+        if (s.startsWith('INSERT INTO simulation_sessions')) {
+          const [id, user_id, module_code, duration_minutes, troubleshoot_pct, safety_pct, tool_use_pct, safety_alerts, ai_feedback, qr_payload, tamper_hash, previous_record_hash, telemetry_log, created_at] = params;
+          const sess = {
+            id, user_id, module_code,
+            duration_minutes: Number(duration_minutes),
+            troubleshoot_pct: Number(troubleshoot_pct),
+            safety_pct: Number(safety_pct),
+            tool_use_pct: Number(tool_use_pct),
+            safety_alerts: Number(safety_alerts || 0),
+            ai_feedback, qr_payload, tamper_hash, previous_record_hash, telemetry_log,
+            created_at: created_at || new Date().toISOString()
+          };
+          adapter.simulationSessions.push(sess);
+          return { changes: 1 };
+        }
+        if (s.startsWith('INSERT INTO users')) {
+          const [id, email, password_hash, full_name, avatar_url, profile_tag, skill_matrix, total_active_hours, overall_accuracy_rate, total_sessions_completed] = params;
+          adapter.users.push({ id, email, password_hash, full_name, avatar_url, profile_tag, skill_matrix, total_active_hours, overall_accuracy_rate, total_sessions_completed });
+          return { changes: 1 };
+        }
+        return { changes: 0 };
+      }
+    };
+  }
+}
+
+let db = null;
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+if (DatabaseSync) {
+  try {
+    let dbPath;
+    if (isServerless) {
+      dbPath = path.join(os.tmpdir(), 'solar_platform.db');
+    } else {
+      const DB_DIR = path.join(__dirname, 'data');
+      if (!fs.existsSync(DB_DIR)) {
+        fs.mkdirSync(DB_DIR, { recursive: true });
+      }
+      dbPath = path.join(DB_DIR, 'solar_platform.db');
+    }
+    db = new DatabaseSync(dbPath);
+    try {
+      db.exec(`
+        PRAGMA journal_mode = WAL;
+        PRAGMA foreign_keys = ON;
+      `);
+    } catch (_) {
+      db.exec(`PRAGMA foreign_keys = ON;`);
+    }
+  } catch (err) {
+    console.warn('[db.js] File SQLite failed, falling back to in-memory DatabaseSync:', err.message);
+    try {
+      db = new DatabaseSync(':memory:');
+      db.exec(`PRAGMA foreign_keys = ON;`);
+    } catch (_) {
+      db = null;
+    }
+  }
+}
+
+if (!db) {
+  console.log('[db.js] Initializing resilient InMemorySQLiteAdapter for serverless compatibility');
+  db = new InMemorySQLiteAdapter();
+}
 
 // --- 1. Schema Initialization (Users, UserProfiles, SimulationSessions) ---
 db.exec(`

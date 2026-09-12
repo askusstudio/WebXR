@@ -10,8 +10,12 @@ const db = require('./db.js');
 const courses = require('./courses.js');
 
 
-const PORT = 8080;
-const DIR = __dirname;
+const PORT = process.env.PORT || 8080;
+const DIR = fs.existsSync(path.join(__dirname, 'dist', 'index.html'))
+  ? path.join(__dirname, 'dist')
+  : fs.existsSync(path.join(__dirname, 'index.html'))
+    ? __dirname
+    : path.join(__dirname, '..');
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=UTF-8',
@@ -127,7 +131,7 @@ function broadcastWsMessage(data) {
   }
 }
 
-const server = http.createServer(async (req, res) => {
+async function handleRequest(req, res) {
 
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -140,7 +144,13 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  // Normalize request URL for local server or Vercel serverless functions
+  let reqUrl = req.headers['x-matched-path'] || req.url || '/';
+  if (reqUrl.startsWith('/api/index.js')) {
+    reqUrl = reqUrl.replace('/api/index.js', '/api');
+    if (reqUrl === '/api') reqUrl = '/api/';
+  }
+  const parsedUrl = new URL(reqUrl, `http://${req.headers.host || 'localhost'}`);
   const pathname = parsedUrl.pathname;
 
   // ==========================================
@@ -387,7 +397,9 @@ const server = http.createServer(async (req, res) => {
 
   res.writeHead(404, { 'Content-Type': 'text/plain' });
   res.end('404 Not Found');
-});
+}
+
+const server = http.createServer(handleRequest);
 
 // RFC 6455 WebSocket Upgrade Handler
 server.on('upgrade', (req, socket, head) => {
@@ -437,28 +449,34 @@ server.on('upgrade', (req, socket, head) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+if (require.main === module && !process.env.VERCEL) {
+  server.listen(PORT, '0.0.0.0', () => {
 
-  const nets = os.networkInterfaces();
-  let localIp = 'localhost';
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name]) {
-      if (net.family === 'IPv4' && !net.internal) {
-        localIp = net.address;
-        break;
+    const nets = os.networkInterfaces();
+    let localIp = 'localhost';
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name]) {
+        if (net.family === 'IPv4' && !net.internal) {
+          localIp = net.address;
+          break;
+        }
       }
     }
-  }
 
-  console.log('====================================================');
-  console.log('  MAYAVUE // 6-Stage End-to-End Certification Server');
-  console.log('====================================================');
-  console.log('  > Stage 1 (Onboarding):  http://localhost:' + PORT + '/#/auth/onboarding');
-  console.log('  > Stage 2 (Learner Hub):  http://localhost:' + PORT + '/#/dashboard');
-  console.log('  > Stage 3 (Theory Lab):   http://localhost:' + PORT + '/#/course/solar-pv/theory/solar_troubleshooting_04');
-  console.log('  > Stage 4 (VR Simulator): http://localhost:' + PORT + '/#/simulate/solar_troubleshooting_04');
-  console.log('  > Stage 5 (Fleet Admin):  http://localhost:' + PORT + '/#/admin/live');
-  console.log('  > Stage 6 (Scorecard):    http://localhost:' + PORT + '/#/certificate/8a8c5cff-d47e-4adf-a5fd-ea8ebfe380b6');
-  console.log('  > Headset Network:        http://' + localIp + ':' + PORT);
-  console.log('====================================================');
-});
+    console.log('====================================================');
+    console.log('  MAYAVUE // 6-Stage End-to-End Certification Server');
+    console.log('====================================================');
+    console.log('  > Stage 1 (Onboarding):  http://localhost:' + PORT + '/#/auth/onboarding');
+    console.log('  > Stage 2 (Learner Hub):  http://localhost:' + PORT + '/#/dashboard');
+    console.log('  > Stage 3 (Theory Lab):   http://localhost:' + PORT + '/#/course/solar-pv/theory/solar_troubleshooting_04');
+    console.log('  > Stage 4 (VR Simulator): http://localhost:' + PORT + '/#/simulate/solar_troubleshooting_04');
+    console.log('  > Stage 5 (Fleet Admin):  http://localhost:' + PORT + '/#/admin/live');
+    console.log('  > Stage 6 (Scorecard):    http://localhost:' + PORT + '/#/certificate/8a8c5cff-d47e-4adf-a5fd-ea8ebfe380b6');
+    console.log('  > Headset Network:        http://' + localIp + ':' + PORT);
+    console.log('====================================================');
+  });
+}
+
+module.exports = handleRequest;
+module.exports.handleRequest = handleRequest;
+module.exports.server = server;

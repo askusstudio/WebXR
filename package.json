@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "MAYAVUE 6-Stage End-to-End VR Certification Platform with 8 Polymorphic Simulation Models, Socratic AI, and Cryptographic Competency Ledger",
   "main": "server.js",
+  "engines": {
+    "node": ">=20.x"
+  },
   "scripts": {
     "build": "node build.js",
     "start": "node server.js",
