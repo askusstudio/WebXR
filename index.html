@@ -3438,13 +3438,27 @@
 
         this.updateHUDForState();
 
-        // Speak initial step prompt
+        // Speak initial step prompt & auto-focus camera on step 1
         if (this.stepInteractiveMap && this.stepInteractiveMap[1]) {
           const s1 = this.stepInteractiveMap[1];
+          if (s1.cameraFocus && this.app && typeof this.app.focusCameraOn === 'function') {
+            this.app.focusCameraOn(s1.cameraFocus.target, s1.cameraFocus.offset, 900);
+          }
           this.app.jarvis.speak({
             en: `Jarvis online. Module ${this.activeModuleCode} active. Step one: ${s1.title}. ${s1.instructionEn}`,
             hi: `जार्विस ऑनलाइन है। मॉड्यूल ${this.activeModuleCode} सक्रिय है। पहला चरण: ${s1.title}। ${s1.instructionHi}`
           });
+        }
+
+        // Initialize 3D holographic step badges visibility (only step 1 visible initially)
+        if (this.stepInteractiveMap) {
+          for (let s = 1; s <= 6; s++) {
+            const sData = this.stepInteractiveMap[s];
+            if (sData && sData.badgeMesh) {
+              sData.badgeMesh.visible = (s === 1);
+              if (sData.badgeMesh.scale) sData.badgeMesh.scale.set(1, 1, 1);
+            }
+          }
         }
       }
 
@@ -3534,6 +3548,9 @@
           } catch (e) {
             console.warn('Step execution error:', e);
           }
+          if (stepData.badgeMesh && typeof stepData.badgeMesh.setCompleted === 'function') {
+            stepData.badgeMesh.setCompleted(stepData.title, (note && note.length < 35) ? note : 'VERIFIED // NOMINAL');
+          }
           if (stepData.telemetryUpdates) {
             this.updateTelemetryHUD(stepData.telemetryUpdates);
           }
@@ -3594,6 +3611,24 @@
         this.currentState = newState;
         this.updateHUDForState();
 
+        // Update 3D holographic step badges visibility (hide future steps, highlight current)
+        if (this.stepInteractiveMap) {
+          for (let s = 1; s <= 6; s++) {
+            const sData = this.stepInteractiveMap[s];
+            if (sData && sData.badgeMesh) {
+              if (s === newState) {
+                sData.badgeMesh.visible = true;
+                if (sData.badgeMesh.scale) sData.badgeMesh.scale.set(1, 1, 1);
+              } else if (s < newState) {
+                sData.badgeMesh.visible = true;
+                if (sData.badgeMesh.scale) sData.badgeMesh.scale.set(0.65, 0.65, 0.65);
+              } else {
+                sData.badgeMesh.visible = false;
+              }
+            }
+          }
+        }
+
         if (newState <= 6) {
           if (this.app.sound && this.app.sound.playSuccessChime) {
             this.app.sound.playSuccessChime();
@@ -3602,6 +3637,9 @@
 
           if (this.stepInteractiveMap && this.stepInteractiveMap[newState]) {
             const sData = this.stepInteractiveMap[newState];
+            if (sData.cameraFocus && this.app && typeof this.app.focusCameraOn === 'function') {
+              this.app.focusCameraOn(sData.cameraFocus.target, sData.cameraFocus.offset, 750);
+            }
             this.app.jarvis.speak({
               en: `Step ${newState}: ${sData.title}. ${sData.instructionEn}`,
               hi: `चरण ${newState}: ${sData.title}। ${sData.instructionHi}`
@@ -6858,6 +6896,22 @@
           return;
         }
 
+        // Check if user clicked an in-world holographic step badge or ring
+        let checkObj = obj;
+        let badgeStep = 0;
+        while (checkObj) {
+          if (checkObj.name && checkObj.name.startsWith('step_badge_')) {
+            const numPart = checkObj.name.replace('step_badge_', '').split('_')[0];
+            badgeStep = parseInt(numPart, 10);
+            break;
+          }
+          checkObj = checkObj.parent;
+        }
+        if (badgeStep > 0 && !isNaN(badgeStep)) {
+          this.fsm.executeStep(badgeStep);
+          return;
+        }
+
         // Check if active module has stepInteractiveMap
         if (this.fsm && this.fsm.stepInteractiveMap) {
           const stepMap = this.fsm.stepInteractiveMap;
@@ -7150,6 +7204,17 @@
           }
         };
         requestAnimationFrame(anim);
+      }
+
+      focusCameraOn(targetVec, cameraOffset, durationMs = 750) {
+        if (!targetVec || this.renderer.xr.isPresenting) return;
+        const offset = cameraOffset || new THREE.Vector3(0, 0.35, 0.95);
+        const endPos = new THREE.Vector3(
+          targetVec.x + offset.x,
+          targetVec.y + offset.y,
+          targetVec.z + offset.z
+        );
+        this.animateCameraTo(endPos, targetVec, durationMs);
       }
 
       animateOpenGateAndEnter() {
@@ -7506,27 +7571,10 @@
           this.jarvis.repeat();
         });
 
-        document.getElementById('btn-action-help').addEventListener('click', () => {
+        document.getElementById('btn-action-help')?.addEventListener('click', () => {
           this.sound.ensureUnlocked();
-          switch (this.fsm.currentState) {
-            case STATES.STEP1_GATE_ENTRY:
-              this.animateOpenGateAndEnter();
-              break;
-            case STATES.STEP2_ISOLATOR_OFF:
-              this.animateOpenLid();
-              break;
-            case STATES.STEP3_VERIFY_VOLTAGE:
-              this.handleProbingInteraction();
-              break;
-            case STATES.STEP4_CORRECT_CIRCUIT:
-              this.animateCorrectCircuit();
-              break;
-            case STATES.STEP5_OPEN_TOOLBOX:
-              this.animateOpenToolbox();
-              break;
-            case STATES.STEP6_INSTALL_BATTERY:
-              this.animateInstallBattery();
-              break;
+          if (this.fsm && typeof this.fsm.executeCurrentStep === 'function') {
+            this.fsm.executeCurrentStep();
           }
         });
 
@@ -7934,6 +7982,18 @@
 
         if (this.env.completionBadgeGroup.visible) {
           this.env.completionBadgeGroup.rotation.z += delta * 0.8;
+        }
+
+        // Billboard all active step badges & rotate target reticles
+        if (this.moduleEquipmentGroup) {
+          this.moduleEquipmentGroup.traverse((child) => {
+            if (child.badgeMesh && child.lookAt) {
+              child.lookAt(this.camera.position);
+            }
+            if (child.ringMesh) {
+              child.ringMesh.rotation.z += delta * 1.8;
+            }
+          });
         }
 
         this.renderer.render(this.scene, this.camera);

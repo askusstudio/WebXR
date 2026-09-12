@@ -31,13 +31,16 @@ global.THREE = {
   Vector3: class {
     constructor(x, y, z) { this.x = x || 0; this.y = y || 0; this.z = z || 0; }
     set(x, y, z) { this.x = x; this.y = y; this.z = z; return this; }
+    copy(v) { this.x = v.x; this.y = v.y; this.z = v.z; return this; }
     clone() { return new global.THREE.Vector3(this.x, this.y, this.z); }
   },
   Group: class {
     constructor() {
       this.children = [];
-      this.position = { set: (x, y, z) => { this.x = x; this.y = y; this.z = z; }, y: 0 };
-      this.rotation = {};
+      this.position = new global.THREE.Vector3();
+      this.rotation = { x: 0, y: 0, z: 0 };
+      this.scale = new global.THREE.Vector3(1, 1, 1);
+      this.visible = true;
     }
     add(...items) { this.children.push(...items); }
     clone() { return new global.THREE.Group(); }
@@ -46,8 +49,10 @@ global.THREE = {
   Mesh: class {
     constructor() {
       this.material = mockMat();
-      this.position = { set: (x, y, z) => { this.x = x; this.y = y; this.z = z; }, y: 0 };
-      this.rotation = {};
+      this.position = new global.THREE.Vector3();
+      this.rotation = { x: 0, y: 0, z: 0 };
+      this.scale = new global.THREE.Vector3(1, 1, 1);
+      this.visible = true;
       this.children = [];
     }
     add(...items) { this.children.push(...items); }
