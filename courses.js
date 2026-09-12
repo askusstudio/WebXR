@@ -285,9 +285,42 @@ const COURSES = [
                 'Insulated Fuse Puller Tool (VDE 1000V Certified)',
                 'Spare 15A 1000V DC Cylindrical Fuses',
                 'Calibrated 15 N*m Insulated Terminal Torque Wrench'
-              ]
+              ],
+              remedialTheory: {
+                safety_isolation: {
+                  title: 'NFPA 70E Arc Flash Hazard & Zero-Energy Safe Isolation Protocol',
+                  badge: 'MANDATORY REMEDIAL // SAFETY BENCHMARK <90%',
+                  standard: 'OSHA 1910.333 / NFPA 70E Article 120',
+                  keyTakeaways: [
+                    'Always verify zero energy (0.0V DC) with CAT IV 1000V rated Fluke 87V probes BEFORE touching any busbar or fuse clips.',
+                    'Don Category 2 Arc Flash Visor (8 cal/cm²) and Class 0 1000V Insulated Gloves with leather outer protectors prior to opening the live DC enclosure.',
+                    'Confirm rotary DC isolator has completed a mechanical 90-degree positive-break rotation into the locked-out position.'
+                  ],
+                  criticalRules: [
+                    'NEVER pull a fuse while energized under load—doing so produces a plasma arc flash capable of causing severe thermal burns.',
+                    'Always test multimeter on a known live voltage source both before and after confirming zero energy (Live-Dead-Live rule).'
+                  ],
+                  videoChapterIndex: 0
+                },
+                diagnostics: {
+                  title: 'High-Voltage DC Diagnostics & Blown 1000V gPV Fuse Extraction',
+                  badge: 'MANDATORY REMEDIAL // DIAGNOSTICS BENCHMARK <80%',
+                  standard: 'IEC 60269-6 / UL 248-19 Photovoltaic Fuses',
+                  keyTakeaways: [
+                    'Open-circuit string voltage (Voc) under 880 W/m² irradiance should read approximately 480V DC on healthy strings.',
+                    'A reading of 0.0V downstream of a fuse while upstream reads 480V indicates an open-circuit blown fuse.',
+                    'Always use a VDE-certified 1000V insulated fuse extractor tool rather than fingers or uninsulated pliers.'
+                  ],
+                  criticalRules: [
+                    'Inspect the replacement fuse rating: Must be 15A 1000V DC 10x38mm gPV type; never use an automotive or AC fuse.',
+                    'Torque battery terminal lugs and busbar fasteners strictly to calibrated 15 N·m to avoid high-resistance thermal hotspots.'
+                  ],
+                  videoChapterIndex: 3
+                }
+              }
             },
             videoChapters: [
+
               { time: '00:00', title: 'Arc Flash Hazard Review & NFPA 70E Donning' },
               { time: '02:15', title: 'Multimeter Probing of 480V DC Rooftop Strings' },
               { time: '05:40', title: 'Rotary DC Isolator Safe De-energization' },

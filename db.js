@@ -92,6 +92,13 @@ db.exec(`
   );
 `);
 
+// Safe Idempotent Schema Migrations
+try { db.exec(`ALTER TABLE user_profiles ADD COLUMN total_sessions INTEGER NOT NULL DEFAULT 0;`); } catch (_) {}
+try { db.exec(`ALTER TABLE user_profiles ADD COLUMN accuracy_rate REAL NOT NULL DEFAULT 100.0;`); } catch (_) {}
+try { db.exec(`ALTER TABLE user_profiles ADD COLUMN remedial_required INTEGER NOT NULL DEFAULT 0;`); } catch (_) {}
+try { db.exec(`ALTER TABLE user_profiles ADD COLUMN remedial_focus TEXT;`); } catch (_) {}
+
+
 // --- 2. Database-Level Row Immutability Triggers (Append-Only) ---
 db.exec(`
   CREATE TRIGGER IF NOT EXISTS trg_sessions_prevent_update
@@ -398,12 +405,72 @@ function seedInitialData() {
   }
 }
 
+// --- 5.5 Autonomous Closed-Loop Architecture Engine ---
+const ExecutionLoopEngine = {
+  // 1. Procedural accuracy calculation: 0.4 * troubleshoot + 0.4 * safety + 0.2 * toolUse
+  calculateProceduralAccuracy(troubleshootPct, safetyPct, toolUsePct) {
+    const score = (0.4 * Number(troubleshootPct || 0)) +
+                  (0.4 * Number(safetyPct || 0)) +
+                  (0.2 * Number(toolUsePct || 0));
+    return Number(score.toFixed(1));
+  },
+
+  // 2. Profile to Course Routing (Adaptive Recovery vs Certification)
+  resolveNextLoopStep({ safetyPct, troubleshootPct, courseId = 'solar-pv', moduleId = 'solar_troubleshooting_04', sessionId }) {
+    const sPct = Number(safetyPct || 0);
+    const tPct = Number(troubleshootPct || 0);
+
+    // Rule 1: Safety isolation breached (<90%)
+    if (sPct < 90) {
+      return {
+        nextAction: 'REMEDIAL_THEORY',
+        focus: 'safety_isolation',
+        route: `#/course/${courseId}/theory/${moduleId}?focus=safety_isolation`,
+        message: 'Safety isolation benchmark (<90%) breached. Remedial micro-theory protocol mandated.',
+        lockedExams: true,
+        remedialRequired: true,
+        remedialFocus: 'safety_isolation',
+        badgeAwarded: null
+      };
+    }
+
+    // Rule 2: Procedural diagnostics breached (<80%)
+    if (tPct < 80) {
+      return {
+        nextAction: 'REMEDIAL_THEORY',
+        focus: 'diagnostics',
+        route: `#/course/${courseId}/theory/${moduleId}?focus=diagnostics`,
+        message: 'Procedural diagnostics benchmark (<80%) breached. Diagnostic multimeter theory review mandated.',
+        lockedExams: true,
+        remedialRequired: true,
+        remedialFocus: 'diagnostics',
+        badgeAwarded: null
+      };
+    }
+
+    // Rule 3: Benchmark Passed -> Autonomous Credential Issued
+    const isSpecialist = sPct >= 98 && tPct >= 95;
+    const badgeAwarded = isSpecialist ? 'Advanced Field Specialist' : 'Certified Apprentice';
+    return {
+      nextAction: 'CERTIFICATE_GENERATED',
+      focus: null,
+      route: `#/certificate/${sessionId}`,
+      message: 'Benchmark verified. Autonomous tamper-proof credential issued.',
+      lockedExams: false,
+      remedialRequired: false,
+      remedialFocus: null,
+      badgeAwarded
+    };
+  }
+};
+
 seedInitialData();
 
 // --- 6. Exported Database Operations ---
 
 module.exports = {
   DEFAULT_CANDIDATE_ID,
+  ExecutionLoopEngine,
 
   // Generate unique sequential trainee verification ID (e.g., MVSTU001)
   generateVerificationId() {
@@ -501,6 +568,18 @@ module.exports = {
     const prevHash = lastSession ? lastSession.tamper_hash : GENESIS_HASH;
     const tamperHash = computeTamperHash(userId, moduleCode, troubleshootPct, safetyPct, toolUsePct, timestamp, prevHash);
 
+    // Calculate raw procedural accuracy: (0.4 * troubleshoot + 0.4 * safety + 0.2 * toolUse)
+    const rawAccuracy = ExecutionLoopEngine.calculateProceduralAccuracy(troubleshootPct, safetyPct, toolUsePct);
+
+    // Resolve Autonomous Closed-Loop Decision: Pass (Certification) vs Fail (Remedial Recovery Branch)
+    const loopOutcome = ExecutionLoopEngine.resolveNextLoopStep({
+      safetyPct,
+      troubleshootPct,
+      courseId: 'solar-pv',
+      moduleId: moduleCode === 'SOLAR-BOX-01' ? 'solar_troubleshooting_04' : moduleCode,
+      sessionId
+    });
+
     // Generate Socratic AI Feedback based on telemetry
     const aiFeedback = generateSocraticAiFeedback({
       moduleCode,
@@ -541,20 +620,34 @@ module.exports = {
       timestamp
     );
 
-    // Update user profile metrics
+    // Scorecard to Profile Re-Sync:
+    // Rolling weighted recalculation of accuracy rate: ((accuracyRate * totalSessions) + rawAccuracy) / (totalSessions + 1)
+    let updatedProfile = null;
     if (user) {
+      const prevSessions = user.total_sessions || 0;
+      const prevAccuracy = user.accuracy_rate != null ? user.accuracy_rate : 100.0;
+      const newAccuracyRate = Number((((prevAccuracy * prevSessions) + rawAccuracy) / (prevSessions + 1)).toFixed(1));
+      const newTotalSessions = prevSessions + 1;
       const newHours = Number((user.practice_hours + durationMinutes / 60).toFixed(2));
       const newSolved = user.solved_faults + 1;
       const newRating = Number(((user.safety_rating * 0.9) + (safetyPct / 20) * 0.1).toFixed(2));
+      const remRequired = loopOutcome.remedialRequired ? 1 : 0;
+      const remFocus = loopOutcome.remedialFocus || null;
 
       db.prepare(`
         UPDATE user_profiles
         SET practice_hours = ?,
             solved_faults = ?,
             safety_rating = ?,
+            accuracy_rate = ?,
+            total_sessions = ?,
+            remedial_required = ?,
+            remedial_focus = ?,
             updated_at = datetime('now')
         WHERE id = ?
-      `).run(newHours, newSolved, newRating, userId);
+      `).run(newHours, newSolved, newRating, newAccuracyRate, newTotalSessions, remRequired, remFocus, userId);
+
+      updatedProfile = this.getUserProfile(userId);
     }
 
     return {
@@ -567,11 +660,21 @@ module.exports = {
       safetyPct,
       toolUsePct,
       safetyAlerts,
+      proceduralAccuracy: rawAccuracy,
+      accuracyRate: updatedProfile ? updatedProfile.accuracy_rate : rawAccuracy,
+      totalSessions: updatedProfile ? updatedProfile.total_sessions : 1,
       aiFeedback,
       qrPayload,
       tamperHash,
       previousRecordHash: prevHash,
-      timestamp
+      timestamp,
+      loopOutcome,
+      nextAction: loopOutcome.nextAction,
+      route: loopOutcome.route,
+      remedialRequired: loopOutcome.remedialRequired,
+      remedialFocus: loopOutcome.remedialFocus,
+      badgeAwarded: loopOutcome.badgeAwarded,
+      lockedExams: loopOutcome.lockedExams
     };
   },
 
@@ -688,5 +791,56 @@ module.exports = {
       calculatedHash: calculated,
       timestamp: session.created_at
     };
+  },
+
+  // Recruiter Talent Pool Leaderboard (Stage 5 Recruiter View)
+  getRecruiterLeaderboard() {
+    const candidates = db.prepare(`
+      SELECT id, verification_id, full_name, email, role, practice_hours,
+             solved_faults, safety_rating, accuracy_rate, total_sessions,
+             remedial_required, remedial_focus, profile_tag, avatar_url
+      FROM user_profiles
+      ORDER BY (accuracy_rate * 0.7 + (safety_rating * 20.0) * 0.3) DESC, practice_hours DESC
+    `).all();
+
+    return candidates.map((c, index) => {
+      const certCount = db.prepare(`
+        SELECT COUNT(*) as count FROM simulation_sessions WHERE user_id = ?
+      `).get(c.id)?.count || 0;
+
+      const compScore = Number(((c.accuracy_rate || 100.0) * 0.7 + (c.safety_rating * 20.0) * 0.3).toFixed(1));
+      let status = 'HIRE READY';
+      let badge = 'Certified Apprentice';
+
+      if (c.remedial_required === 1) {
+        status = 'IN REMEDIAL';
+        badge = 'Remedial In Progress';
+      } else if (c.safety_rating >= 4.9 && (c.accuracy_rate || 100.0) >= 95.0) {
+        status = 'CERTIFIED EXPERT';
+        badge = 'Advanced Field Specialist';
+      }
+
+      return {
+        rank: index + 1,
+        id: c.id,
+        verificationId: c.verification_id,
+        fullName: c.full_name,
+        email: c.email,
+        role: c.role,
+        avatarUrl: c.avatar_url,
+        practiceHours: Number(c.practice_hours.toFixed(2)),
+        solvedFaults: c.solved_faults,
+        safetyRating: Number(c.safety_rating.toFixed(1)),
+        accuracyRate: Number((c.accuracy_rate != null ? c.accuracy_rate : 100.0).toFixed(1)),
+        totalSessions: c.total_sessions || 0,
+        remedialRequired: !!c.remedial_required,
+        remedialFocus: c.remedial_focus,
+        compositeScore: compScore,
+        verifiedCertificates: certCount,
+        status,
+        badgeAwarded: badge
+      };
+    });
   }
 };
+

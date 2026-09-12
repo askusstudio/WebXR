@@ -1756,8 +1756,12 @@
         </button>
       </div>
 
+      <!-- Adaptive Recovery Remedial Micro-Theory Container -->
+      <div id="topic-remedial-container"></div>
+
       <!-- Tabs -->
       <div class="flex items-center gap-2 border-b border-slate-800">
+
         <button id="tab-btn-syllabus" class="tab-btn tab-btn-active">Tab 1: Books &amp; PDFs (SLD)</button>
         <button id="tab-btn-video" class="tab-btn">Tab 2: Videos (Masterclass)</button>
         <button id="tab-btn-3d" class="tab-btn">Tab 3: Animated Circuits (3D Exploded)</button>
@@ -1840,7 +1844,18 @@
       </div>
     </div>
 
-  <div id="webgl-container"></div>
+    <!-- Arc Flash Critical Hazard HUD Alert Banner -->
+    <div id="arc-flash-hud-alert" class="hidden fixed top-24 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300">
+      <div class="flex items-center gap-3 px-6 py-3.5 bg-rose-950/95 border-2 border-rose-500 rounded-xl shadow-[0_0_35px_rgba(244,63,94,0.7)] backdrop-blur-md animate-pulse">
+        <span class="text-2xl animate-bounce">⚡</span>
+        <div>
+          <div class="text-sm font-black tracking-wider text-rose-300 uppercase">⚠️ ARC FLASH HAZARD // ENERGIZED CONTACT</div>
+          <div class="text-xs font-mono text-rose-200/90">Critical Safety Violation: 480V Energized Busbar contacted prior to Lockout / Tagout!</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="webgl-container"></div>
 
   <!-- Screen HUD Overlay -->
   <div id="hud-overlay">
@@ -2161,8 +2176,42 @@
         </div>
       </div>
 
+      <!-- Recruiter Talent Pool Leaderboard (Live Re-indexed by Autonomous Loop Engine) -->
+      <div class="rounded-xl bg-slate-900 border border-slate-800 p-6 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-sm font-bold text-slate-200 uppercase font-mono tracking-wider flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Recruiter Talent Pool Leaderboard (Live Re-indexed Ledger)
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Rank calculated dynamically from practice hours, procedural accuracy rate, and verified safety record.</p>
+          </div>
+          <span class="px-2.5 py-1 rounded bg-sky-950/80 border border-sky-800 text-sky-300 font-mono text-xs">
+            AUTOMATIC PROFILE RE-SYNC
+          </span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 text-xs font-mono">
+                <th class="py-2.5 px-3">RANK</th>
+                <th class="py-2.5 px-3">CANDIDATE</th>
+                <th class="py-2.5 px-3">PRACTICE HRS</th>
+                <th class="py-2.5 px-3">ACCURACY RATE</th>
+                <th class="py-2.5 px-3">SAFETY RATING</th>
+                <th class="py-2.5 px-3">COMPOSITE</th>
+                <th class="py-2.5 px-3">STATUS</th>
+                <th class="py-2.5 px-3">BADGE / CREDENTIAL</th>
+              </tr>
+            </thead>
+            <tbody id="recruiter-leaderboard-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Dual Column: Real-time Alerts & Remote Fault Injector -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
         <!-- Safety Alert Ticker -->
         <div class="rounded-xl bg-slate-900 border border-slate-800 p-6 space-y-4">
           <h3 class="text-sm font-bold text-slate-200 uppercase font-mono tracking-wider">Live Safety Violation Alerts</h3>
@@ -2798,6 +2847,48 @@
         osc2.start(now);
         osc1.stop(now + 0.75);
         osc2.stop(now + 0.75);
+      }
+
+      playArcFlashZap() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const bufferSize = Math.floor(this.ctx.sampleRate * 0.45);
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.12));
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(800, now);
+        filter.frequency.linearRampToValueAtTime(200, now + 0.4);
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.65, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        noise.start(now);
+
+        const osc = this.ctx.createOscillator();
+        const oscGain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+        oscGain.gain.setValueAtTime(0.45, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(oscGain);
+        oscGain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.36);
       }
     }
 
@@ -3743,6 +3834,9 @@
       }
 
       triggerArcFlashViolation() {
+        if (this.app && typeof this.app.triggerArcFlash === 'function') {
+          this.app.triggerArcFlash(new THREE.Vector3(0.07, 0.88, -0.61));
+        }
         this.recordError(
           'ARC_FLASH',
           'ARC FLASH HAZARD // ENERGIZED CONTACT',
@@ -4315,7 +4409,13 @@
         this.ventMeshTexture = this.createVentMeshTexture();
         this.batteryNameplateTexture = this.createNameplateTexture("LiFePO4 ESS MODULE 48V", "NOMINAL: 51.2V // 100Ah", "ENERGY: 5.12 kWh // 1C", "UL 1973 / CE / IEC 62619");
         this.dmmCalDecalTexture = this.createNameplateTexture("CALIBRATION CERTIFIED", "MODEL: FLK-87V-IND", "TRACEABLE: NIST-2026-Q3", "STATUS: PASS // 1000V CAT III");
+        this.weatheredConcreteTexture = this.createWeatheredConcreteTexture();
+        this.sintexTankTexture = this.createSintexTankTexture();
+        this.acCondenserTexture = this.createACCondenserTexture();
+        this.galvanizedSpangleTexture = this.createGalvanizedSpangleTexture();
+        this.exposedBrickTexture = this.createExposedBrickTexture();
       }
+
 
       createHazardStripeTexture() {
         const canvas = document.createElement('canvas');
@@ -4437,7 +4537,264 @@
         return texture;
       }
 
+      createWeatheredConcreteTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024;
+        canvas.height = 1024;
+        const ctx = canvas.getContext('2d');
+
+        // Base industrial concrete slab tone
+        ctx.fillStyle = '#3a4659';
+        ctx.fillRect(0, 0, 1024, 1024);
+
+        // Mottled aggregate noise & texture variation
+        for (let i = 0; i < 35000; i++) {
+          const x = Math.random() * 1024;
+          const y = Math.random() * 1024;
+          const tone = Math.random() > 0.5 ? 245 : 15;
+          const alpha = (Math.random() * 0.08).toFixed(3);
+          ctx.fillStyle = `rgba(${tone},${tone},${tone},${alpha})`;
+          ctx.fillRect(x, y, Math.random() * 3 + 1, Math.random() * 3 + 1);
+        }
+
+        // Expansion joints dividing into 4 rooftop structural quadrants
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(512, 0); ctx.lineTo(512, 1024);
+        ctx.moveTo(0, 512); ctx.lineTo(1024, 512);
+        ctx.stroke();
+
+        // Dark bituminous sealant line inside joints
+        ctx.strokeStyle = '#090d14';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(512, 0); ctx.lineTo(512, 1024);
+        ctx.moveTo(0, 512); ctx.lineTo(1024, 512);
+        ctx.stroke();
+
+        // Dark water-pooling puddles near drainage spouts (smooth organic contours)
+        const puddleGrad1 = ctx.createRadialGradient(280, 220, 20, 280, 220, 180);
+        puddleGrad1.addColorStop(0, 'rgba(15, 23, 42, 0.75)');
+        puddleGrad1.addColorStop(0.5, 'rgba(30, 41, 59, 0.55)');
+        puddleGrad1.addColorStop(0.85, 'rgba(51, 65, 85, 0.25)');
+        puddleGrad1.addColorStop(1, 'rgba(58, 70, 89, 0.0)');
+        ctx.fillStyle = puddleGrad1;
+        ctx.beginPath();
+        ctx.ellipse(280, 220, 180, 120, 0.35, 0, Math.PI * 2);
+        ctx.fill();
+
+        const puddleGrad2 = ctx.createRadialGradient(780, 750, 30, 780, 750, 220);
+        puddleGrad2.addColorStop(0, 'rgba(15, 23, 42, 0.8)');
+        puddleGrad2.addColorStop(0.6, 'rgba(24, 34, 50, 0.5)');
+        puddleGrad2.addColorStop(1, 'rgba(58, 70, 89, 0.0)');
+        ctx.fillStyle = puddleGrad2;
+        ctx.beginPath();
+        ctx.ellipse(780, 750, 210, 150, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Dried white mineral rings (efflorescence rings from evaporated rainwater)
+        ctx.strokeStyle = 'rgba(241, 245, 249, 0.38)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.ellipse(280, 220, 150, 100, 0.35, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(226, 232, 240, 0.28)';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.ellipse(280, 220, 175, 118, 0.35, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(248, 250, 252, 0.35)';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.ellipse(780, 750, 185, 130, -0.4, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Hairline settlement cracks
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.7)';
+        ctx.lineWidth = 1.8;
+        const drawCrack = (startX, startY, pts) => {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          let cx = startX, cy = startY;
+          pts.forEach(([dx, dy]) => {
+            cx += dx; cy += dy;
+            ctx.lineTo(cx, cy);
+          });
+          ctx.stroke();
+        };
+        drawCrack(120, 80, [[25, 18], [-10, 30], [35, 22], [40, -10], [50, 25], [30, 45]]);
+        drawCrack(680, 420, [[-30, 20], [15, 35], [-25, 40], [-40, 20], [-20, 50]]);
+        drawCrack(450, 820, [[30, -15], [20, 25], [45, 10], [30, -20], [25, 15]]);
+
+        // Dust & silt sediment wash layer along lower edge
+        const siltGrad = ctx.createLinearGradient(0, 800, 0, 1024);
+        siltGrad.addColorStop(0, 'rgba(84, 71, 55, 0.0)');
+        siltGrad.addColorStop(0.7, 'rgba(92, 77, 59, 0.25)');
+        siltGrad.addColorStop(1, 'rgba(78, 64, 48, 0.45)');
+        ctx.fillStyle = siltGrad;
+        ctx.fillRect(0, 800, 1024, 224);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(2, 2);
+        return texture;
+      }
+
+      createSintexTankTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+
+        // Sun-bleached UV-degraded dark polyethylene
+        ctx.fillStyle = '#152019';
+        ctx.fillRect(0, 0, 512, 512);
+
+        // Molded cylindrical corrugated hoop ribs
+        for (let y = 0; y < 512; y += 42) {
+          const ribGrad = ctx.createLinearGradient(0, y, 0, y + 42);
+          ribGrad.addColorStop(0, '#0c1410');
+          ribGrad.addColorStop(0.3, '#1f2e24');
+          ribGrad.addColorStop(0.7, '#2a3d31');
+          ribGrad.addColorStop(1, '#0c1410');
+          ctx.fillStyle = ribGrad;
+          ctx.fillRect(0, y, 512, 38);
+        }
+
+        // Faded white stenciled brand lettering
+        ctx.fillStyle = 'rgba(226, 232, 240, 0.45)';
+        ctx.font = 'bold 36px "SF Mono", Consolas, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('SINTEX', 256, 175);
+
+        ctx.font = 'bold 18px "SF Mono", Consolas, monospace';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.4)';
+        ctx.fillText('1000 LITRES • TRIPLE LAYER', 256, 210);
+        ctx.fillText('FDA APPROVED UV STABILIZED', 256, 235);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        return texture;
+      }
+
+      createACCondenserTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+
+        // Powder coated outdoor enamel finish (sun-faded industrial beige-grey)
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(0, 0, 512, 512);
+
+        // Aluminum radiator cooling fins
+        ctx.fillStyle = '#94a3b8';
+        for (let y = 20; y < 490; y += 5) {
+          ctx.fillRect(20, y, 360, 2.5);
+        }
+
+        // Rust drip stains from mounting fasteners
+        const drawRustDrip = (x, y) => {
+          ctx.fillStyle = '#7c2d12';
+          ctx.beginPath();
+          ctx.arc(x, y, 6, 0, Math.PI * 2);
+          ctx.fill();
+          const rustGrad = ctx.createLinearGradient(x, y, x, y + 70);
+          rustGrad.addColorStop(0, 'rgba(124, 45, 18, 0.8)');
+          rustGrad.addColorStop(0.4, 'rgba(154, 52, 18, 0.45)');
+          rustGrad.addColorStop(1, 'rgba(180, 83, 9, 0.0)');
+          ctx.fillStyle = rustGrad;
+          ctx.fillRect(x - 3, y, 6, 70);
+        };
+        drawRustDrip(420, 50);
+        drawRustDrip(420, 260);
+        drawRustDrip(420, 460);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        return texture;
+      }
+
+      createGalvanizedSpangleTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        // Hot-dip galvanized base
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(0, 0, 256, 256);
+
+        // Zinc crystalline polygon spangles
+        for (let i = 0; i < 280; i++) {
+          const cx = Math.random() * 256;
+          const cy = Math.random() * 256;
+          const rad = Math.random() * 14 + 6;
+          const sides = Math.floor(Math.random() * 3) + 5;
+          const lightness = 130 + Math.floor(Math.random() * 85);
+          ctx.fillStyle = `rgb(${lightness},${lightness + 6},${lightness + 12})`;
+          ctx.beginPath();
+          for (let s = 0; s < sides; s++) {
+            const a = (s / sides) * Math.PI * 2;
+            const r = rad * (0.8 + Math.random() * 0.4);
+            const px = cx + Math.cos(a) * r;
+            const py = cy + Math.sin(a) * r;
+            if (s === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        return texture;
+      }
+
+      createExposedBrickTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        // Grey cement mortar
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(0, 0, 256, 256);
+
+        // Red terracotta clay bricks
+        const rows = 8;
+        const bH = 26;
+        for (let r = 0; r < rows; r++) {
+          const y = r * 32 + 3;
+          const offset = (r % 2 === 0) ? 0 : 36;
+          for (let x = -36; x < 290; x += 74) {
+            const bX = x + offset;
+            const brickRed = 140 + Math.floor(Math.random() * 40);
+            ctx.fillStyle = `rgb(${brickRed}, 55, 35)`;
+            ctx.fillRect(bX, y, 66, bH);
+          }
+        }
+
+        // Flaking weathered plaster patches on top
+        ctx.fillStyle = 'rgba(226, 232, 240, 0.65)';
+        ctx.beginPath();
+        ctx.ellipse(60, 80, 50, 35, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(190, 180, 60, 45, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        return texture;
+      }
+
       createRoomAndFloor() {
+
         // High-grade industrial semi-gloss epoxy floor
         const floorGeo = new THREE.PlaneGeometry(16, 16);
         const floorMat = new THREE.MeshStandardMaterial({
@@ -4797,23 +5154,279 @@
           metalness: 0.8
         });
 
+        // Weathered Industrial Concrete Rooftop Slab with water pooling, efflorescence, and expansion joints
         const roofSlabMat = new THREE.MeshStandardMaterial({
-          color: 0x273549, // Clean industrial commercial slate rooftop membrane
-          roughness: 0.85,
-          metalness: 0.2
+          map: this.weatheredConcreteTexture,
+          roughness: 0.92,
+          metalness: 0.12
         });
 
         // Surrounding roof slabs creating an opening for the glass skylight (X: -2.4 to 2.4, Z: -2.4 to 0.4)
         const ceilingN = new THREE.Mesh(new THREE.BoxGeometry(16, 0.14, 5.5), roofSlabMat);
         ceilingN.position.set(0, 3.6, -5.15);
+        ceilingN.receiveShadow = true;
         const ceilingS = new THREE.Mesh(new THREE.BoxGeometry(16, 0.14, 7.5), roofSlabMat);
         ceilingS.position.set(0, 3.6, 4.15);
+        ceilingS.receiveShadow = true;
         const ceilingW = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.14, 2.8), roofSlabMat);
         ceilingW.position.set(-5.2, 3.6, -1.0);
+        ceilingW.receiveShadow = true;
         const ceilingE = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.14, 2.8), roofSlabMat);
         ceilingE.position.set(5.2, 3.6, -1.0);
+        ceilingE.receiveShadow = true;
 
         this.solarRoofGroup.add(ceilingN, ceilingS, ceilingW, ceilingE);
+
+        // --- Weathered Parapet Perimeter Walls with Plaster Decay & Exposed Red Brick ---
+        const parapetMat = new THREE.MeshStandardMaterial({
+          map: this.exposedBrickTexture,
+          roughness: 0.88,
+          metalness: 0.1
+        });
+        const copingMat = new THREE.MeshStandardMaterial({
+          color: 0x475569,
+          roughness: 0.8,
+          metalness: 0.2
+        });
+
+        // North parapet wall
+        const parapetN = new THREE.Mesh(new THREE.BoxGeometry(15.8, 0.85, 0.26), parapetMat);
+        parapetN.position.set(0, 4.09, -7.8);
+        const copingN = new THREE.Mesh(new THREE.BoxGeometry(16.0, 0.08, 0.32), copingMat);
+        copingN.position.set(0, 4.54, -7.8);
+
+        // South parapet wall
+        const parapetS = new THREE.Mesh(new THREE.BoxGeometry(15.8, 0.85, 0.26), parapetMat);
+        parapetS.position.set(0, 4.09, 7.8);
+        const copingS = new THREE.Mesh(new THREE.BoxGeometry(16.0, 0.08, 0.32), copingMat);
+        copingS.position.set(0, 4.54, 7.8);
+
+        // West parapet wall
+        const parapetW = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.85, 15.6), parapetMat);
+        parapetW.position.set(-7.8, 4.09, 0);
+        const copingW = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.08, 15.8), copingMat);
+        copingW.position.set(-7.8, 4.54, 0);
+
+        // East parapet wall
+        const parapetE = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.85, 15.6), parapetMat);
+        parapetE.position.set(7.8, 4.09, 0);
+        const copingE = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.08, 15.8), copingMat);
+        copingE.position.set(7.8, 4.54, 0);
+
+        this.solarRoofGroup.add(parapetN, copingN, parapetS, copingS, parapetW, copingW, parapetE, copingE);
+
+        // --- Sintex-Style Corrugated Cylindrical PVC Water Storage Tank on Brick Piers ---
+        const sintexGroup = new THREE.Group();
+        sintexGroup.position.set(3.6, 3.67, -2.6);
+
+        // 4 Raised Red Clay Brick Pedestal Piers
+        const pierMat = new THREE.MeshStandardMaterial({
+          map: this.exposedBrickTexture,
+          roughness: 0.9,
+          metalness: 0.1
+        });
+        const pierGeo = new THREE.BoxGeometry(0.28, 0.35, 0.28);
+        [
+          [-0.45, 0.175, -0.45],
+          [ 0.45, 0.175, -0.45],
+          [-0.45, 0.175,  0.45],
+          [ 0.45, 0.175,  0.45]
+        ].forEach(([px, py, pz]) => {
+          const pier = new THREE.Mesh(pierGeo, pierMat);
+          pier.position.set(px, py, pz);
+          pier.castShadow = true;
+          pier.receiveShadow = true;
+          sintexGroup.add(pier);
+        });
+
+        // Corrugated Dark Polyethylene Tank Body with Faded Stencil
+        const tankMat = new THREE.MeshStandardMaterial({
+          map: this.sintexTankTexture,
+          roughness: 0.72,
+          metalness: 0.18
+        });
+        const tankBody = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 1.35, 32), tankMat);
+        tankBody.position.set(0, 1.025, 0);
+        tankBody.castShadow = true;
+        sintexGroup.add(tankBody);
+
+        // Top Threaded Inspection Lid & Breather Cap
+        const lidMat = new THREE.MeshStandardMaterial({ color: 0x1f2e24, roughness: 0.65, metalness: 0.2 });
+        const tankLid = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.08, 24), lidMat);
+        tankLid.position.set(0, 1.74, 0);
+        const breatherVent = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.12, 12), lidMat);
+        breatherVent.position.set(0.12, 1.82, 0);
+        sintexGroup.add(tankLid, breatherVent);
+
+        // PVC Overflow Pipe & Brass Drain Cock Valve
+        const pipeMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4, metalness: 0.6 });
+        const brassMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.3, metalness: 0.85 });
+        const overflowPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.85, 12), pipeMat);
+        overflowPipe.position.set(0.64, 1.25, 0);
+        const drainValve = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.15, 12), brassMat);
+        drainValve.rotation.z = Math.PI / 2;
+        drainValve.position.set(0.68, 0.42, 0);
+        sintexGroup.add(overflowPipe, drainValve);
+
+        this.solarRoofGroup.add(sintexGroup);
+
+        // --- Outdoor AC Condenser Units with Radiator Fins & Insulated Tubing ---
+        const acGroup = new THREE.Group();
+        acGroup.position.set(-3.7, 3.67, -2.4);
+
+        // Powder-coated condenser cabinet with radiator fins & rust stains
+        const acCabinetMat = new THREE.MeshStandardMaterial({
+          map: this.acCondenserTexture,
+          roughness: 0.65,
+          metalness: 0.35
+        });
+        const acCabinet = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.68, 0.38), acCabinetMat);
+        acCabinet.position.set(0, 0.44, 0);
+        acCabinet.castShadow = true;
+        acGroup.add(acCabinet);
+
+        // Top circular protective fan grille & motor hub
+        const fanGrilleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.8 });
+        const fanRing = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.012, 8, 24), fanGrilleMat);
+        fanRing.rotation.x = Math.PI / 2;
+        fanRing.position.set(0, 0.785, 0);
+        const fanHub = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.02, 16), fanGrilleMat);
+        fanHub.position.set(0, 0.785, 0);
+        acGroup.add(fanRing, fanHub);
+
+        // Rusted angle-iron vibration mounting feet
+        const rustFeetMat = new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.85, metalness: 0.4 });
+        const footL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.44), rustFeetMat);
+        footL.position.set(-0.35, 0.05, 0);
+        const footR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.44), rustFeetMat);
+        footR.position.set(0.35, 0.05, 0);
+        acGroup.add(footL, footR);
+
+        // Copper refrigeration line set wrapped in frayed white foam insulation tape
+        const foamInsulationMat = new THREE.MeshStandardMaterial({
+          color: 0xf1f5f9,
+          roughness: 0.95,
+          metalness: 0.05
+        });
+        const copperMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.35, metalness: 0.9 });
+        const suctionLine = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 1.4, 16), foamInsulationMat);
+        suctionLine.rotation.z = Math.PI / 3;
+        suctionLine.position.set(-0.48, 0.45, -0.15);
+        const liquidLine = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.4, 16), copperMat);
+        liquidLine.rotation.z = Math.PI / 3;
+        liquidLine.position.set(-0.48, 0.42, -0.12);
+        acGroup.add(suctionLine, liquidLine);
+
+        this.solarRoofGroup.add(acGroup);
+
+        // --- Unfinished Structural Pillar Starters with Protruding Rebar ---
+        const rebarMat = new THREE.MeshStandardMaterial({
+          color: 0x78350f, // Heavily oxidized deformed steel rebar
+          roughness: 0.85,
+          metalness: 0.6
+        });
+        const concreteStubMat = new THREE.MeshStandardMaterial({
+          map: this.weatheredConcreteTexture,
+          roughness: 0.9,
+          metalness: 0.1
+        });
+
+        const pillarCoords = [
+          [ 4.6, 3.67,  1.4],
+          [-4.6, 3.67,  1.4]
+        ];
+
+        pillarCoords.forEach(([px, py, pz]) => {
+          const pillarGroup = new THREE.Group();
+          pillarGroup.position.set(px, py, pz);
+
+          // Concrete stump starter
+          const stub = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.52, 0.42), concreteStubMat);
+          stub.position.set(0, 0.26, 0);
+          stub.castShadow = true;
+          stub.receiveShadow = true;
+          pillarGroup.add(stub);
+
+          // 4 Protruding vertical ribbed rebar rods with hooked tops
+          const rebarGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.68, 10);
+          const rebarOffsets = [
+            [-0.12, -0.12], [0.12, -0.12],
+            [-0.12,  0.12], [0.12,  0.12]
+          ];
+          rebarOffsets.forEach(([rx, rz]) => {
+            const bar = new THREE.Mesh(rebarGeo, rebarMat);
+            bar.position.set(rx, 0.74, rz);
+            bar.rotation.z = (Math.random() - 0.5) * 0.08;
+            bar.rotation.x = (Math.random() - 0.5) * 0.08;
+            bar.castShadow = true;
+            pillarGroup.add(bar);
+          });
+
+          this.solarRoofGroup.add(pillarGroup);
+        });
+
+        // --- Realistic Rooftop Working Clutter ---
+        // 1. Forgotten weathered broom leaning against north parapet
+        const broomGroup = new THREE.Group();
+        broomGroup.position.set(2.4, 3.67, -7.6);
+        broomGroup.rotation.z = 0.22;
+        broomGroup.rotation.x = 0.15;
+        const broomHandle = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.014, 0.014, 1.45, 10),
+          new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.85 })
+        );
+        broomHandle.position.set(0, 0.725, 0);
+        const broomBristles = new THREE.Mesh(
+          new THREE.BoxGeometry(0.24, 0.28, 0.06),
+          new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.95 })
+        );
+        broomBristles.position.set(0, 0.14, 0);
+        broomGroup.add(broomHandle, broomBristles);
+        this.solarRoofGroup.add(broomGroup);
+
+        // 2. Clipped plastic zip ties on concrete deck
+        const zipTieMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 });
+        const zipGeo = new THREE.TorusGeometry(0.025, 0.003, 6, 12, Math.PI * 1.5);
+        [
+          [-0.85, 3.68, -0.4],
+          [ 0.45, 3.68, -0.8],
+          [ 1.15, 3.68,  0.2]
+        ].forEach(([zx, zy, zz], i) => {
+          const zt = new THREE.Mesh(zipGeo, zipTieMat);
+          zt.rotation.x = -Math.PI / 2;
+          zt.rotation.z = i * 1.2;
+          zt.position.set(zx, zy, zz);
+          this.solarRoofGroup.add(zt);
+        });
+
+        // 3. Transparent mineral water bottle on stanchion ledge
+        const bottleGroup = new THREE.Group();
+        bottleGroup.position.set(1.65, 3.95, 0.22);
+        const bottleBody = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.032, 0.032, 0.18, 16),
+          new THREE.MeshPhysicalMaterial({
+            color: 0xe0f2fe,
+            transparent: true,
+            opacity: 0.55,
+            roughness: 0.1,
+            transmission: 0.85,
+            ior: 1.33
+          })
+        );
+        const bottleCap = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.015, 0.015, 0.025, 12),
+          new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 })
+        );
+        bottleCap.position.y = 0.1;
+        bottleGroup.add(bottleBody, bottleCap);
+        this.solarRoofGroup.add(bottleGroup);
+
+        // 4. Coiled garden wash-down hose on wall bracket
+        const hoseMat = new THREE.MeshStandardMaterial({ color: 0x65a30d, roughness: 0.65 });
+        const hoseCoil = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.035, 10, 32), hoseMat);
+        hoseCoil.rotation.y = Math.PI / 2;
+        hoseCoil.position.set(-7.65, 4.25, 2.4);
+        this.solarRoofGroup.add(hoseCoil);
 
         // OSHA Yellow Rooftop Perimeter Demarcation Lines
         const yellowLineMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
@@ -4851,7 +5464,7 @@
 
         this.solarRoofGroup.add(frameX_N, frameX_S, frameZ_W, frameZ_E, mullionZ1, mullionZ2);
 
-        // Architectural Glass Skylight Pane (allows looking up from workbench to the solar panels)
+        // Architectural Glass Skylight Pane
         const skylightGlassMat = new THREE.MeshPhysicalMaterial({
           color: 0x88c4e8,
           transparent: true,
@@ -4867,15 +5480,16 @@
         skylightPane.position.set(0, 3.67, -1.0);
         this.solarRoofGroup.add(skylightPane);
 
-        // --- 2. Rooftop Aluminum Unistrut Mounting Rack (Tilted at 25 degrees) ---
+        // --- 2. Rooftop Slotted 41 × 41 mm Unistrut Mounting Rack (Tilted at 25 degrees) ---
+        // Galvanized steel with crystalline zinc spangles texture
         const aluRackMat = new THREE.MeshStandardMaterial({
-          color: 0x9eabb7,
-          metalness: 0.9,
-          roughness: 0.2
+          map: this.galvanizedSpangleTexture,
+          metalness: 0.88,
+          roughness: 0.32
         });
 
         // Stanchion posts lifting the rack structure above the roof
-        const stanchionGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.45, 16);
+        const stanchionGeo = new THREE.CylinderGeometry(0.032, 0.032, 0.45, 16);
         const stanchionCoords = [
           [-1.6, 3.85, -2.1], [0, 3.85, -2.1], [1.6, 3.85, -2.1],
           [-1.6, 3.85, -0.9], [0, 3.85, -0.9], [1.6, 3.85, -0.9],
@@ -4884,18 +5498,31 @@
         stanchionCoords.forEach(([x, y, z]) => {
           const st = new THREE.Mesh(stanchionGeo, aluRackMat);
           st.position.set(x, y, z);
+          st.castShadow = true;
           this.solarRoofGroup.add(st);
         });
 
-        // Longitudinal Rails
-        const longRailGeo = new THREE.BoxGeometry(4.2, 0.04, 0.04);
+        // Slotted 41 × 41 mm Unistrut Longitudinal Rails
+        const longRailGeo = new THREE.BoxGeometry(4.4, 0.041, 0.041);
         const r1 = new THREE.Mesh(longRailGeo, aluRackMat);
         r1.position.set(0, 4.18, -1.8);
+        r1.castShadow = true;
         const r2 = new THREE.Mesh(longRailGeo, aluRackMat);
         r2.position.set(0, 4.02, -0.9);
+        r2.castShadow = true;
         const r3 = new THREE.Mesh(longRailGeo, aluRackMat);
         r3.position.set(0, 3.86, 0.0);
+        r3.castShadow = true;
         this.solarRoofGroup.add(r1, r2, r3);
+
+        // Sagging UV-resistant XLPO DC solar string cable running along rail spine
+        const cableMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.8, metalness: 0.1 });
+        const cableGeo = new THREE.CylinderGeometry(0.008, 0.008, 4.3, 12);
+        const dcCable = new THREE.Mesh(cableGeo, cableMat);
+        dcCable.rotation.z = Math.PI / 2;
+        dcCable.position.set(0, 3.98, -0.92);
+        this.solarRoofGroup.add(dcCable);
+
 
         // --- 3. Photovoltaic (PV) Solar Panel Modules (6 Modular PV Arrays) ---
         // Tilt angle: 25 degrees (approx 0.436 radians)
@@ -4948,18 +5575,18 @@
         const clampMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.95, roughness: 0.12 });
         const boltMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
 
-        const panelW = 1.12;
-        const panelThick = 0.04;
-        const panelD = 0.96;
+        const panelW = 1.134;
+        const panelThick = 0.035;
+        const panelD = 1.139;
 
-        // 2 rows of 3 panels each
+        // 2 rows of 3 panels each (550W Half-Cut Architecture)
         const panelLayout = [
-          { x: -1.22, y: 0.20, z: -0.55 },
-          { x: 0,     y: 0.20, z: -0.55 },
-          { x: 1.22,  y: 0.20, z: -0.55 },
-          { x: -1.22, y: -0.20, z: 0.45 },
-          { x: 0,     y: -0.20, z: 0.45 },
-          { x: 1.22,  y: -0.20, z: 0.45 }
+          { x: -1.22, y: 0.22, z: -0.65 },
+          { x: 0,     y: 0.22, z: -0.65 },
+          { x: 1.22,  y: 0.22, z: -0.65 },
+          { x: -1.22, y: -0.22, z: 0.55 },
+          { x: 0,     y: -0.22, z: 0.55 },
+          { x: 1.22,  y: -0.22, z: 0.55 }
         ];
 
         panelLayout.forEach((cfg, idx) => {
@@ -6625,6 +7252,173 @@
     }
 
     /* ==========================================================================
+       7B. ARC FLASH HAZARD & PYROTECHNIC SAFETY SYSTEM
+       ========================================================================== */
+    class ArcFlashHazardSystem {
+      constructor(scene, sound) {
+        this.scene = scene;
+        this.sound = sound;
+        this.isActive = false;
+        this.flashTimer = 0;
+        this.maxParticles = 180;
+
+        this.geom = new THREE.BufferGeometry();
+        this.positions = new Float32Array(this.maxParticles * 3);
+        this.colors = new Float32Array(this.maxParticles * 3);
+        this.velocities = [];
+        this.lifetimes = new Float32Array(this.maxParticles);
+        this.maxLifetimes = new Float32Array(this.maxParticles);
+
+        for (let i = 0; i < this.maxParticles; i++) {
+          this.positions[i * 3] = 0;
+          this.positions[i * 3 + 1] = -100;
+          this.positions[i * 3 + 2] = 0;
+          this.colors[i * 3] = 1;
+          this.colors[i * 3 + 1] = 1;
+          this.colors[i * 3 + 2] = 1;
+          this.lifetimes[i] = 0;
+          this.maxLifetimes[i] = 1.0;
+          this.velocities.push(new THREE.Vector3());
+        }
+
+        this.geom.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
+        this.geom.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
+
+        // Procedural particle glow texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        grad.addColorStop(0.25, 'rgba(147, 197, 253, 0.95)');
+        grad.addColorStop(0.65, 'rgba(59, 130, 246, 0.45)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 64, 64);
+        const pTexture = new THREE.CanvasTexture(canvas);
+
+        this.mat = new THREE.PointsMaterial({
+          size: 0.14,
+          map: pTexture,
+          vertexColors: true,
+          transparent: true,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+
+        this.points = new THREE.Points(this.geom, this.mat);
+        this.scene.add(this.points);
+
+        // Intense arc-flash illumination light
+        this.flashLight = new THREE.PointLight(0x60a5fa, 0, 12);
+        this.scene.add(this.flashLight);
+      }
+
+      trigger(position = new THREE.Vector3(0, 1.25, -0.65)) {
+        this.isActive = true;
+        this.flashTimer = 0.45;
+        this.flashLight.position.copy(position);
+        this.flashLight.intensity = 10.0;
+        this.flashLight.color.setHex(0xdbeafe);
+
+        if (this.sound && typeof this.sound.playArcFlashZap === 'function') {
+          try { this.sound.playArcFlashZap(); } catch (_) {}
+        } else if (this.sound && typeof this.sound.playFuseSnap === 'function') {
+          try { this.sound.playFuseSnap(); } catch (_) {}
+        }
+
+        for (let i = 0; i < this.maxParticles; i++) {
+          this.positions[i * 3] = position.x + (Math.random() - 0.5) * 0.06;
+          this.positions[i * 3 + 1] = position.y + (Math.random() - 0.5) * 0.06;
+          this.positions[i * 3 + 2] = position.z + (Math.random() - 0.5) * 0.06;
+
+          const speed = 2.0 + Math.random() * 4.5;
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.random() * Math.PI;
+          this.velocities[i].set(
+            Math.sin(phi) * Math.cos(theta) * speed,
+            Math.abs(Math.cos(phi)) * speed * 1.3 + 0.6,
+            Math.sin(phi) * Math.sin(theta) * speed
+          );
+
+          const life = 0.35 + Math.random() * 0.65;
+          this.lifetimes[i] = life;
+          this.maxLifetimes[i] = life;
+
+          // Electric blue/white or incandescent sparks
+          if (Math.random() > 0.35) {
+            this.colors[i * 3] = 0.8 + Math.random() * 0.2;
+            this.colors[i * 3 + 1] = 0.9 + Math.random() * 0.1;
+            this.colors[i * 3 + 2] = 1.0;
+          } else {
+            this.colors[i * 3] = 1.0;
+            this.colors[i * 3 + 1] = 0.65 + Math.random() * 0.35;
+            this.colors[i * 3 + 2] = 0.15;
+          }
+        }
+
+        this.geom.attributes.position.needsUpdate = true;
+        this.geom.attributes.color.needsUpdate = true;
+
+        const banner = document.getElementById('arc-flash-hud-alert');
+        if (banner) {
+          banner.classList.remove('hidden');
+          clearTimeout(this._bannerTimer);
+          this._bannerTimer = setTimeout(() => banner.classList.add('hidden'), 4000);
+        }
+      }
+
+      update(delta) {
+        if (!this.isActive) return;
+
+        if (this.flashTimer > 0) {
+          this.flashTimer -= delta;
+          this.flashLight.intensity = Math.max(0, (this.flashTimer / 0.45) * 10.0);
+          if (this.flashTimer <= 0) {
+            this.flashLight.intensity = 0;
+          }
+        }
+
+        let activeCount = 0;
+        const gravity = -9.8;
+
+        for (let i = 0; i < this.maxParticles; i++) {
+          if (this.lifetimes[i] > 0) {
+            activeCount++;
+            this.lifetimes[i] -= delta;
+            const progress = 1 - (this.lifetimes[i] / this.maxLifetimes[i]);
+
+            this.velocities[i].y += gravity * delta;
+            this.positions[i * 3] += this.velocities[i].x * delta;
+            this.positions[i * 3 + 1] += this.velocities[i].y * delta;
+            this.positions[i * 3 + 2] += this.velocities[i].z * delta;
+
+            const fade = Math.max(0, 1 - progress);
+            this.colors[i * 3] *= fade;
+            this.colors[i * 3 + 1] *= fade;
+            this.colors[i * 3 + 2] *= fade;
+
+            if (this.positions[i * 3 + 1] < 0.88 && this.velocities[i].y < 0) {
+              this.velocities[i].y = -this.velocities[i].y * 0.35;
+              this.velocities[i].x *= 0.6;
+              this.velocities[i].z *= 0.6;
+            }
+          } else {
+            this.positions[i * 3 + 1] = -100;
+          }
+        }
+
+        this.geom.attributes.position.needsUpdate = true;
+        this.geom.attributes.color.needsUpdate = true;
+
+        if (activeCount === 0 && this.flashTimer <= 0) {
+          this.isActive = false;
+        }
+      }
+    }
+
+    /* ==========================================================================
        8. MAIN APPLICATION ORCHESTRATOR
        ========================================================================== */
     class WebXRTrainingApp {
@@ -6649,7 +7443,7 @@
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.1;
+        this.renderer.toneMappingExposure = 1.15;
         this.container.appendChild(this.renderer.domElement);
 
         this.renderer.xr.enabled = true;
@@ -6679,6 +7473,7 @@
         this.scene.add(this.moduleEquipmentGroup);
         this.ghostGuides = new HolographicGhostGuides(this.scene);
         this.diegeticHUD = new Diegetic3DHUD(this.scene);
+        this.arcFlashHazard = new ArcFlashHazardSystem(this.scene, this.sound);
 
         this.fsm = new TrainingFSM(this);
 
@@ -6694,6 +7489,8 @@
       }
 
       setupLights() {
+        this.scene.fog = new THREE.FogExp2(0xd6e4f0, 0.022);
+
         const ambientLight = new THREE.AmbientLight(0xdde8f5, 0.65);
         this.scene.add(ambientLight);
 
@@ -6733,15 +7530,15 @@
         roofLight.position.set(2.0, 4.3, -0.5);
         this.scene.add(roofLight);
 
-        // Natural rooftop outdoor sunlight illuminating the 25-degree tilted PV modules
-        const roofSun = new THREE.DirectionalLight(0xfff7ed, 2.2);
+        // Natural rooftop outdoor sunlight illuminating the 25-degree tilted PV modules (5600K warm daylight)
+        const roofSun = new THREE.DirectionalLight(0xfff3e0, 2.6);
         roofSun.position.set(1.5, 9.0, 2.2);
         roofSun.target.position.set(0, 4.0, -0.85);
         this.scene.add(roofSun);
         this.scene.add(roofSun.target);
 
-        // Sky ambient fill light over rooftop for crisp outdoor contrast
-        const roofSky = new THREE.HemisphereLight(0x38bdf8, 0x1e293b, 0.75);
+        // Sky ambient fill light over rooftop for crisp outdoor contrast (6500K daylight sky fill)
+        const roofSky = new THREE.HemisphereLight(0xd6e8fa, 0x1e293b, 0.85);
         roofSky.position.set(0, 9.0, 0);
         this.scene.add(roofSky);
 
@@ -7955,6 +8752,22 @@
         }
       }
 
+      triggerArcFlash(pos) {
+        const contactPos = pos || new THREE.Vector3(0.07, 0.88, -0.61);
+        if (this.arcFlashHazard) {
+          this.arcFlashHazard.trigger(contactPos);
+        }
+        if (window.mayaVue && typeof window.mayaVue.sendTelemetryPacket === 'function') {
+          window.mayaVue.sendTelemetryPacket('UNINSULATED_CONTACT', {
+            x: contactPos.x,
+            y: contactPos.y,
+            z: contactPos.z,
+            voltage: 480,
+            hazardLevel: 'CRITICAL_ARC_FLASH'
+          });
+        }
+      }
+
       render(timestamp, frame) {
         const simView = document.getElementById('view-simulation');
         if (simView && simView.classList.contains('hidden')) return;
@@ -7971,6 +8784,9 @@
 
         this.ghostGuides.update(delta);
         this.renderWaveform();
+        if (this.arcFlashHazard) {
+          this.arcFlashHazard.update(delta);
+        }
 
         if (Math.floor(time * 20) % 2 === 0) {
           this.diegeticHUD.renderCanvas(this.jarvis.isSpeaking || this.micListener.isListening, time);

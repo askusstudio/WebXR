@@ -19,6 +19,7 @@ class MayaVuePlatform {
     };
 
     this.init();
+    this.initTelemetryWebSocket();
   }
 
   async init() {
@@ -26,6 +27,48 @@ class MayaVuePlatform {
     await this.loadInitialData();
     this.handleRoute();
   }
+
+  initTelemetryWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/api/telemetry/ws`;
+    try {
+      this.telemetryWs = new WebSocket(wsUrl);
+      this.telemetryWs.onopen = () => {
+        console.log('[Telemetry WS] Connected: 10 Hz streaming active');
+      };
+      this.telemetryWs.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'TELEMETRY_PACKET' && this.onTelemetryReceived) {
+            this.onTelemetryReceived(msg.packet);
+          }
+        } catch (_) {}
+      };
+    } catch (e) {
+      console.warn('[Telemetry WS] WebSocket fallback to HTTP', e);
+    }
+  }
+
+  sendTelemetryPacket(type, data = {}) {
+    const packet = {
+      type, // TOOL_GRAB, BREAKER_SWITCH, PROBE_VOLTAGE, TORQUE_APPLIED, UNINSULATED_CONTACT
+      candidateId: this.currentCandidateId,
+      moduleCode: this.currentTopicId || 'SOLAR-BOX-01',
+      timestamp: new Date().toISOString(),
+      data
+    };
+
+    if (this.telemetryWs && this.telemetryWs.readyState === WebSocket.OPEN) {
+      this.telemetryWs.send(JSON.stringify(packet));
+    } else {
+      fetch('/api/telemetry/packet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(packet)
+      }).catch(() => {});
+    }
+  }
+
 
   setupEventListeners() {
     window.addEventListener('hashchange', () => this.handleRoute());
@@ -106,7 +149,10 @@ class MayaVuePlatform {
 
   handleRoute() {
     const hash = window.location.hash || '#/dashboard';
-    const cleanHash = hash.replace(/^#\/?/, '');
+    const rawClean = hash.replace(/^#\/?/, '');
+    const [cleanHash, queryString] = rawClean.split('?');
+    const queryParams = new URLSearchParams(queryString || '');
+    const focusParam = queryParams.get('focus');
     const parts = cleanHash.split('/');
 
     // Update active nav links
@@ -137,14 +183,15 @@ class MayaVuePlatform {
     // STAGE 3: Multimodal Theory & 3D Prep Center
     // Format: #/course/:courseId/theory/:moduleId
     if (parts[0] === 'course' && parts[2] === 'theory') {
-      this.showTheoryLabScreen(parts[1], parts[3]);
+      this.showTheoryLabScreen(parts[1], parts[3], focusParam);
       return;
     }
     // Fallback for #/courses/solar-installation/:topicId
     if (parts[0] === 'courses' && parts[2]) {
-      this.showTheoryLabScreen('solar-pv', parts[2]);
+      this.showTheoryLabScreen('solar-pv', parts[2], focusParam);
       return;
     }
+
 
     // STAGE 4: 3D/VR Simulation Lab
     // Format: #/simulate/:moduleId
@@ -410,7 +457,7 @@ class MayaVuePlatform {
   // STAGE 3: THEORY & 3D MEDIA PREP CENTER
   // ==========================================
 
-  async showTheoryLabScreen(courseId, topicId) {
+  async showTheoryLabScreen(courseId, topicId, focusParam = null) {
     const screen = document.getElementById('view-topic-detail');
     if (!screen) return;
     screen.classList.remove('hidden');
@@ -420,16 +467,68 @@ class MayaVuePlatform {
 
     try {
       const topic = await fetch(`/api/courses/${courseId}/theory/${topicId}`).then(r => r.json());
-      this.renderTheoryLab(topic);
+      this.renderTheoryLab(topic, focusParam);
     } catch (err) {
       console.error('Failed to load topic:', err);
     }
   }
 
-  renderTheoryLab(topic) {
+  renderTheoryLab(topic, focusParam = null) {
     document.getElementById('topic-title').textContent = topic.title;
     document.getElementById('topic-module-badge').textContent = `Module 0${topic.moduleNumber}: ${topic.moduleTitle}`;
     document.getElementById('topic-overview-text').textContent = topic.syllabus.overview;
+
+    // Adaptive Recovery Remedial Micro-Theory Banner
+    const remContainer = document.getElementById('topic-remedial-container');
+    if (remContainer) {
+      if (focusParam && topic.syllabus && topic.syllabus.remedialTheory && topic.syllabus.remedialTheory[focusParam]) {
+        const rem = topic.syllabus.remedialTheory[focusParam];
+        remContainer.innerHTML = `
+          <div class="p-5 rounded-2xl border-2 border-rose-500/90 bg-gradient-to-r from-rose-950/90 via-slate-950 to-amber-950/40 text-rose-100 shadow-2xl backdrop-blur">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded bg-rose-600 text-white font-mono text-xs font-bold animate-pulse">
+                  ⚠ ADAPTIVE RECOVERY PROTOCOL ACTIVE
+                </span>
+                <span class="font-mono text-xs text-rose-300">BENCHMARK BREACH DETECTED</span>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-slate-900 border border-rose-800 text-[11px] font-mono text-rose-400">
+                ${rem.badge}
+              </span>
+            </div>
+            <h3 class="text-lg font-extrabold text-white mb-1">${rem.title}</h3>
+            <p class="text-xs text-slate-300 font-mono mb-4">${rem.standard} • Required before practical exam unlocked</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs bg-slate-950/80 p-4 rounded-xl border border-rose-900/60 mb-4">
+              <div>
+                <h4 class="font-bold text-rose-400 mb-2 flex items-center gap-1.5">
+                  <span>🎯</span> Mandatory Remedial Takeaways:
+                </h4>
+                <ul class="space-y-1.5 text-slate-300">
+                  ${rem.keyTakeaways.map(t => `<li class="flex items-start gap-1.5"><span class="text-rose-400">•</span><span>${t}</span></li>`).join('')}
+                </ul>
+              </div>
+              <div>
+                <h4 class="font-bold text-amber-400 mb-2 flex items-center gap-1.5">
+                  <span>⚡</span> Critical Rules &amp; Safety Interlocks:
+                </h4>
+                <ul class="space-y-1.5 text-amber-200">
+                  ${rem.criticalRules.map(r => `<li class="flex items-start gap-1.5"><span class="text-amber-400">⚠</span><span>${r}</span></li>`).join('')}
+                </ul>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-rose-900/40">
+              <span class="text-xs text-slate-400 font-mono">Exam unlock state: Remedial review in progress. Complete review below to re-qualify.</span>
+              <button onclick="window.location.hash = '#/simulate/${topic.id}'" class="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold font-mono text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-rose-900/40 transition-all">
+                ⚡ Retake Practical VR Exam →
+              </button>
+            </div>
+          </div>
+        `;
+      } else {
+        remContainer.innerHTML = '';
+      }
+    }
+
 
     // Glowing Primary CTA: Route directly to Stage 4 (3D/VR Simulator)
     const simCta = document.getElementById('topic-launch-sim-btn');
@@ -769,9 +868,9 @@ class MayaVuePlatform {
         userId: this.currentCandidateId,
         moduleCode: result.moduleCode || 'SOLAR-BOX-01',
         durationMinutes: result.activeDurationSeconds ? result.activeDurationSeconds / 60 : 2.75,
-        troubleshootPct: result.troubleshootPct || 99.2,
-        safetyPct: result.safetyPct || 100.0,
-        toolUsePct: result.toolUsePct || 98.5,
+        troubleshootPct: result.troubleshootPct != null ? result.troubleshootPct : 99.2,
+        safetyPct: result.safetyPct != null ? result.safetyPct : 100.0,
+        toolUsePct: result.toolUsePct != null ? result.toolUsePct : 98.5,
         safetyAlerts: result.safetyAlerts || 0,
         telemetryLog: result.telemetryLog || {}
       };
@@ -783,7 +882,13 @@ class MayaVuePlatform {
       });
       const data = await res.json();
 
-      if (data.sessionId) {
+      // Refresh candidate profile in local state
+      await this.loadInitialData();
+
+      // Autonomous Closed-Loop Routing:
+      if (data.nextAction === 'REMEDIAL_THEORY' && data.route) {
+        window.location.hash = data.route;
+      } else if (data.sessionId) {
         window.location.hash = `#/certificate/${data.sessionId}`;
       }
     } catch (err) {
@@ -800,14 +905,18 @@ class MayaVuePlatform {
     screen.classList.remove('hidden');
 
     try {
-      const fleetData = await fetch('/api/admin/fleet').then(r => r.json());
-      this.renderAdminFleet(fleetData);
+      const [fleetData, leaderboardData] = await Promise.all([
+        fetch('/api/admin/fleet').then(r => r.json()),
+        fetch('/api/recruiter/leaderboard').then(r => r.json()).catch(() => ({ leaderboard: [] }))
+      ]);
+      this.renderAdminFleet(fleetData, leaderboardData.leaderboard || []);
     } catch (err) {
       console.error('Failed to load fleet data:', err);
     }
   }
 
-  renderAdminFleet(fleetData) {
+  renderAdminFleet(fleetData, leaderboard = []) {
+
     // Top KPIs
     const countEl = document.getElementById('admin-fleet-count');
     const fixTimeEl = document.getElementById('admin-avg-fixtime');
@@ -856,7 +965,57 @@ class MayaVuePlatform {
       });
     }
 
+    // Render Recruiter Talent Pool Leaderboard
+    const recTbody = document.getElementById('recruiter-leaderboard-tbody');
+    if (recTbody) {
+      recTbody.innerHTML = '';
+      leaderboard.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-800 text-xs font-mono hover:bg-slate-800/40 transition-colors';
+        const isRemedial = c.status === 'IN REMEDIAL';
+        const isExpert = c.status === 'CERTIFIED EXPERT';
+        tr.innerHTML = `
+          <td class="py-3 px-3">
+            <span class="font-bold text-base ${c.rank === 1 ? 'text-amber-400' : c.rank === 2 ? 'text-slate-300' : c.rank === 3 ? 'text-amber-600' : 'text-slate-500'}">
+              #${c.rank}
+            </span>
+          </td>
+          <td class="py-3 px-3">
+            <div class="flex items-center gap-2.5 font-sans">
+              <img src="${c.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80'}" class="w-7 h-7 rounded-full object-cover border border-slate-700">
+              <div>
+                <span class="font-bold text-slate-200 block">${c.fullName}</span>
+                <span class="text-[10px] text-sky-400 font-mono">${c.verificationId}</span>
+              </div>
+            </div>
+          </td>
+          <td class="py-3 px-3 text-slate-300">${c.practiceHours} hrs</td>
+          <td class="py-3 px-3 font-semibold ${c.accuracyRate >= 95 ? 'text-emerald-400' : c.accuracyRate >= 80 ? 'text-sky-400' : 'text-rose-400'}">
+            ${c.accuracyRate}%
+          </td>
+          <td class="py-3 px-3 text-amber-300">${c.safetyRating} / 5.0</td>
+          <td class="py-3 px-3 font-bold text-white">${c.compositeScore}</td>
+          <td class="py-3 px-3">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+              isRemedial ? 'bg-rose-950 text-rose-300 border border-rose-800' :
+              isExpert ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+              'bg-sky-950 text-sky-300 border border-sky-800'
+            }">
+              ${c.status}
+            </span>
+          </td>
+          <td class="py-3 px-3">
+            <span class="inline-flex items-center gap-1 text-[11px] font-medium ${isExpert ? 'text-amber-300 font-bold' : 'text-slate-300'}">
+              ${isExpert ? '★ ' : '✓ '}${c.badgeAwarded}
+            </span>
+          </td>
+        `;
+        recTbody.appendChild(tr);
+      });
+    }
+
     // Safety Alerts Ticker
+
     const alertList = document.getElementById('admin-alerts-ticker');
     if (alertList) {
       alertList.innerHTML = '';

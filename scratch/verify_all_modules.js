@@ -315,6 +315,65 @@ async function runApiTests() {
   }
 
   // -------------------------------------------------------------
+  // TEST 4B: Autonomous Closed-Loop Architecture & Telemetry
+  // -------------------------------------------------------------
+  console.log('\n[TEST 4B] Testing Autonomous Closed-Loop Architecture & Telemetry...');
+  
+  // 1. Procedural accuracy formula: 0.4 * troubleshoot + 0.4 * safety + 0.2 * toolUse
+  const calcAcc = db.ExecutionLoopEngine.calculateProceduralAccuracy(90, 100, 80);
+  if (Math.abs(calcAcc - 92) > 0.01) {
+    throw new Error(`ExecutionLoopEngine accuracy mismatch: expected 92, got ${calcAcc}`);
+  }
+  console.log(`  ✓ ExecutionLoopEngine.calculateProceduralAccuracy formula validated (0.4*90 + 0.4*100 + 0.2*80 = 92.0%)`);
+
+  // 2. Adaptive recovery resolution for benchmark failure
+  const failLoop = db.ExecutionLoopEngine.resolveNextLoopStep({
+    moduleCode: 'solar_troubleshooting_04',
+    safetyPct: 80,
+    troubleshootPct: 70,
+    proceduralAccuracy: 75
+  });
+  if (failLoop.nextAction !== 'REMEDIAL_THEORY' || failLoop.focus !== 'safety_isolation' || failLoop.remedialRequired !== true) {
+    throw new Error(`Adaptive recovery fail loop resolution failed: ${JSON.stringify(failLoop)}`);
+  }
+  console.log(`  ✓ Adaptive Recovery Fail Routing: Safety 80% (<90%) correctly triggers REMEDIAL_THEORY (focus: ${failLoop.focus})`);
+
+  // 3. Certified completion resolution for benchmark pass
+  const passLoop = db.ExecutionLoopEngine.resolveNextLoopStep({
+    moduleCode: 'solar_troubleshooting_04',
+    safetyPct: 100,
+    troubleshootPct: 95,
+    proceduralAccuracy: 97
+  });
+  if (passLoop.nextAction !== 'CERTIFICATE_GENERATED' || passLoop.remedialRequired !== false || !passLoop.badgeAwarded) {
+    throw new Error(`Pass loop resolution failed: ${JSON.stringify(passLoop)}`);
+  }
+  console.log(`  ✓ Benchmark Pass Routing: Safety 100% & Troubleshoot 95% correctly triggers CERTIFICATE_GENERATED (badge: ${passLoop.badgeAwarded})`);
+
+  // 4. Live Telemetry Packet API (10 Hz ingest fallback)
+  const telemetryRes = await makeRequest('/api/telemetry/packet', 'POST', {
+    type: 'UNINSULATED_CONTACT',
+    candidateId: db.DEFAULT_CANDIDATE_ID,
+    moduleCode: 'solar_troubleshooting_04',
+    data: { voltage: 480, hazard: 'ARC_FLASH' }
+  });
+  if (telemetryRes.status !== 200 || !telemetryRes.data.success) {
+    throw new Error(`POST /api/telemetry/packet failed: ${JSON.stringify(telemetryRes)}`);
+  }
+  console.log(`  ✓ POST /api/telemetry/packet responded 200 OK for live UNINSULATED_CONTACT telemetry event`);
+
+  // 5. Recruiter Talent Pool Leaderboard
+  const leaderboardRes = await makeRequest('/api/recruiter/leaderboard');
+  if (leaderboardRes.status !== 200 || !leaderboardRes.data.leaderboard || leaderboardRes.data.leaderboard.length === 0) {
+    throw new Error(`GET /api/recruiter/leaderboard failed: ${JSON.stringify(leaderboardRes)}`);
+  }
+  const topCandidate = leaderboardRes.data.leaderboard[0];
+  if (!topCandidate.fullName || typeof topCandidate.compositeScore !== 'number') {
+    throw new Error(`Invalid leaderboard candidate schema: ${JSON.stringify(topCandidate)}`);
+  }
+  console.log(`  ✓ GET /api/recruiter/leaderboard responded 200 OK (${leaderboardRes.data.leaderboard.length} candidates, #1: ${topCandidate.fullName} with score ${topCandidate.compositeScore})`);
+
+  // -------------------------------------------------------------
   // TEST 5: Real HTML / DOM HUD UI Elements Check
   // -------------------------------------------------------------
   console.log('\n[TEST 5/5] Auditing Production HTML & Practice HUD Elements...');
@@ -328,10 +387,13 @@ async function runApiTests() {
     'id="task-instruction"',
     'id="step-pill-1"',
     'id="step-pill-6"',
+    'id="arc-flash-hud-alert"',
     'setModulePractice',
     'executeCurrentStep',
     'executeStep',
-    'handleSimulationCompleted'
+    'handleSimulationCompleted',
+    'ArcFlashHazardSystem',
+    'triggerArcFlash'
   ];
 
   requiredElements.forEach(marker => {
@@ -339,10 +401,10 @@ async function runApiTests() {
       throw new Error(`index.html missing required UI/FSM marker: ${marker}`);
     }
   });
-  console.log(`  ✓ All ${requiredElements.length} required interactive HUD elements, button hooks, and FSM handlers present in index.html.`);
+  console.log(`  ✓ All ${requiredElements.length} required interactive HUD elements, button hooks, arc flash system, and FSM handlers present in index.html.`);
 
   console.log('\n================================================================');
-  console.log('  ✓ ALL 8 MODULE PRACTICE PROCESSES FULLY VERIFIED & OPERATIONAL!');
+  console.log('  ✓ ALL 8 MODULE PRACTICE PROCESSES & CLOSED-LOOP FULLY VERIFIED!');
   console.log('================================================================\n');
 }
 

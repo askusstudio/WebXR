@@ -5,8 +5,10 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const db = require('./db.js');
 const courses = require('./courses.js');
+
 
 const PORT = 8080;
 const DIR = __dirname;
@@ -60,7 +62,73 @@ function parseJsonBody(req) {
 // In-memory remote glitch injection queue
 let activeInjectedGlitches = [];
 
+// =========================================================================
+// NATIVE RFC 6455 WEBSOCKET TELEMETRY STREAM (10 Hz ZERO-DEPENDENCY ENGINE)
+// =========================================================================
+const wsClients = new Set();
+
+function decodeWsFrame(buffer) {
+  if (buffer.length < 2) return null;
+  const secondByte = buffer[1];
+  const isMasked = (secondByte & 0x80) === 0x80;
+  let payloadLength = secondByte & 0x7f;
+  let offset = 2;
+  if (payloadLength === 126) {
+    if (buffer.length < 4) return null;
+    payloadLength = buffer.readUInt16BE(offset);
+    offset += 2;
+  } else if (payloadLength === 127) {
+    if (buffer.length < 10) return null;
+    payloadLength = Number(buffer.readBigUInt64BE(offset));
+    offset += 8;
+  }
+  let mask = null;
+  if (isMasked) {
+    if (buffer.length < offset + 4) return null;
+    mask = buffer.subarray(offset, offset + 4);
+    offset += 4;
+  }
+  if (buffer.length < offset + payloadLength) return null;
+  const data = Buffer.from(buffer.subarray(offset, offset + payloadLength));
+  if (isMasked && mask) {
+    for (let i = 0; i < data.length; i++) {
+      data[i] = data[i] ^ mask[i % 4];
+    }
+  }
+  return data.toString('utf8');
+}
+
+function encodeWsTextFrame(str) {
+  const payload = Buffer.from(str, 'utf8');
+  const len = payload.length;
+  let header;
+  if (len < 126) {
+    header = Buffer.from([0x81, len]);
+  } else if (len <= 0xffff) {
+    header = Buffer.alloc(4);
+    header[0] = 0x81;
+    header[1] = 126;
+    header.writeUInt16BE(len, 2);
+  } else {
+    header = Buffer.alloc(10);
+    header[0] = 0x81;
+    header[1] = 127;
+    header.writeBigUInt64BE(BigInt(len), 2);
+  }
+  return Buffer.concat([header, payload]);
+}
+
+function broadcastWsMessage(data) {
+  const frame = encodeWsTextFrame(typeof data === 'string' ? data : JSON.stringify(data));
+  for (const client of wsClients) {
+    try {
+      if (!client.destroyed) client.write(frame);
+    } catch (_) {}
+  }
+}
+
 const server = http.createServer(async (req, res) => {
+
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -174,11 +242,33 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // POST /api/telemetry/packet (10 Hz Live Telemetry Stream Ingestion)
+  if (req.method === 'POST' && pathname === '/api/telemetry/packet') {
+    try {
+      const packet = await parseJsonBody(req);
+      broadcastWsMessage({
+        type: 'TELEMETRY_PACKET',
+        packet,
+        timestamp: new Date().toISOString()
+      });
+      return sendJson(res, 200, { success: true, received: true });
+    } catch (err) {
+      return sendJson(res, 500, { error: err.message });
+    }
+  }
+
   // ==========================================
-  // STAGE 5: DUAL-VIEW TELEMETRY & ADMIN FLEET
+  // STAGE 5: DUAL-VIEW TELEMETRY, FLEET & RECRUITER TALENT POOL
   // ==========================================
 
+  // GET /api/recruiter/leaderboard (Stage 5 Recruiter Talent Pool)
+  if (req.method === 'GET' && (pathname === '/api/recruiter/leaderboard' || pathname === '/api/leaderboard')) {
+    const leaderboard = db.getRecruiterLeaderboard();
+    return sendJson(res, 200, { success: true, leaderboard });
+  }
+
   // GET /api/admin/fleet (Master Admin / Instructor Console)
+
   if (req.method === 'GET' && pathname === '/api/admin/fleet') {
     const fleet = db.getFleetStatus();
     return sendJson(res, 200, {
@@ -299,7 +389,56 @@ const server = http.createServer(async (req, res) => {
   res.end('404 Not Found');
 });
 
+// RFC 6455 WebSocket Upgrade Handler
+server.on('upgrade', (req, socket, head) => {
+  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  if (parsedUrl.pathname === '/api/telemetry/ws' || parsedUrl.pathname === '/ws') {
+    const key = req.headers['sec-websocket-key'];
+    if (!key) {
+      socket.destroy();
+      return;
+    }
+    const acceptHash = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+    const headers = [
+      'HTTP/1.1 101 Switching Protocols',
+      'Upgrade: websocket',
+      'Connection: Upgrade',
+      `Sec-WebSocket-Accept: ${acceptHash}`
+    ];
+    socket.write(headers.join('\r\n') + '\r\n\r\n');
+    wsClients.add(socket);
+
+    // Send initial handshake confirmation
+    const welcome = encodeWsTextFrame(JSON.stringify({
+      type: 'STREAM_CONNECTED',
+      rate: '10Hz',
+      serverTime: new Date().toISOString()
+    }));
+    socket.write(welcome);
+
+    socket.on('data', chunk => {
+      const text = decodeWsFrame(chunk);
+      if (text) {
+        try {
+          const packet = JSON.parse(text);
+          broadcastWsMessage({
+            type: 'TELEMETRY_PACKET',
+            packet,
+            timestamp: new Date().toISOString()
+          });
+        } catch (_) {}
+      }
+    });
+
+    socket.on('close', () => wsClients.delete(socket));
+    socket.on('error', () => wsClients.delete(socket));
+  } else {
+    socket.destroy();
+  }
+});
+
 server.listen(PORT, '0.0.0.0', () => {
+
   const nets = os.networkInterfaces();
   let localIp = 'localhost';
   for (const name of Object.keys(nets)) {
