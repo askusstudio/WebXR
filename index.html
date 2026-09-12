@@ -414,6 +414,35 @@
       color: var(--text-dim);
       line-height: 1.4;
     }
+    .btn-practice-step {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      margin-top: 8px;
+      padding: 9px 14px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0284c7, #06b6d4);
+      color: #030712;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+    .btn-practice-step:hover {
+      background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(14, 165, 233, 0.55);
+    }
+    .btn-practice-step:active {
+      transform: translateY(1px) scale(0.98);
+    }
 
     /* Step Progression Badges (6 Steps) */
     .steps-progress-row {
@@ -1896,6 +1925,10 @@
           <div class="task-instruction" id="task-instruction">
             Click the access keypad or say: "Jarvis, open the gate" to unlock entrance.
           </div>
+        <button id="btn-practice-step-action" class="btn-practice-step interactive-ui" title="Execute current practice action (Shortcut: E or Enter)">
+          <span style="font-size: 14px;">⚡</span>
+          <span id="practice-step-action-text">EXECUTE: 1. ROOF INSPECTION</span>
+        </button>
         </div>
 
         <div class="steps-progress-row">
@@ -2664,6 +2697,81 @@
         osc.stop(now + 0.5);
       }
 
+      playRatchetingSound() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [0, 0.035, 0.07].forEach((delay, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(1400 + idx * 220, now + delay);
+          gain.gain.setValueAtTime(0.18, now + delay);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.025);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + delay);
+          osc.stop(now + delay + 0.03);
+        });
+      }
+
+      playRelayThud() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(85, now);
+        osc.frequency.exponentialRampToValueAtTime(25, now + 0.12);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.16);
+      }
+
+      playAirHiss() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const bufferSize = this.ctx.sampleRate * 0.25;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1600, now);
+        filter.frequency.exponentialRampToValueAtTime(500, now + 0.24);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+
+      playScanTone() {
+        this.ensureUnlocked();
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(660, now);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.18);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.23);
+      }
+
       playSolarTelemetryChime() {
         this.ensureUnlocked();
         if (this.muted || !this.ctx) return;
@@ -3291,6 +3399,9 @@
     class TrainingFSM {
       constructor(app) {
         this.app = app;
+        this.activeModuleCode = 'SOLAR-BOX-01';
+        this.stepConfig = null;
+        this.stepInteractiveMap = null;
         this.currentState = STATES.STEP1_GATE_ENTRY;
         this.circuitEnergized = true;
         this.busVoltage = 480.0;
@@ -3308,21 +3419,51 @@
         this.enterState(STATES.STEP1_GATE_ENTRY);
       }
 
+      setModulePractice(moduleCode, simConfig, stepMap) {
+        this.activeModuleCode = moduleCode || 'SOLAR-BOX-01';
+        this.stepConfig = simConfig;
+        this.stepInteractiveMap = stepMap || null;
+        this.currentState = 1;
+        this.circuitEnergized = true;
+        this.busVoltage = 480.0;
+        this.batteryOnline = false;
+        this.safetyScore = 100;
+        this.elapsedSeconds = 0;
+        this.errors = [];
+        this.lastErrorType = null;
+        this.lastErrorTimestamp = 0;
+
+        const scoreElem = document.getElementById('hud-score');
+        if (scoreElem) scoreElem.textContent = "100%";
+
+        this.updateHUDForState();
+
+        // Speak initial step prompt
+        if (this.stepInteractiveMap && this.stepInteractiveMap[1]) {
+          const s1 = this.stepInteractiveMap[1];
+          this.app.jarvis.speak({
+            en: `Jarvis online. Module ${this.activeModuleCode} active. Step one: ${s1.title}. ${s1.instructionEn}`,
+            hi: `जार्विस ऑनलाइन है। मॉड्यूल ${this.activeModuleCode} सक्रिय है। पहला चरण: ${s1.title}। ${s1.instructionHi}`
+          });
+        }
+      }
+
       startTimer() {
+        if (this.timerInterval) clearInterval(this.timerInterval);
         this.timerInterval = setInterval(() => {
           if (this.currentState === STATES.COMPLETED) return;
           this.elapsedSeconds++;
           const mins = String(Math.floor(this.elapsedSeconds / 60)).padStart(2, '0');
           const secs = String(this.elapsedSeconds % 60).padStart(2, '0');
           const timerStr = `${mins}:${secs}`;
-          document.getElementById('hud-timer').textContent = timerStr;
+          const hTimer = document.getElementById('hud-timer');
+          if (hTimer) hTimer.textContent = timerStr;
           if (this.app.diegeticHUD) this.app.diegeticHUD.updateTimer(timerStr);
         }, 1000);
       }
 
       recordError(type, title, desc, penalty = 15) {
         const now = Date.now();
-        // Throttle identical error types within 1500ms to prevent accidental double-clicks
         if (this.lastErrorType === type && (now - this.lastErrorTimestamp < 1500)) {
           return null;
         }
@@ -3343,140 +3484,236 @@
         };
         this.errors.push(errObj);
 
-        // Deduct score
         this.safetyScore = Math.max(0, this.safetyScore - penalty);
         const scoreElem = document.getElementById('hud-score');
         if (scoreElem) scoreElem.textContent = `${this.safetyScore}%`;
         if (this.app.diegeticHUD) this.app.diegeticHUD.updateScore(this.safetyScore);
 
         this.flashScreen('amber');
-        this.app.sound.playElectricArcBuzz();
+        if (this.app.sound && this.app.sound.playElectricArcBuzz) {
+          this.app.sound.playElectricArcBuzz();
+        }
 
         return errObj;
+      }
+
+      executeStep(stepNum) {
+        if (stepNum === this.currentState) {
+          this.executeCurrentStep();
+        } else if (stepNum < this.currentState) {
+          if (this.app.sound && this.app.sound.playProbeBeep) this.app.sound.playProbeBeep();
+          this.app.jarvis.speak({
+            en: `Step ${stepNum} is already verified and completed, sir.`,
+            hi: `चरण ${stepNum} पहले ही सत्यापित और पूरा हो चुका है, सर।`
+          }, true);
+        } else {
+          this.recordError(
+            'SEQUENCE_VIOLATION',
+            `STEP ${stepNum} LOCKED`,
+            `Prerequisite steps must be executed sequentially before step ${stepNum}.`,
+            10
+          );
+          this.app.jarvis.speak({
+            en: `Step ${stepNum} is currently locked. Complete Step ${this.currentState} first.`,
+            hi: `चरण ${stepNum} अभी लॉक है। पहले चरण ${this.currentState} पूरा करें।`
+          }, true);
+        }
+      }
+
+      executeCurrentStep() {
+        if (this.currentState >= STATES.COMPLETED) return;
+
+        const stepData = (this.stepInteractiveMap && this.stepInteractiveMap[this.currentState])
+          ? this.stepInteractiveMap[this.currentState]
+          : null;
+
+        let note = '';
+        if (stepData && typeof stepData.execute === 'function') {
+          try {
+            note = stepData.execute(this.app);
+          } catch (e) {
+            console.warn('Step execution error:', e);
+          }
+          if (stepData.telemetryUpdates) {
+            this.updateTelemetryHUD(stepData.telemetryUpdates);
+          }
+        } else {
+          // Fallback to original combiner box step methods
+          switch (this.currentState) {
+            case STATES.STEP1_GATE_ENTRY:
+              if (this.app.animateOpenGateAndEnter) this.app.animateOpenGateAndEnter();
+              break;
+            case STATES.STEP2_ISOLATOR_OFF:
+              if (this.app.animateRotarySwitch) this.app.animateRotarySwitch();
+              break;
+            case STATES.STEP3_VERIFY_VOLTAGE:
+              if (this.app.handleProbingInteraction) this.app.handleProbingInteraction();
+              break;
+            case STATES.STEP4_CORRECT_CIRCUIT:
+              if (this.app.animateCorrectCircuit) this.app.animateCorrectCircuit();
+              break;
+            case STATES.STEP5_OPEN_TOOLBOX:
+              if (this.app.animateOpenToolbox) this.app.animateOpenToolbox();
+              break;
+            case STATES.STEP6_INSTALL_BATTERY:
+              if (this.app.animateInstallBattery) this.app.animateInstallBattery();
+              break;
+          }
+        }
+
+        // Advance state!
+        this.enterState(this.currentState + 1);
+      }
+
+      updateTelemetryHUD(updates) {
+        if (!updates) return;
+        const keys = ['p1', 'p2', 'p3', 'p4'];
+        const idMap = {
+          p1: 'hud-solar-voltage',
+          p2: 'hud-irradiance',
+          p3: 'hud-voltage',
+          p4: 'hud-battery-status'
+        };
+
+        keys.forEach(k => {
+          if (updates[k]) {
+            const item = updates[k];
+            const el = document.getElementById(idMap[k]);
+            if (el) {
+              el.textContent = item.value;
+              const lbl = el.previousElementSibling;
+              if (lbl && lbl.classList.contains('telemetry-label')) {
+                lbl.textContent = item.label;
+              }
+            }
+          }
+        });
       }
 
       enterState(newState) {
         this.currentState = newState;
         this.updateHUDForState();
 
-        switch (newState) {
-          case STATES.STEP1_GATE_ENTRY:
-            this.app.jarvis.speak({
-              en: "Jarvis online. Facility perimeter secured. Step one: Access the security keypad or say 'Jarvis, open the gate' to unlock entrance.",
-              hi: "जार्विस ऑनलाइन है। सुविधा की परिधि सुरक्षित है। पहला चरण: सुरक्षा कीपैड का उपयोग करें या प्रवेश द्वार खोलने के लिए कहें 'जार्विस, गेट खोलो'।"
-            });
-            this.app.ghostGuides.setStep(1);
-            break;
-
-          case STATES.STEP2_ISOLATOR_OFF:
+        if (newState <= 6) {
+          if (this.app.sound && this.app.sound.playSuccessChime) {
             this.app.sound.playSuccessChime();
-            this.flashScreen('green');
-            this.app.jarvis.speak({
-              en: "Security blast gate open. Inside testing facility. Step two: Open the combiner box lid and rotate the DC isolator switch to zero volts.",
-              hi: "सुरक्षा ब्लास्ट गेट खुल गया है। आप परीक्षण केंद्र के अंदर हैं। दूसरा चरण: कंबाइनर बॉक्स का ढक्कन खोलें और डीसी आइसोलेटर स्विच को शून्य वोल्ट पर घुमाएं।"
-            });
-            this.app.ghostGuides.setStep(2);
-            break;
+          }
+          this.flashScreen('green');
 
-          case STATES.STEP3_VERIFY_VOLTAGE:
-            this.app.sound.playSuccessChime();
-            this.flashScreen('green');
+          if (this.stepInteractiveMap && this.stepInteractiveMap[newState]) {
+            const sData = this.stepInteractiveMap[newState];
             this.app.jarvis.speak({
-              en: "Array isolator turned off. Step three: Voltage verification. Touch multimeter probes to positive and negative terminals to confirm zero potential.",
-              hi: "सोलर ऐरे आइसोलेटर बंद कर दिया गया है। तीसरा चरण: वोल्टेज सत्यापन। शून्य विभव की पुष्टि के लिए मल्टीमीटर प्रोब्स को पॉजिटिव और नेगेटिव टर्मिनल्स पर लगाएं।"
+              en: `Step ${newState}: ${sData.title}. ${sData.instructionEn}`,
+              hi: `चरण ${newState}: ${sData.title}। ${sData.instructionHi}`
             });
-            this.app.ghostGuides.setStep(3);
-            break;
+          } else {
+            // Default combiner box speak
+            switch (newState) {
+              case STATES.STEP1_GATE_ENTRY:
+                this.app.jarvis.speak({
+                  en: "Perimeter secured. Step one: Access security keypad or say 'Jarvis, open the gate'.",
+                  hi: "पहला चरण: सुरक्षा कीपैड का उपयोग करें या प्रवेश के लिए कहें 'जार्विस, गेट खोलो'।"
+                });
+                break;
+              case STATES.STEP2_ISOLATOR_OFF:
+                this.app.jarvis.speak({
+                  en: "Gate opened. Step two: Open combiner box lid and rotate DC isolator switch to zero volts.",
+                  hi: "दूसरा चरण: कंबाइनर बॉक्स का ढक्कन खोलें और डीसी आइसोलेटर स्विच को शून्य वोल्ट पर घुमाएं।"
+                });
+                break;
+              case STATES.STEP3_VERIFY_VOLTAGE:
+                this.app.jarvis.speak({
+                  en: "Array isolated. Step three: Touch multimeter probes to positive and negative terminals to confirm zero volts.",
+                  hi: "तीसरा चरण: शून्य विभव की पुष्टि के लिए मल्टीमीटर प्रोब्स को टर्मिनल्स पर लगाएं।"
+                });
+                break;
+              case STATES.STEP4_CORRECT_CIRCUIT:
+                this.app.jarvis.speak({
+                  en: "Zero voltage verified. Step four: Extract defective blown fuse and insert fresh high-voltage cartridge.",
+                  hi: "चौथा चरण: खराब फ्यूज को बाहर निकालें और नया हाई-वोल्टेज फ्यूज लगाएं।"
+                });
+                break;
+              case STATES.STEP5_OPEN_TOOLBOX:
+                this.app.jarvis.speak({
+                  en: "Circuit corrected. Step five: Open industrial tool box on workbench to access torque tools.",
+                  hi: "पांचवां चरण: इंसुलेटेड टॉर्क टूल निकालने के लिए कार्यक्षेत्र पर टूलबॉक्स खोलें।"
+                });
+                break;
+              case STATES.STEP6_INSTALL_BATTERY:
+                this.app.jarvis.speak({
+                  en: "Tools ready. Step six: Mount the new 48-volt battery pack into Energy Storage Rack bay.",
+                  hi: "छठा चरण: ऊर्जा भंडारण रैक में नया 48-वोल्ट बैटरी पैक स्थापित करें।"
+                });
+                break;
+            }
+          }
 
-          case STATES.STEP4_CORRECT_CIRCUIT:
-            this.app.sound.playSuccessChime();
-            this.flashScreen('green');
-            this.app.jarvis.speak({
-              en: "Zero voltage verified. Step four: Correct the circuit. Extract the defective blown fuse and insert the replacement high-voltage cartridge into the DIN rail.",
-              hi: "शून्य वोल्टेज की पुष्टि हो गई है। चौथा चरण: सर्किट सुधार। खराब फ्यूज को बाहर निकालें और डीआईएन रेल में नया हाई-वोल्टेज फ्यूज लगाएं।"
-            });
-            this.app.ghostGuides.setStep(4);
-            break;
-
-          case STATES.STEP5_OPEN_TOOLBOX:
-            this.app.sound.playSuccessChime();
-            this.flashScreen('green');
-            this.app.jarvis.speak({
-              en: "Circuit continuity corrected. Step five: Open the industrial tool box on the workbench to access the new lithium battery module and insulated torque tool.",
-              hi: "सर्किट निरंतरता ठीक हो गई है। पांचवां चरण: नए लिथियम बैटरी मॉड्यूल और इंसुलेटेड टॉर्क टूल को निकालने के लिए कार्यक्षेत्र पर टूलबॉक्स खोलें।"
-            });
-            this.app.ghostGuides.setStep(5);
-            break;
-
-          case STATES.STEP6_INSTALL_BATTERY:
-            this.app.sound.playSuccessChime();
-            this.flashScreen('green');
-            this.app.jarvis.speak({
-              en: "Tool box ready. Step six: Mount the new 48-volt battery pack into the Energy Storage Rack bay, locking terminals into place.",
-              hi: "टूलबॉक्स तैयार है। छठा चरण: ऊर्जा भंडारण रैक में नया 48-वोल्ट बैटरी पैक स्थापित करें और टर्मिनल्स को लॉक करें।"
-            });
-            this.app.ghostGuides.setStep(6);
-            break;
-
-          case STATES.COMPLETED:
+          if (this.app.ghostGuides) {
+            if (this.activeModuleCode.includes('BOX') || this.activeModuleCode.includes('04')) {
+              this.app.ghostGuides.setStep(newState);
+            } else {
+              this.app.ghostGuides.setStep(0);
+            }
+          }
+        } else if (newState === STATES.COMPLETED) {
+          // MODULE COMPLETED!
+          if (this.app.sound && this.app.sound.playCompletionFanfare) {
             this.app.sound.playCompletionFanfare();
-            this.flashScreen('green');
-            this.batteryOnline = true;
-            document.getElementById('hud-battery-status').textContent = "ONLINE // 51.2V";
-            document.getElementById('hud-battery-status').style.color = "#00ff88";
+          }
+          this.flashScreen('green');
+          this.batteryOnline = true;
 
-            // Generate report card metrics and show modal
-            const report = this.generateReportCard();
+          const batElem = document.getElementById('hud-battery-status');
+          if (batElem) {
+            batElem.textContent = "ONLINE // CERTIFIED";
+            batElem.style.color = "#00ff88";
+          }
 
-            // Reveal report card button in bottom action bar
-            const reportBtn = document.getElementById('btn-view-report');
-            if (reportBtn) reportBtn.style.display = 'inline-flex';
+          const report = this.generateReportCard();
+          const reportBtn = document.getElementById('btn-view-report');
+          if (reportBtn) reportBtn.style.display = 'inline-flex';
 
-            const mins = String(Math.floor(this.elapsedSeconds / 60)).padStart(2, '0');
-            const secs = String(this.elapsedSeconds % 60).padStart(2, '0');
-            const debriefEn = `Module complete. Final report generated: Accuracy ${report.accuracy} percent, Grade ${report.grade}, Safety score ${report.finalScore} percent. Time taken: ${mins} minutes and ${secs} seconds. ${this.errors.length === 0 ? "Flawless execution, sir. Zero safety infractions recorded." : `${this.errors.length} protocol ${this.errors.length === 1 ? 'infraction was' : 'infractions were'} detected. Review your training report card on screen.`}`;
-            const debriefHi = `प्रशिक्षण मॉड्यूल पूरा हुआ। अंतिम रिपोर्ट तैयार: सटीकता ${report.accuracy} प्रतिशत, ग्रेड ${report.grade}, सुरक्षा स्कोर ${report.finalScore} प्रतिशत। लिया गया समय: ${mins} मिनट और ${secs} सेकंड। ${this.errors.length === 0 ? "उत्कृष्ट प्रदर्शन, सर। शून्य सुरक्षा उल्लंघन दर्ज किए गए।" : `${this.errors.length} प्रोटोकॉल त्रुटियां पाई गईं। स्क्रीन पर अपना रिपोर्ट कार्ड देखें।`}`;
+          const mins = String(Math.floor(this.elapsedSeconds / 60)).padStart(2, '0');
+          const secs = String(this.elapsedSeconds % 60).padStart(2, '0');
+          const debriefEn = `Module ${this.activeModuleCode} completed! Final report generated: Accuracy ${report.accuracy} percent, Grade ${report.grade}, Safety score ${report.finalScore} percent. Time taken: ${mins} minutes and ${secs} seconds. ${this.errors.length === 0 ? "Flawless execution, sir. Zero safety infractions recorded." : `${this.errors.length} protocol ${this.errors.length === 1 ? 'infraction was' : 'infractions were'} detected. Review your training report card on screen.`}`;
+          const debriefHi = `मॉड्यूल ${this.activeModuleCode} पूरा हुआ! अंतिम रिपोर्ट तैयार: सटीकता ${report.accuracy} प्रतिशत, ग्रेड ${report.grade}, सुरक्षा स्कोर ${report.finalScore} प्रतिशत। लिया गया समय: ${mins} मिनट और ${secs} सेकंड।`;
 
-            
-            // Notify MAYAVUE Certification Platform of simulation completion
-            if (window.mayaVue) {
-              window.mayaVue.handleSimulationCompleted({
-                topicId: 'solar_troubleshooting_04',
-                accuracyScore: report.accuracy,
-                safetyViolationsCount: this.errors.length,
-                activeDurationSeconds: this.elapsedSeconds || 180,
-                telemetryData: {
-                  voc_probed: '480.0V DC',
-                  isolated_bus_voltage: '0.0V DC',
-                  fuse_continuity: 'FUSE 3 REPLACED PASS',
-                  battery_bus: '48V LiFePO4 BUS CONNECTED 15 N*m',
-                  safetyScore: report.finalScore,
-                  grade: report.grade,
-                  errors: this.errors
-                }
-              });
-            }
+          // Notify MAYAVUE Certification Platform of simulation completion
+          if (window.mayaVue && typeof window.mayaVue.handleSimulationCompleted === 'function') {
+            window.mayaVue.handleSimulationCompleted({
+              moduleCode: this.activeModuleCode || 'SOLAR-BOX-01',
+              troubleshootPct: report.accuracy,
+              safetyPct: report.finalScore,
+              toolUsePct: 96.5,
+              safetyAlerts: this.errors.length,
+              activeDurationSeconds: this.elapsedSeconds || 160,
+              telemetryLog: (this.stepConfig && this.stepConfig.telemetryLog) ? this.stepConfig.telemetryLog : {
+                module: this.activeModuleCode,
+                status: 'COMPLETED_SUCCESS'
+              }
+            });
+          }
 
-            this.app.jarvis.speak({ en: debriefEn, hi: debriefHi });
-            this.app.ghostGuides.setStep(7);
-            document.getElementById('completion-modal').classList.add('show');
-            if (this.app.env.completionBadgeGroup) {
-              this.app.env.completionBadgeGroup.visible = true;
-            }
-            break;
+          this.app.jarvis.speak({ en: debriefEn, hi: debriefHi });
+          if (this.app.ghostGuides) this.app.ghostGuides.setStep(7);
+          const modal = document.getElementById('completion-modal');
+          if (modal) modal.classList.add('show');
+          if (this.app.env && this.app.env.completionBadgeGroup) {
+            this.app.env.completionBadgeGroup.visible = true;
+          }
         }
       }
 
       triggerArcFlashViolation() {
         this.recordError(
           'ARC_FLASH',
-          'ARC FLASH HAZARD // ENERGIZED PROBING',
-          'Multimeter test probes touched energized 480V DC terminals prior to lock-out / tag-out isolation.',
+          'ARC FLASH HAZARD // ENERGIZED CONTACT',
+          'Operating components prior to Lockout / Tagout safe isolation.',
           25
         );
         this.app.jarvis.speak({
-          en: "Warning: Circuit is still energized at 480 volts! Turn the isolation switch first to prevent an arc flash.",
-          hi: "चेतावनी: सर्किट अभी भी 480 वोल्ट पर सक्रिय है! आर्क फ्लैश से बचने के लिए पहले आइसोलेटर स्विच बंद करें।"
+          en: "Warning: High voltage hazard! Execute safe isolation protocol first!",
+          hi: "चेतावनी: हाई-वोल्टेज खतरा! पहले सुरक्षित आइसोलेशन प्रोटोकॉल निष्पादित करें!"
         }, true);
       }
 
@@ -3487,7 +3724,7 @@
 
         let grade = 'S';
         let gradeTitle = 'MASTER ELECTRICIAN // FLAWLESS COMPLIANCE';
-        let gradeSub = 'Substation entrance, safe LOTO isolation, circuit correction, and battery commissioning validated.';
+        let gradeSub = `Module ${this.activeModuleCode} procedures and NFPA 70E compliance fully validated.`;
         let stars = '★★★★★';
         let bannerClass = '';
         let ratingText = 'CLASS 0 (1000V)';
@@ -3497,7 +3734,7 @@
           grade = 'S';
           stars = '★★★★★';
           gradeTitle = 'MASTER ELECTRICIAN // FLAWLESS';
-          gradeSub = 'Zero safety infractions. Textbook adherence to NFPA 70E and OSHA 1910.303 high-voltage standards.';
+          gradeSub = 'Zero safety infractions. Textbook adherence to high-voltage standards.';
           ratingText = 'CLASS 0 (1000V)';
           ratingSub = 'Master Electrician // Zero Violations';
           bannerClass = '';
@@ -3513,302 +3750,168 @@
           grade = 'B';
           stars = '★★★☆☆';
           gradeTitle = 'FIELD APPRENTICE // SATISFACTORY';
-          gradeSub = 'Task successfully accomplished. Non-critical sequence or safety lapses recorded during maintenance phase.';
+          gradeSub = 'Task successfully accomplished. Non-critical sequence lapses recorded.';
           ratingText = 'CLASS 1 (7500V)';
           ratingSub = 'Supervised Authorization Only';
           bannerClass = 'grade-warn';
-        } else if (accuracy >= 50) {
+        } else {
           grade = 'C';
           stars = '★★☆☆☆';
           gradeTitle = 'JUNIOR OPERATOR // MARGINAL PASS';
-          gradeSub = 'High-voltage safety risk provoked. Recommended immediate review of Lockout/Tagout and live bus procedures.';
+          gradeSub = 'High-voltage safety risk provoked. Recommended immediate review of Lockout/Tagout procedures.';
           ratingText = 'CONDITIONAL';
           ratingSub = 'Remedial Training Recommended';
           bannerClass = 'grade-warn';
-        } else {
-          grade = 'D';
-          stars = '★☆☆☆☆';
-          gradeTitle = 'CRITICAL BREACH // HAZARDOUS';
-          gradeSub = 'Multiple severe electrical infractions recorded. Recertification in NFPA 70E safety mandatory.';
-          ratingText = 'UNQUALIFIED';
-          ratingSub = 'Immediate Retraining Required';
-          bannerClass = 'grade-danger';
         }
 
         const mins = String(Math.floor(this.elapsedSeconds / 60)).padStart(2, '0');
         const secs = String(this.elapsedSeconds % 60).padStart(2, '0');
-        const timeFormatted = `${mins}:${secs}`;
-        const benchmarkSeconds = 135; // 02:15 target
-        let timeSub = '';
-        if (this.elapsedSeconds <= benchmarkSeconds) {
-          const delta = benchmarkSeconds - this.elapsedSeconds;
-          timeSub = `Target: 02:15 (-${delta}s Faster)`;
-        } else {
-          const delta = this.elapsedSeconds - benchmarkSeconds;
-          timeSub = `Target: 02:15 (+${delta}s Methodical)`;
+        const durationStr = `${mins}m ${secs}s`;
+
+        // Update modal UI
+        const gBadge = document.getElementById('modal-grade-badge');
+        if (gBadge) {
+          gBadge.textContent = grade;
+          gBadge.className = 'grade-badge ' + (grade === 'S' ? 'grade-s' : (grade === 'A' ? 'grade-a' : 'grade-b'));
+        }
+        const gStars = document.getElementById('modal-grade-stars');
+        if (gStars) gStars.textContent = stars;
+        const gTitle = document.getElementById('modal-grade-title');
+        if (gTitle) gTitle.textContent = gradeTitle;
+        const gSub = document.getElementById('modal-grade-sub');
+        if (gSub) gSub.textContent = gradeSub;
+
+        const mBanner = document.getElementById('modal-grade-banner');
+        if (mBanner) {
+          mBanner.className = 'grade-banner ' + bannerClass;
         }
 
-        const gradeBanner = document.getElementById('report-grade-banner');
-        if (gradeBanner) {
-          gradeBanner.className = 'report-grade-banner ' + bannerClass;
-        }
-        const gradeCircle = document.getElementById('report-grade-circle');
-        if (gradeCircle) gradeCircle.textContent = grade;
-        const starsElem = document.getElementById('report-stars');
-        if (starsElem) starsElem.textContent = stars;
-        const gradeTitleElem = document.getElementById('report-grade-title');
-        if (gradeTitleElem) gradeTitleElem.textContent = gradeTitle;
-        const gradeSubElem = document.getElementById('report-grade-sub');
-        if (gradeSubElem) gradeSubElem.textContent = gradeSub;
+        const mAcc = document.getElementById('modal-accuracy-val');
+        if (mAcc) mAcc.textContent = `${accuracy}%`;
+        const mScore = document.getElementById('modal-score-val');
+        if (mScore) mScore.textContent = `${finalScore}%`;
+        const mTime = document.getElementById('modal-time-val');
+        if (mTime) mTime.textContent = durationStr;
+        const mErr = document.getElementById('modal-errors-val');
+        if (mErr) mErr.textContent = this.errors.length;
 
-        const accElem = document.getElementById('report-accuracy');
-        if (accElem) accElem.textContent = `${accuracy}%`;
-        const accSubElem = document.getElementById('report-accuracy-sub');
-        if (accSubElem) accSubElem.textContent = `${Math.max(0, 6 - this.errors.length)}/6 Optimal Steps`;
+        const mRating = document.getElementById('modal-rating-text');
+        if (mRating) mRating.textContent = ratingText;
+        const mRatingSub = document.getElementById('modal-rating-sub');
+        if (mRatingSub) mRatingSub.textContent = ratingSub;
 
-        const scoreElem = document.getElementById('report-score');
-        if (scoreElem) {
-          scoreElem.textContent = `${finalScore}%`;
-          scoreElem.style.color = finalScore >= 80 ? 'var(--green-safe)' : (finalScore >= 50 ? 'var(--amber-warn)' : 'var(--red-alert)');
-        }
-        const scoreSubElem = document.getElementById('report-score-sub');
-        if (scoreSubElem) scoreSubElem.textContent = this.errors.length === 0 ? 'Zero Infraction Penalties' : `-${totalPenalty}% Deductions`;
-
-        const timeElem = document.getElementById('report-time');
-        if (timeElem) timeElem.textContent = timeFormatted;
-        const timeSubElem = document.getElementById('report-time-sub');
-        if (timeSubElem) timeSubElem.textContent = timeSub;
-
-        const ratingElem = document.getElementById('report-rating');
-        if (ratingElem) {
-          ratingElem.textContent = ratingText;
-          ratingElem.style.color = bannerClass === 'grade-danger' ? 'var(--red-alert)' : (bannerClass === 'grade-warn' ? 'var(--amber-warn)' : 'var(--cyan-glow)');
-        }
-        const ratingSubElem = document.getElementById('report-rating-sub');
-        if (ratingSubElem) ratingSubElem.textContent = ratingSub;
-
-        const errorBadge = document.getElementById('report-error-count-badge');
-        const errorsContainer = document.getElementById('report-errors-container');
-        if (errorsContainer) {
+        // Render infractions table
+        const errContainer = document.getElementById('modal-infractions-container');
+        if (errContainer) {
           if (this.errors.length === 0) {
-            if (errorBadge) {
-              errorBadge.textContent = '0 ERRORS';
-              errorBadge.className = 'section-badge';
-            }
-            errorsContainer.innerHTML = `
-              <div class="no-error-card">
-                <span style="font-size: 16px; font-weight: bold;">✔</span>
-                <span><strong>PERFECT RUN:</strong> Zero safety violations or procedural errors detected under NFPA 70E standards.</span>
-              </div>
-            `;
+            errContainer.innerHTML = '<div class="infraction-row clean">✓ ZERO SAFETY INFRACTIONS RECORDED // PERFECT OSHA COMPLIANCE</div>';
           } else {
-            if (errorBadge) {
-              errorBadge.textContent = `${this.errors.length} ERROR${this.errors.length > 1 ? 'S' : ''}`;
-              errorBadge.className = 'section-badge badge-red';
-            }
-            let errorHtml = '';
-            this.errors.forEach((err) => {
-              errorHtml += `
-                <div class="error-item">
-                  <span class="error-timestamp">[T+${err.timestamp}]</span>
-                  <div style="flex: 1;">
-                    <strong style="color: #fff;">${err.title}:</strong> ${err.desc}
-                    <span style="display: block; font-size: 10px; color: #f87171; margin-top: 2px;">Penalized: -${err.penalty}% accuracy (Step ${err.step})</span>
-                  </div>
+            errContainer.innerHTML = this.errors.map(err => `
+              <div class="infraction-row ${err.penalty >= 20 ? 'critical' : 'warn'}">
+                <div class="infraction-header">
+                  <span class="infraction-title">${err.title}</span>
+                  <span class="infraction-penalty">-${err.penalty}%</span>
                 </div>
-              `;
-            });
-            errorsContainer.innerHTML = errorHtml;
-          }
-        }
-
-        const improvementsContainer = document.getElementById('report-improvements-container');
-        if (improvementsContainer) {
-          const improvements = [];
-
-          if (this.errors.some(e => e.type === 'ARC_FLASH')) {
-            improvements.push({
-              icon: '⚡',
-              title: 'Always De-Energize Prior to Contact (LOTO First Principle)',
-              desc: 'Rotate the DC combiner isolation switch to 0V before bringing multimeter probes near terminals to eliminate arc flash explosions.'
-            });
-          }
-
-          if (this.errors.some(e => e.type === 'LIVE_MAINTENANCE')) {
-            improvements.push({
-              icon: '🧤',
-              title: 'Enforce De-Energized Work Environment (NFPA 70E)',
-              desc: 'Never attempt to pull or insert DIN rail fuses while the DC bus is energized at 480V. Always isolate and confirm zero voltage first.'
-            });
-          }
-
-          if (this.errors.some(e => e.type === 'UNVERIFIED_VOLTAGE')) {
-            improvements.push({
-              icon: '🔬',
-              title: 'Execute the Standard 3-Point Multimeter Verification',
-              desc: 'Verify 0.00V potential across positive and negative busbars with calibrated probes prior to physical component replacement.'
-            });
-          }
-
-          if (this.errors.some(e => e.type === 'SEQUENCE_BREACH')) {
-            improvements.push({
-              icon: '🧰',
-              title: 'Stage Tools & PPE from the Toolbox Early',
-              desc: 'Unlatch the industrial toolbox and inspect insulated torque tools prior to handling the 48V Lithium-ion storage battery module.'
-            });
-          }
-
-          if (this.errors.some(e => e.type === 'ACCESS_PERIMETER')) {
-            improvements.push({
-              icon: '🚪',
-              title: 'Respect Facility Safety Enclosure Boundaries',
-              desc: 'Authenticate through the blast doors first before interacting with high-voltage electrical equipment inside the room.'
-            });
-          }
-
-          if (this.elapsedSeconds > 180) {
-            improvements.push({
-              icon: '⏱',
-              title: 'Improve Pacing & Spatial Awareness',
-              desc: `Your completion time was ${timeFormatted}. Target benchmark is 02:15. Practice recognizing equipment positions to reduce transit lag.`
-            });
-          }
-
-          if (this.errors.length === 0) {
-            improvements.push({
-              icon: '⭐',
-              title: 'Maintain Dielectric Pre-Check Habits',
-              desc: 'Continue testing insulating rubber gloves (air-test for punctures) and verifying tool insulation before entering high-voltage enclosures.'
-            });
-            improvements.push({
-              icon: '📈',
-              title: 'Rooftop Solar Telemetry Monitoring',
-              desc: 'Incorporate routine open-circuit voltage string checks and benchtop oscilloscope ripple analysis during scheduled preventive maintenance.'
-            });
-          }
-
-          let impHtml = '';
-          improvements.forEach(imp => {
-            impHtml += `
-              <div class="improvement-item">
-                <span style="font-size: 14px;">${imp.icon}</span>
-                <div>
-                  <strong style="color: #fff;">${imp.title}:</strong> ${imp.desc}
-                </div>
+                <div class="infraction-desc">${err.desc}</div>
+                <div class="infraction-meta">Time: ${err.timestamp} | Step ${err.step} of 6</div>
               </div>
-            `;
-          });
-          improvementsContainer.innerHTML = impHtml;
+            `).join('');
+          }
         }
 
-        return { accuracy, finalScore, grade, timeFormatted };
+        return { accuracy, finalScore, grade, durationStr };
       }
 
       flashScreen(color) {
-        const overlay = document.getElementById('hud-overlay');
-        overlay.classList.remove('flash-amber', 'flash-green');
-        void overlay.offsetWidth;
-        overlay.classList.add(color === 'amber' ? 'flash-amber' : 'flash-green');
+        const overlay = document.getElementById('screen-flash-overlay');
+        if (!overlay) return;
+        overlay.className = 'flash-' + color;
         setTimeout(() => {
-          overlay.classList.remove('flash-amber', 'flash-green');
-        }, 600);
+          overlay.className = '';
+        }, 400);
       }
 
       updateHUDForState() {
-        const isHi = this.app.language === 'hi';
-        const stepPills = [1, 2, 3, 4, 5, 6].map(n => document.getElementById(`step-pill-${n}`));
-        const pillLabelsEn = [
-          "1. MAIN GATE",
-          "2. SAFE ISOLATION",
-          "3. PROBE VOLTAGE",
-          "4. FIX CIRCUIT",
-          "5. TOOL BOX",
-          "6. NEW BATTERY"
-        ];
-        const pillLabelsHi = [
-          "1. मुख्य गेट",
-          "2. सुरक्षित अलगाव",
-          "3. वोल्टेज जांच",
-          "4. सर्किट सुधार",
-          "5. टूलबॉक्स",
-          "6. नई बैटरी"
-        ];
-        const pillLabels = isHi ? pillLabelsHi : pillLabelsEn;
-        stepPills.forEach((pill, idx) => {
-          const stepNum = idx + 1;
-          pill.classList.remove('active', 'completed');
-          if (stepNum < this.currentState) {
-            pill.classList.add('completed');
-          } else if (stepNum === this.currentState) {
-            pill.classList.add('active');
-          }
-          if (pill) pill.textContent = pillLabels[idx];
-        });
+        const isHi = (this.app.language === 'hi');
 
-        const titlesEn = {
-          1: "Open Main Facility Gate",
-          2: "Lockout / Safe Isolation (LOTO)",
-          3: "Voltage Verification (Probing)",
-          4: "Correct Circuit (Fuse Replacement)",
-          5: "Access Industrial Tool Box",
-          6: "Install New Battery Module",
-          7: "All Training Modules Completed"
-        };
+        let title = '';
+        let instruction = '';
+        let actionLabel = '';
 
-        const titlesHi = {
-          1: "मुख्य गेट खोलें",
-          2: "सुरक्षित अलगाव (LOTO स्विच बंद)",
-          3: "वोल्टेज सत्यापन (मल्टीमीटर प्रोब)",
-          4: "सर्किट सुधार (फ्यूज प्रतिस्थापन)",
-          5: "औद्योगिक टूलबॉक्स खोलें",
-          6: "नया बैटरी मॉड्यूल लगाएं",
-          7: "सभी प्रशिक्षण मॉड्यूल पूर्ण"
-        };
-
-        const instructionsEn = {
-          1: "Click the keypad or say: 'Jarvis, open the gate' to enter the testing facility.",
-          2: "Open the combiner lid and rotate the DC switch to 0V (or say: 'Jarvis, isolate switch').",
-          3: "Pick up multimeter probes to touch terminals (or say: 'Jarvis, verify voltage').",
-          4: "Extract blown fuse and seat replacement cartridge (or say: 'Jarvis, replace fuse').",
-          5: "Unlatch and open the tool box on the workbench (or say: 'Jarvis, open toolbox').",
-          6: "Mount the new battery module into the rack bay (or say: 'Jarvis, install battery').",
-          7: "Substation entrance, circuit isolation, circuit correction, and battery rack installation successfully verified."
-        };
-
-        const instructionsHi = {
-          1: "कीपैड पर क्लिक करें या कहें: 'जार्विस, गेट खोलो' प्रयोगशाला में प्रवेश के लिए।",
-          2: "कंबाइनर बॉक्स का ढक्कन खोलें और स्विच 0V पर घुमाएं (या कहें: 'जार्विस, स्विच बंद करो')।",
-          3: "टर्मिनल्स को छूने के लिए प्रोब्स उठाएं (या कहें: 'जार्विस, वोल्टेज चेक करो')।",
-          4: "खराब फ्यूज निकालें और नया फ्यूज लगाएं (या कहें: 'जार्विस, फ्यूज बदलो')।",
-          5: "कार्यक्षेत्र पर रखे टूलबॉक्स को खोलें (या कहें: 'जार्विस, टूलबॉक्स खोलो')।",
-          6: "रैक बे में नया बैटरी मॉड्यूल लगाएं (या कहें: 'जार्विस, बैटरी लगाओ')।",
-          7: "सबस्टेशन प्रवेश, सर्किट अलगाव, फ्यूज सुधार और बैटरी इंस्टॉलेशन सफलतापूर्वक सत्यापित हुआ।"
-        };
-
-        const titles = isHi ? titlesHi : titlesEn;
-        const instructions = isHi ? instructionsHi : instructionsEn;
+        if (this.stepInteractiveMap && this.stepInteractiveMap[this.currentState]) {
+          const sData = this.stepInteractiveMap[this.currentState];
+          title = (isHi && sData.titleHi) ? sData.titleHi : (sData.title || `STEP ${this.currentState}`);
+          instruction = (isHi && sData.instructionHi) ? sData.instructionHi : (sData.instructionEn || '');
+          actionLabel = sData.actionLabel || `EXECUTE: ${this.currentState}. ${title}`;
+        } else {
+          // Default combiner box texts
+          const titlesEn = {
+            1: "Open Facility Security Gate",
+            2: "Safe DC Isolation",
+            3: "Verify Zero Voltage",
+            4: "Correct Circuit & Fuse",
+            5: "Open Tool Box",
+            6: "Install 48V Battery Module",
+            7: "Procedure Fully Certified"
+          };
+          const instructionsEn = {
+            1: "Click access keypad or say: 'Jarvis, open the gate'.",
+            2: "Open combiner lid and rotate DC switch to 0V.",
+            3: "Pick up multimeter probes to touch terminals (confirm 0.00V).",
+            4: "Extract blown fuse and seat replacement 15A cartridge.",
+            5: "Unlatch and open tool box on workbench.",
+            6: "Mount new battery module into rack bay.",
+            7: "All procedural tasks and safety isolation verified."
+          };
+          title = titlesEn[this.currentState] || "Procedure Complete";
+          instruction = instructionsEn[this.currentState] || "All steps verified.";
+          actionLabel = `EXECUTE: ${this.currentState}. ${title}`;
+        }
 
         const stepText = isHi
           ? (this.currentState <= 6 ? `चरण ${this.currentState} / 6` : "मॉड्यूल पूर्ण")
           : (this.currentState <= 6 ? `STEP ${this.currentState} OF 6` : "MODULE COMPLETE");
 
-        document.getElementById('task-step-tag').textContent = stepText;
-        document.getElementById('task-title').textContent = titles[this.currentState];
-        document.getElementById('task-instruction').textContent = instructions[this.currentState];
+        const tagEl = document.getElementById('task-step-tag');
+        if (tagEl) tagEl.textContent = stepText;
+        const titleEl = document.getElementById('task-title');
+        if (titleEl) titleEl.textContent = title;
+        const instrEl = document.getElementById('task-instruction');
+        if (instrEl) instrEl.textContent = instruction;
+
+        const actionBtnText = document.getElementById('practice-step-action-text');
+        if (actionBtnText) {
+          actionBtnText.textContent = (this.currentState <= 6) ? actionLabel : '✓ MODULE COMPLETED';
+        }
 
         const handleText = document.getElementById('guide-handle-text');
         if (handleText) {
-          handleText.textContent = isHi
-            ? (this.currentState <= 6 ? `टास्क गाइड // चरण ${this.currentState}/6: ${titles[this.currentState].substring(0, 18)}` : `टास्क गाइड // पूर्ण`)
-            : (this.currentState <= 6 ? `TASK GUIDE // STEP ${this.currentState}/6: ${titles[this.currentState].substring(0, 18)}` : `TASK GUIDE // COMPLETE`);
+          handleText.textContent = `TASK GUIDE // ${this.activeModuleCode} // ${stepText}`;
+        }
+
+        // Update step pills
+        for (let i = 1; i <= 6; i++) {
+          const pill = document.getElementById(`step-pill-${i}`);
+          if (pill) {
+            let pTitle = `STEP ${i}`;
+            if (this.stepInteractiveMap && this.stepInteractiveMap[i]) {
+              pTitle = this.stepInteractiveMap[i].title || pTitle;
+            }
+            if (i < this.currentState) {
+              pill.textContent = `${i}. ✓ ${pTitle}`;
+              pill.className = 'step-pill completed';
+            } else if (i === this.currentState) {
+              pill.textContent = `${i}. ${pTitle}`;
+              pill.className = 'step-pill active';
+            } else {
+              pill.textContent = `${i}. ${pTitle}`;
+              pill.className = 'step-pill';
+            }
+          }
         }
 
         if (this.app.diegeticHUD) {
-          this.app.diegeticHUD.updateStep(
-            stepText,
-            titles[this.currentState],
-            instructions[this.currentState]
-          );
+          this.app.diegeticHUD.updateStep(stepText, title, instruction);
         }
       }
 
@@ -3816,8 +3919,10 @@
         this.circuitEnergized = false;
         this.busVoltage = 0.0;
         const vElem = document.getElementById('hud-voltage');
-        vElem.textContent = "0.00 V";
-        vElem.classList.add('safe');
+        if (vElem) {
+          vElem.textContent = "0.00 V";
+          vElem.classList.add('safe');
+        }
         if (this.app.diegeticHUD) {
           this.app.diegeticHUD.updateVoltage("0.00 V - SAFE");
         }
@@ -3832,19 +3937,27 @@
         this.errors = [];
         this.lastErrorType = null;
         this.lastErrorTimestamp = 0;
-        document.getElementById('hud-score').textContent = "100%";
-        document.getElementById('hud-battery-status').textContent = "OFFLINE";
-        document.getElementById('hud-battery-status').style.color = "#ff9100";
+
+        const sScore = document.getElementById('hud-score');
+        if (sScore) sScore.textContent = "100%";
+        const bStatus = document.getElementById('hud-battery-status');
+        if (bStatus) {
+          bStatus.textContent = "OFFLINE";
+          bStatus.style.color = "#ff9100";
+        }
         const vElem = document.getElementById('hud-voltage');
-        vElem.textContent = "480.0 V";
-        vElem.classList.remove('safe');
-        document.getElementById('completion-modal').classList.remove('show');
+        if (vElem) {
+          vElem.textContent = "480.0 V";
+          vElem.classList.remove('safe');
+        }
+
         const reportBtn = document.getElementById('btn-view-report');
         if (reportBtn) reportBtn.style.display = 'none';
-        if (this.app.env.completionBadgeGroup) {
+        if (this.app.env && this.app.env.completionBadgeGroup) {
           this.app.env.completionBadgeGroup.visible = false;
         }
-        this.enterState(STATES.STEP1_GATE_ENTRY);
+
+        this.enterState(1);
       }
     }
 
@@ -6667,7 +6780,8 @@
           this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
           this.raycaster.setFromCamera(this.mouse, this.camera);
-          const intersects = this.raycaster.intersectObjects(this.env.interactiveObjects, true);
+          const targetObjects = (this.interactiveObjects && this.interactiveObjects.length > 0) ? this.interactiveObjects : this.env.interactiveObjects;
+          const intersects = this.raycaster.intersectObjects(targetObjects, true);
 
           if (intersects.length > 0) {
             let target = intersects[0].object;
@@ -6712,6 +6826,22 @@
             case 'l':
               this.toggleLanguage();
               break;
+            case 'e':
+            case 'enter':
+              if (this.fsm && typeof this.fsm.executeCurrentStep === 'function') {
+                this.fsm.executeCurrentStep();
+              }
+              break;
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+              if (this.fsm && typeof this.fsm.executeStep === 'function') {
+                this.fsm.executeStep(parseInt(e.key));
+              }
+              break;
             case ' ':
               this.jarvis.repeat();
               break;
@@ -6726,6 +6856,52 @@
         if (obj.name === 'completion_badge' || obj.parent?.name === 'completion_badge') {
           this.showReportCard();
           return;
+        }
+
+        // Check if active module has stepInteractiveMap
+        if (this.fsm && this.fsm.stepInteractiveMap) {
+          const stepMap = this.fsm.stepInteractiveMap;
+          const currentStep = this.fsm.currentState;
+
+          // Check which step this object belongs to
+          let matchedStep = 0;
+          for (let s = 1; s <= 6; s++) {
+            if (stepMap[s] && stepMap[s].name) {
+              const targetName = stepMap[s].name;
+              if (obj.name === targetName || obj.parent?.name === targetName ||
+                  (obj.name && obj.name.includes(targetName)) || (obj.parent?.name && obj.parent.name.includes(targetName))) {
+                matchedStep = s;
+                break;
+              }
+            }
+          }
+
+          if (matchedStep > 0) {
+            if (matchedStep === currentStep) {
+              this.fsm.executeCurrentStep();
+              return;
+            } else if (matchedStep < currentStep) {
+              if (this.sound && this.sound.playProbeBeep) this.sound.playProbeBeep();
+              this.jarvis.speak({
+                en: `Step ${matchedStep} is already completed and verified, sir. Proceed with Step ${currentStep}.`,
+                hi: `चरण ${matchedStep} पहले ही पूर्ण और सत्यापित है, सर। चरण ${currentStep} पर आगे बढ़ें।`
+              }, true);
+              return;
+            } else if (matchedStep > currentStep) {
+              const stepTitle = stepMap[matchedStep].title || `STEP ${matchedStep}`;
+              this.fsm.recordError(
+                'SEQUENCE_VIOLATION',
+                `OUT-OF-SEQUENCE: ${stepTitle}`,
+                `Attempted to interact with ${stepTitle} before completing prerequisite Step ${currentStep}.`,
+                15
+              );
+              this.jarvis.speak({
+                en: `Protocol breach, sir! You cannot perform ${stepTitle} yet. You must complete Step ${currentStep} first.`,
+                hi: `प्रोटोकॉल उल्लंघन, सर! आप अभी यह कार्य नहीं कर सकते। आपको पहले चरण ${currentStep} पूरा करना होगा।`
+              }, true);
+              return;
+            }
+          }
         }
 
         // Gate Interaction
@@ -7222,7 +7398,8 @@
         ray.ray.origin.setFromMatrixPosition(controller.matrixWorld);
         ray.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
 
-        const intersects = ray.intersectObjects(this.env.interactiveObjects, true);
+        const targetObjects = (this.interactiveObjects && this.interactiveObjects.length > 0) ? this.interactiveObjects : this.env.interactiveObjects;
+        const intersects = ray.intersectObjects(targetObjects, true);
         if (intersects.length > 0) {
           let target = intersects[0].object;
           while (target.parent && !target.name) target = target.parent;
@@ -7301,6 +7478,28 @@
         document.getElementById('btn-rooftop-view')?.addEventListener('click', () => {
           this.toggleRooftopView();
         });
+
+        // Practice Action Button in Task Guide HUD
+        document.getElementById('btn-practice-step-action')?.addEventListener('click', () => {
+          this.sound.ensureUnlocked();
+          if (this.fsm && typeof this.fsm.executeCurrentStep === 'function') {
+            this.fsm.executeCurrentStep();
+          }
+        });
+
+        // Interactive Step Pills (1 to 6)
+        for (let sIdx = 1; sIdx <= 6; sIdx++) {
+          const pillEl = document.getElementById(`step-pill-${sIdx}`);
+          if (pillEl) {
+            pillEl.style.cursor = 'pointer';
+            pillEl.addEventListener('click', () => {
+              this.sound.ensureUnlocked();
+              if (this.fsm && typeof this.fsm.executeStep === 'function') {
+                this.fsm.executeStep(sIdx);
+              }
+            });
+          }
+        }
 
         document.getElementById('btn-replay-voice').addEventListener('click', () => {
           this.sound.ensureUnlocked();
@@ -7677,7 +7876,8 @@
             codeUpper,
             this.moduleEquipmentGroup,
             THREE,
-            this.sound
+            this.sound,
+            this
           );
 
           if (result) {
@@ -7693,6 +7893,10 @@
             if (result.defaultControlsTarget && this.controls) {
               this.controls.target.copy(result.defaultControlsTarget);
               this.controls.update();
+            }
+
+            if (this.fsm && typeof this.fsm.setModulePractice === 'function') {
+              this.fsm.setModulePractice(modCode, simConfig, result.stepInteractiveMap);
             }
           }
         }
