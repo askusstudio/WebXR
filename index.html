@@ -4,6 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>JARVIS // WebXR Solar Safe Isolation &amp; Battery Training</title>
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem('mayavue_theme') || 'light';
+        if (theme === 'light') {
+          document.documentElement.classList.add('theme-light');
+        } else {
+          document.documentElement.classList.remove('theme-light');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <style>
     :root {
       --bg-dark: #07090e;
@@ -1468,6 +1480,209 @@
         display: none !important;
       }
     }
+
+    /* ==========================================================================
+       LIGHT BACKGROUND THEME (MAYAVUE CLEAN BLUEPRINT & INDUSTRIAL LIGHT)
+       ========================================================================== */
+    html.theme-light {
+      --bg-dark: #f8fafc;
+      --panel-bg: rgba(255, 255, 255, 0.94);
+      --panel-border: rgba(14, 165, 233, 0.32);
+      --cyan-glow: #0284c7;
+      --cyan-dim: rgba(2, 132, 199, 0.12);
+      --amber-warn: #d97706;
+      --amber-dim: rgba(217, 119, 6, 0.14);
+      --red-alert: #dc2626;
+      --green-safe: #16a34a;
+      --text-main: #0f172a;
+      --text-dim: #64748b;
+    }
+
+    html.theme-light body {
+      background-color: #f8fafc !important;
+      color: #0f172a !important;
+    }
+
+    html.theme-light #global-platform-nav {
+      background: rgba(255, 255, 255, 0.96) !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    html.theme-light .nav-link {
+      color: #64748b !important;
+    }
+    html.theme-light .nav-link:hover {
+      color: #0f172a !important;
+      background: #f1f5f9 !important;
+    }
+    html.theme-light .nav-link.nav-link-active {
+      color: #0284c7 !important;
+      background: rgba(14, 165, 233, 0.12) !important;
+      border-color: rgba(14, 165, 233, 0.4) !important;
+    }
+
+    html.theme-light .app-screen {
+      background-color: #f8fafc !important;
+      background-image: radial-gradient(#cbd5e1 1px, transparent 1px) !important;
+      background-size: 24px 24px !important;
+      color: #0f172a !important;
+    }
+
+    html.theme-light #view-simulation {
+      background-color: transparent !important;
+      background-image: none !important;
+    }
+
+    html.theme-light .tab-btn {
+      color: #64748b !important;
+    }
+    html.theme-light .tab-btn:hover {
+      color: #0f172a !important;
+    }
+    html.theme-light .tab-btn.tab-btn-active {
+      color: #0284c7 !important;
+      border-bottom-color: #0284c7 !important;
+      background: rgba(14, 165, 233, 0.08) !important;
+    }
+
+    /* Cards and Surfaces */
+    html.theme-light .glass-card {
+      background: rgba(255, 255, 255, 0.92) !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), inset 0 0 14px rgba(2, 132, 199, 0.05) !important;
+      color: #0f172a !important;
+    }
+
+    html.theme-light .bg-slate-900,
+    html.theme-light .bg-slate-900\/90,
+    html.theme-light .bg-slate-900\/80,
+    html.theme-light .bg-slate-900\/70,
+    html.theme-light .bg-slate-900\/50,
+    html.theme-light .bg-slate-900\/40 {
+      background-color: #ffffff !important;
+    }
+
+    html.theme-light .bg-slate-950,
+    html.theme-light .bg-slate-950\/80,
+    html.theme-light .bg-slate-950\/60 {
+      background-color: #f8fafc !important;
+    }
+
+    html.theme-light .bg-slate-800,
+    html.theme-light .bg-slate-800\/80,
+    html.theme-light .bg-slate-800\/60,
+    html.theme-light .bg-slate-800\/50 {
+      background-color: #f1f5f9 !important;
+    }
+
+    html.theme-light .bg-gradient-to-r.from-slate-900.via-slate-900\/90.to-slate-950,
+    html.theme-light .bg-gradient-to-br.from-slate-900.via-slate-900.to-slate-950 {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%) !important;
+    }
+
+    /* Borders */
+    html.theme-light .border-slate-800,
+    html.theme-light .border-slate-700,
+    html.theme-light .border-slate-700\/80,
+    html.theme-light .border-slate-700\/60,
+    html.theme-light .border-slate-600 {
+      border-color: #e2e8f0 !important;
+    }
+
+    /* Text Colors */
+    html.theme-light .text-white,
+    html.theme-light .text-slate-100,
+    html.theme-light .text-slate-200 {
+      color: #0f172a !important;
+    }
+
+    html.theme-light .text-slate-300,
+    html.theme-light .text-slate-400 {
+      color: #475569 !important;
+    }
+
+    html.theme-light .text-slate-500 {
+      color: #64748b !important;
+    }
+
+    /* Interactive Inputs & Selects */
+    html.theme-light input,
+    html.theme-light select,
+    html.theme-light textarea {
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+
+    /* Status Badges */
+    html.theme-light .bg-sky-950,
+    html.theme-light .bg-sky-950\/80 {
+      background-color: #e0f2fe !important;
+    }
+    html.theme-light .text-sky-300,
+    html.theme-light .text-sky-400 {
+      color: #0284c7 !important;
+    }
+    html.theme-light .border-sky-800,
+    html.theme-light .border-sky-700\/60 {
+      border-color: #bae6fd !important;
+    }
+
+    html.theme-light .bg-emerald-950,
+    html.theme-light .bg-emerald-950\/80 {
+      background-color: #dcfce7 !important;
+    }
+    html.theme-light .text-emerald-300,
+    html.theme-light .text-emerald-400 {
+      color: #16a34a !important;
+    }
+    html.theme-light .border-emerald-800,
+    html.theme-light .border-emerald-700\/60 {
+      border-color: #bbf7d0 !important;
+    }
+
+    html.theme-light .bg-amber-950,
+    html.theme-light .bg-amber-950\/80 {
+      background-color: #fef3c7 !important;
+    }
+    html.theme-light .text-amber-300,
+    html.theme-light .text-amber-400 {
+      color: #d97706 !important;
+    }
+    html.theme-light .border-amber-800,
+    html.theme-light .border-amber-700\/60 {
+      border-color: #fde68a !important;
+    }
+
+    html.theme-light .bg-red-950,
+    html.theme-light .bg-red-950\/80 {
+      background-color: #fee2e2 !important;
+    }
+    html.theme-light .text-red-300,
+    html.theme-light .text-red-400 {
+      color: #dc2626 !important;
+    }
+    html.theme-light .border-red-800,
+    html.theme-light .border-red-700\/60 {
+      border-color: #fca5a5 !important;
+    }
+
+    /* Buttons in Light Mode */
+    html.theme-light #nav-role-toggle,
+    html.theme-light #lang-toggle-btn,
+    html.theme-light #theme-toggle-btn {
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #334155 !important;
+    }
+    html.theme-light #nav-role-toggle:hover,
+    html.theme-light #lang-toggle-btn:hover,
+    html.theme-light #theme-toggle-btn:hover {
+      background-color: #f1f5f9 !important;
+      border-color: #94a3b8 !important;
+      color: #0f172a !important;
+    }
   </style>
 
 </head>
@@ -1531,6 +1746,12 @@
         <span id="nav-candidate-name" class="font-semibold text-slate-200">Alex Rivera</span>
         <span id="nav-stuid-badge" class="text-[10px] font-mono px-1 rounded bg-slate-800 text-emerald-400 border border-slate-700">MVSTU001</span>
       </div>
+
+      <!-- Theme Switcher Button -->
+      <button id="theme-toggle-btn" class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-xs font-mono text-slate-300 hover:text-white transition-colors" title="Toggle Light / Dark Theme">
+        <span id="theme-toggle-icon">☀️</span>
+        <span id="theme-toggle-label">LIGHT</span>
+      </button>
 
       <!-- Hindi / English Voice Toggle -->
       <button id="lang-toggle-btn" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-xs font-mono text-slate-300 hover:text-white transition-colors">
@@ -7488,8 +7709,18 @@
         this.renderer.setAnimationLoop((t, frame) => this.render(t, frame));
       }
 
+      setTheme(theme) {
+        const isLight = theme === 'light';
+        if (this.scene) {
+          this.scene.background = new THREE.Color(isLight ? 0xdde8f5 : 0x0a101d);
+          this.scene.fog = new THREE.FogExp2(isLight ? 0xd6e4f0 : 0x0a101d, 0.022);
+        }
+      }
+
       setupLights() {
-        this.scene.fog = new THREE.FogExp2(0xd6e4f0, 0.022);
+        const isLight = (localStorage.getItem('mayavue_theme') || 'light') === 'light';
+        this.scene.background = new THREE.Color(isLight ? 0xdde8f5 : 0x0a101d);
+        this.scene.fog = new THREE.FogExp2(isLight ? 0xd6e4f0 : 0x0a101d, 0.022);
 
         const ambientLight = new THREE.AmbientLight(0xdde8f5, 0.65);
         this.scene.add(ambientLight);

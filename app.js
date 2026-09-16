@@ -17,12 +17,14 @@ class MayaVuePlatform {
       safetyViolations: 0,
       activeInterval: null
     };
+    this.currentTheme = localStorage.getItem('mayavue_theme') || 'light';
 
     this.init();
     this.initTelemetryWebSocket();
   }
 
   async init() {
+    this.setTheme(this.currentTheme);
     this.setupEventListeners();
     await this.loadInitialData();
     this.handleRoute();
@@ -98,6 +100,36 @@ class MayaVuePlatform {
     if (regForm) {
       regForm.addEventListener('submit', (e) => this.handleRegistration(e));
     }
+
+    // Theme toggle button in nav
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => this.toggleTheme());
+    }
+  }
+
+  setTheme(theme) {
+    this.currentTheme = theme;
+    localStorage.setItem('mayavue_theme', theme);
+    const isLight = theme === 'light';
+    if (isLight) {
+      document.documentElement.classList.add('theme-light');
+    } else {
+      document.documentElement.classList.remove('theme-light');
+    }
+    const icon = document.getElementById('theme-toggle-icon');
+    const label = document.getElementById('theme-toggle-label');
+    if (icon) icon.textContent = isLight ? '☀️' : '🌙';
+    if (label) label.textContent = isLight ? 'LIGHT' : 'DARK';
+
+    if (window.app && typeof window.app.setTheme === 'function') {
+      window.app.setTheme(theme);
+    }
+  }
+
+  toggleTheme() {
+    const next = this.currentTheme === 'light' ? 'dark' : 'light';
+    this.setTheme(next);
   }
 
   async loadInitialData() {
@@ -627,7 +659,7 @@ class MayaVuePlatform {
     const height = 360;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a101d);
+    scene.background = new THREE.Color(this.currentTheme === 'light' ? 0xf8fafc : 0x0a101d);
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0.6, 0.8, 1.2);
